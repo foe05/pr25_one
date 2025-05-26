@@ -838,7 +838,7 @@ class AHGMH_Admin_Page {
                         </div>
                         
                         <p class="submit">
-                            <button type="submit" class="button button-primary"><?php echo esc_html__('Grenzwerte speichern', 'abschussplan-hgmh'); ?></button>
+                            <button type="submit" class="button button-primary"><?php echo esc_html__('Abschuss (Soll) speichern', 'abschussplan-hgmh'); ?></button>
                         </p>
                     </form>
                 </div>
@@ -873,9 +873,22 @@ class AHGMH_Admin_Page {
             }
             
             function getStoredLimits(species) {
-                // This would normally fetch from the database via AJAX
-                // For now, return empty object
-                return {};
+                let limits = {};
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'GET',
+                    data: {
+                        action: 'load_species_limits',
+                        species: species
+                    },
+                    async: false,
+                    success: function(response) {
+                        if (response.success) {
+                            limits = response.data.limits;
+                        }
+                    }
+                });
+                return limits;
             }
             
             // Handle form submission
@@ -905,7 +918,7 @@ class AHGMH_Admin_Page {
                         }, 500);
                     },
                     error: function() {
-                        $('#limits-response').removeClass('notice-success').addClass('notice-error').html('<p><?php echo esc_js(__('Fehler beim Speichern der Grenzwerte.', 'abschussplan-hgmh')); ?></p>').show();
+                        $('#limits-response').removeClass('notice-success').addClass('notice-error').html('<p><?php echo esc_js(__('Fehler beim Speichern der Abschuss (Soll) Werte.', 'abschussplan-hgmh')); ?></p>').show();
                     }
                 });
             });
@@ -943,11 +956,11 @@ class AHGMH_Admin_Page {
                             </thead>
                             <tbody id="categories-list">
                                 <?php 
-                                $categories = array(
+                                $categories = get_option('ahgmh_categories', array(
                                     "Wildkalb (AK 0)", "Schmaltier (AK 1)", "Alttier (AK 2)", 
                                     "Hirschkalb (AK 0)", "Schmalspießer (AK1)", "Junger Hirsch (AK 2)", 
                                     "Mittelalter Hirsch (AK 3)", "Alter Hirsch (AK 4)"
-                                );
+                                ));
                                 foreach ($categories as $index => $category): ?>
                                 <tr>
                                     <td>
@@ -975,7 +988,7 @@ class AHGMH_Admin_Page {
             // Add new category
             $('#add-category').click(function() {
                 var newRow = '<tr>' +
-                    '<td><input type="text" name="categories[]" value="" class="regular-text" placeholder="<?php echo esc_js(__('Neue Kategorie', 'abschussplan-hgmh')); ?>" /></td>' +
+                    '<td><input type="text" name="categories[]" value="" class="regular-text" placeholder="<?php echo esc_js(__('Kategorie eingeben', 'abschussplan-hgmh')); ?>" /></td>' +
                     '<td><button type="button" class="button button-secondary remove-category"><?php echo esc_js(__('Entfernen', 'abschussplan-hgmh')); ?></button></td>' +
                     '</tr>';
                 $('#categories-list').append(newRow);

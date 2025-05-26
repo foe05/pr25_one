@@ -38,6 +38,7 @@ class AHGMH_Form_Handler {
         add_action('wp_ajax_save_categories', array($this, 'save_categories'));
         add_action('wp_ajax_save_species', array($this, 'save_species'));
         add_action('wp_ajax_save_species_limits', array($this, 'save_species_limits'));
+        add_action('wp_ajax_load_species_limits', array($this, 'load_species_limits'));
     }
 
     /**
@@ -813,7 +814,7 @@ class AHGMH_Form_Handler {
         }
         
         // Verify nonce
-        if (!isset($_POST['species_limits_nonce_field']) || !wp_verify_nonce($_POST['species_limits_nonce_field'], 'species_limits_nonce')) {
+        if (!isset($_POST['limits_nonce_field']) || !wp_verify_nonce($_POST['limits_nonce_field'], 'limits_nonce')) {
             wp_send_json_error(array(
                 'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
             ));
@@ -841,7 +842,35 @@ class AHGMH_Form_Handler {
         update_option($option_key, $sanitized_limits);
         
         wp_send_json_success(array(
-            'message' => sprintf(__('Grenzen für %s gespeichert.', 'abschussplan-hgmh'), $species)
+            'message' => sprintf(__('Abschuss (Soll) für %s gespeichert.', 'abschussplan-hgmh'), $species)
+        ));
+    }
+    
+    /**
+     * Load species-specific limits via AJAX
+     */
+    public function load_species_limits() {
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        $species = isset($_GET['species']) ? sanitize_text_field($_GET['species']) : '';
+        
+        if (empty($species)) {
+            wp_send_json_error(array(
+                'message' => __('Keine Wildart angegeben.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Load species-specific limits
+        $option_key = 'abschuss_category_limits_' . sanitize_key($species);
+        $limits = get_option($option_key, array());
+        
+        wp_send_json_success(array(
+            'limits' => $limits
         ));
     }
 }
