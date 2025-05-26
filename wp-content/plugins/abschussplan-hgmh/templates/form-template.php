@@ -123,7 +123,7 @@ jQuery(document).ready(function($) {
         // Get form data
         const formData = new FormData();
         formData.append('action', 'submit_abschuss_form');
-        formData.append('nonce', $('#ahgmh_nonce').val());
+        formData.append('ahgmh_nonce', $('#ahgmh_nonce').val());
         formData.append('game_species', $('#game_species').val());
         formData.append('field1', $('#field1').val());
         formData.append('field2', $('#field2').val());
@@ -147,12 +147,10 @@ jQuery(document).ready(function($) {
                     $form[0].reset();
                     $('#field1').val(currentDate);
                     
-                    // Refresh the table if it exists on the same page
-                    if (typeof window.abschussRefreshTable === 'function') {
-                        setTimeout(() => {
-                            window.abschussRefreshTable(false); // Don't show loading for auto-refresh
-                        }, 500); // Small delay to let the success message show
-                    }
+                    // Reload the page to show updated table
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500); // Small delay to show success message
                 } else {
                     // Show error message
                     $responseContainer.removeClass('alert-success').addClass('alert-danger').text(response.data.message).show();

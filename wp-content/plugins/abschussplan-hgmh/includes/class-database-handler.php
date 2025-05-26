@@ -58,8 +58,10 @@ class AHGMH_Database_Handler {
     public function insert_submission($data) {
         global $wpdb;
         
-        // Sanitize data
+        // Sanitize data - include user_id and game_species
         $sanitized_data = array(
+            'user_id' => isset($data['user_id']) ? intval($data['user_id']) : 0,
+            'game_species' => isset($data['game_species']) ? sanitize_text_field($data['game_species']) : 'Rotwild',
             'field1' => sanitize_text_field($data['field1']),
             'field2' => sanitize_text_field($data['field2']),
             'field3' => sanitize_text_field($data['field3']),
@@ -70,7 +72,7 @@ class AHGMH_Database_Handler {
         $result = $wpdb->insert(
             $this->table_name,
             $sanitized_data,
-            array('%s', '%s', '%s', '%s')
+            array('%d', '%s', '%s', '%s', '%s', '%s')
         );
         
         return $result ? $wpdb->insert_id : false;
