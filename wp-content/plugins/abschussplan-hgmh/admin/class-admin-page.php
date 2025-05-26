@@ -636,14 +636,140 @@ class AHGMH_Admin_Page {
         // Get form handler instance to use its methods
         $form_handler = abschussplan_hgmh()->form;
         
+        // Get available species
+        $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+        
+        // Get selected species from URL parameter
+        $selected_species = isset($_GET['species']) ? sanitize_text_field($_GET['species']) : 'Rotwild';
+        
+        // Validate selected species
+        if (!in_array($selected_species, $available_species)) {
+            $selected_species = !empty($available_species) ? $available_species[0] : 'Rotwild';
+        }
+        
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Abschussplan Übersicht', 'abschussplan-hgmh'); ?></h1>
             
-            <?php
-            // Use the same logic as the summary shortcode
-            echo $form_handler->render_summary();
-            ?>
+            <!-- Species Selection -->
+            <div class="postbox">
+                <div class="postbox-header">
+                    <h2 class="hndle ui-sortable-handle">
+                        <span><?php echo esc_html__('Wildart auswählen', 'abschussplan-hgmh'); ?></span>
+                    </h2>
+                </div>
+                <div class="inside">
+                    <form method="get" action="">
+                        <input type="hidden" name="page" value="abschussplan-hgmh" />
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">
+                                    <label for="species-selector"><?php echo esc_html__('Wildart:', 'abschussplan-hgmh'); ?></label>
+                                </th>
+                                <td>
+                                    <select name="species" id="species-selector">
+                                        <?php foreach ($available_species as $species) : ?>
+                                            <option value="<?php echo esc_attr($species); ?>" <?php selected($species, $selected_species); ?>>
+                                                <?php echo esc_html($species); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <input type="submit" class="button" value="<?php echo esc_attr__('Anzeigen', 'abschussplan-hgmh'); ?>" />
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Species-specific Summary -->
+            <div class="postbox">
+                <div class="postbox-header">
+                    <h2 class="hndle ui-sortable-handle">
+                        <span><?php echo esc_html(sprintf(__('Übersicht für %s', 'abschussplan-hgmh'), $selected_species)); ?></span>
+                    </h2>
+                </div>
+                <div class="inside">
+                    <?php
+                    // Use the summary shortcode with specific species
+                    echo $form_handler->render_summary(array('species' => $selected_species));
+                    ?>
+                </div>
+            </div>
+            
+            <!-- Categories Overview per Species -->
+            <div class="postbox">
+                <div class="postbox-header">
+                    <h2 class="hndle ui-sortable-handle">
+                        <span><?php echo esc_html(sprintf(__('Kategorien für %s', 'abschussplan-hgmh'), $selected_species)); ?></span>
+                    </h2>
+                </div>
+                <div class="inside">
+                    <?php
+                    $categories = get_option('ahgmh_categories', array('Wildkalb (AK 0)', 'Schmaltier (AK 1)', 'Alttier (AK 2)'));
+                    $limits = get_option('abschuss_category_limits_' . sanitize_key($selected_species), array());
+                    $allow_exceeding = get_option('abschuss_category_allow_exceeding_' . sanitize_key($selected_species), array());
+                    $database = abschussplan_hgmh()->database;
+                    $counts = $database->get_category_counts($selected_species);
+                    ?>
+                    
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
+                                <th><?php echo esc_html__('Abschuss (Ist)', 'abschussplan-hgmh'); ?></th>
+                                <th><?php echo esc_html__('Abschuss (Soll)', 'abschussplan-hgmh'); ?></th>
+                                <th><?php echo esc_html__('Überschreitung erlaubt', 'abschussplan-hgmh'); ?></th>
+                                <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($categories as $category): 
+                                $current_count = isset($counts[$category]) ? $counts[$category] : 0;
+                                $limit = isset($limits[$category]) ? $limits[$category] : 0;
+                                $exceeding_allowed = isset($allow_exceeding[$category]) ? $allow_exceeding[$category] : false;
+                                $percentage = $limit > 0 ? ($current_count / $limit) * 100 : 0;
+                                $status_class = '';
+                                $status_text = '';
+                                
+                                if ($limit > 0) {
+                                    if ($percentage >= 100) {
+                                        $status_class = 'notice-error';
+                                        $status_text = round($percentage, 1) . '% - ' . __('Limit erreicht/überschritten', 'abschussplan-hgmh');
+                                    } elseif ($percentage >= 90) {
+                                        $status_class = 'notice-warning';
+                                        $status_text = round($percentage, 1) . '% - ' . __('Limit fast erreicht', 'abschussplan-hgmh');
+                                    } else {
+                                        $status_class = 'notice-success';
+                                        $status_text = round($percentage, 1) . '% - ' . __('Im Rahmen', 'abschussplan-hgmh');
+                                    }
+                                } else {
+                                    $status_class = 'notice-info';
+                                    $status_text = __('Kein Limit gesetzt', 'abschussplan-hgmh');
+                                }
+                            ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($category); ?></strong></td>
+                                <td><?php echo esc_html($current_count); ?></td>
+                                <td><?php echo $limit > 0 ? esc_html($limit) : '<em>' . esc_html__('Unbegrenzt', 'abschussplan-hgmh') . '</em>'; ?></td>
+                                <td>
+                                    <?php if ($exceeding_allowed): ?>
+                                        <span style="color: #46b450; font-weight: bold;"><?php echo esc_html__('Ja', 'abschussplan-hgmh'); ?></span>
+                                    <?php else: ?>
+                                        <span style="color: #dc3232; font-weight: bold;"><?php echo esc_html__('Nein', 'abschussplan-hgmh'); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="notice <?php echo esc_attr($status_class); ?> inline" style="padding: 4px 8px; margin: 0;">
+                                        <?php echo esc_html($status_text); ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             
             <div class="mt-4">
                 <h3><?php echo esc_html__('Verfügbare Shortcodes', 'abschussplan-hgmh'); ?></h3>
@@ -829,6 +955,7 @@ class AHGMH_Admin_Page {
                                     <tr>
                                         <th scope="col" class="manage-column"><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
                                         <th scope="col" class="manage-column" style="width: 150px;"><?php echo esc_html__('Abschuss (Soll)', 'abschussplan-hgmh'); ?></th>
+                                        <th scope="col" class="manage-column" style="width: 150px;"><?php echo esc_html__('Überschießen möglich?', 'abschussplan-hgmh'); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="limits-tbody">
@@ -858,22 +985,33 @@ class AHGMH_Admin_Page {
             function loadLimits() {
                 const species = $('#species-select').val();
                 const categories = <?php echo json_encode(get_option('ahgmh_categories', array('Wildkalb (AK 0)', 'Schmaltier (AK 1)', 'Alttier (AK 2)'))); ?>;
-                const limits = getStoredLimits(species);
+                const data = getStoredLimitsAndExceeding(species);
+                const limits = data.limits;
+                const allowExceeding = data.allowExceeding;
                 
                 let html = '';
                 categories.forEach(function(category) {
                     const value = limits[category] || '0';
+                    const exceedingChecked = allowExceeding[category] ? 'checked' : '';
+                    const categoryId = category.replace(/[^a-zA-Z0-9]/g, '_');
+                    
                     html += '<tr>';
                     html += '<td>' + category + '</td>';
                     html += '<td><input type="number" name="limits[' + category + ']" value="' + value + '" min="0" style="width: 100px;" /></td>';
+                    html += '<td>';
+                    html += '<label>';
+                    html += '<input type="checkbox" name="allow_exceeding[' + category + ']" value="1" ' + exceedingChecked + ' /> ';
+                    html += '<?php echo esc_js(__('Ja', 'abschussplan-hgmh')); ?>';
+                    html += '</label>';
+                    html += '</td>';
                     html += '</tr>';
                 });
                 
                 $('#limits-tbody').html(html);
             }
             
-            function getStoredLimits(species) {
-                let limits = {};
+            function getStoredLimitsAndExceeding(species) {
+                let data = { limits: {}, allowExceeding: {} };
                 $.ajax({
                     url: ajaxurl,
                     type: 'GET',
@@ -884,11 +1022,12 @@ class AHGMH_Admin_Page {
                     async: false,
                     success: function(response) {
                         if (response.success) {
-                            limits = response.data.limits;
+                            data.limits = response.data.limits || {};
+                            data.allowExceeding = response.data.allowExceeding || {};
                         }
                     }
                 });
-                return limits;
+                return data;
             }
             
             // Handle form submission
@@ -1073,7 +1212,7 @@ class AHGMH_Admin_Page {
                             </thead>
                             <tbody id="species-list">
                                 <?php 
-                                $species = array('Rotwild', 'Damwild');
+                                $species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
                                 foreach ($species as $specie): ?>
                                 <tr>
                                     <td>

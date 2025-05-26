@@ -241,15 +241,17 @@ class AHGMH_Form_Handler {
             $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'custom-form-display');
         }
         
-        // Check if the selected category has reached its maximum limit
+        // Check if the selected category has reached its maximum limit (only if exceeding is not allowed)
         if (empty($errors['field2'])) {
             $limits = $this->get_category_limits($game_species);
             $counts = $this->get_category_counts($game_species);
+            $allow_exceeding = $this->get_category_allow_exceeding($game_species);
             
             $current_count = isset($counts[$field2]) ? $counts[$field2] : 0;
             $max_count = isset($limits[$field2]) ? $limits[$field2] : 0;
+            $exceeding_allowed = isset($allow_exceeding[$field2]) ? $allow_exceeding[$field2] : false;
             
-            if ($max_count > 0 && $current_count >= $max_count) {
+            if ($max_count > 0 && $current_count >= $max_count && !$exceeding_allowed) {
                 $errors['field2'] = sprintf(
                     __('Höchstgrenze für diese Kategorie erreicht (%d).', 'custom-form-display'),
                     $max_count
@@ -505,6 +507,27 @@ class AHGMH_Form_Handler {
     }
 
     /**
+     * Get category allow exceeding settings for a specific species
+     * 
+     * @param string $species Game species
+     */
+    private function get_category_allow_exceeding($species = 'Rotwild') {
+        // Get dynamic categories
+        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        
+        $default = array();
+        foreach ($categories as $category) {
+            $default[$category] = false;
+        }
+        
+        // Get species-specific allow exceeding settings
+        $option_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
+        $allow_exceeding = get_option($option_key, $default);
+        
+        return $allow_exceeding;
+    }
+
+    /**
      * Render limits configuration for specific species
      * 
      * @param array $atts Shortcode attributes
@@ -528,6 +551,7 @@ class AHGMH_Form_Handler {
         
         $limits = $this->get_category_limits($selected_species);
         $counts = $this->get_category_counts($selected_species);
+        $allow_exceeding = $this->get_category_allow_exceeding($selected_species);
         
         ob_start();
         ?>
@@ -543,18 +567,20 @@ class AHGMH_Form_Handler {
                         <?php wp_nonce_field('species_limits_nonce', 'species_limits_nonce_field'); ?>
                         
                         <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
-                                    <th><?php echo esc_html__('Abschuss (Ist)', 'abschussplan-hgmh'); ?></th>
-                                    <th><?php echo esc_html__('Abschuss (Soll)', 'abschussplan-hgmh'); ?></th>
-                                    <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
-                                </tr>
+                        <thead>
+                        <tr>
+                        <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
+                        <th><?php echo esc_html__('Abschuss (Ist)', 'abschussplan-hgmh'); ?></th>
+                        <th><?php echo esc_html__('Abschuss (Soll)', 'abschussplan-hgmh'); ?></th>
+                        <th><?php echo esc_html__('Überschießen möglich?', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                            </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($categories as $category): 
                                     $current_count = isset($counts[$category]) ? $counts[$category] : 0;
                                     $limit = isset($limits[$category]) ? $limits[$category] : 0;
+                                    $allow_exceed = isset($allow_exceeding[$category]) ? $allow_exceeding[$category] : false;
                                     $percentage = $limit > 0 ? ($current_count / $limit) * 100 : 0;
                                     $status_class = '';
                                     if ($percentage >= 100) {
@@ -578,9 +604,25 @@ class AHGMH_Form_Handler {
                                                style="width: 100px;" />
                                     </td>
                                     <td>
+                                        <div class="form-check">
+                                            <input type="checkbox" 
+                                                   name="allow_exceeding[<?php echo esc_attr($category); ?>]" 
+                                                   value="1"
+                                                   class="form-check-input" 
+                                                   id="exceed_<?php echo esc_attr(sanitize_title($category)); ?>"
+                                                   <?php checked($allow_exceed, true); ?> />
+                                            <label class="form-check-label" for="exceed_<?php echo esc_attr(sanitize_title($category)); ?>">
+                                                <?php echo esc_html__('Ja', 'abschussplan-hgmh'); ?>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td>
                                         <?php if ($limit > 0): ?>
                                             <span class="badge <?php echo esc_attr($status_class); ?>" style="padding: 6px 12px;">
                                                 <?php echo esc_html(round($percentage, 1)); ?>%
+                                                <?php if ($allow_exceed): ?>
+                                                    <small> (<?php echo esc_html__('Überschreitung erlaubt', 'abschussplan-hgmh'); ?>)</small>
+                                                <?php endif; ?>
                                             </span>
                                         <?php else: ?>
                                             <span class="badge bg-secondary text-white"><?php echo esc_html__('Unbegrenzt', 'abschussplan-hgmh'); ?></span>
@@ -761,6 +803,7 @@ class AHGMH_Form_Handler {
         
         $species = isset($_POST['species']) ? sanitize_text_field($_POST['species']) : '';
         $limits = isset($_POST['limits']) ? $_POST['limits'] : array();
+        $allow_exceeding = isset($_POST['allow_exceeding']) ? $_POST['allow_exceeding'] : array();
         
         if (empty($species)) {
             wp_send_json_error(array(
@@ -776,9 +819,22 @@ class AHGMH_Form_Handler {
             $sanitized_limits[$sanitized_category] = $sanitized_limit;
         }
         
+        // Sanitize allow exceeding settings
+        $sanitized_allow_exceeding = array();
+        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        foreach ($categories as $category) {
+            $sanitized_category = sanitize_text_field($category);
+            $exceeding_allowed = isset($allow_exceeding[$category]) && $allow_exceeding[$category] == '1';
+            $sanitized_allow_exceeding[$sanitized_category] = $exceeding_allowed;
+        }
+        
         // Save species-specific limits
         $option_key = 'abschuss_category_limits_' . sanitize_key($species);
         update_option($option_key, $sanitized_limits);
+        
+        // Save species-specific allow exceeding settings
+        $exceeding_option_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
+        update_option($exceeding_option_key, $sanitized_allow_exceeding);
         
         wp_send_json_success(array(
             'message' => sprintf(__('Abschuss (Soll) für %s gespeichert.', 'abschussplan-hgmh'), $species)
@@ -808,8 +864,13 @@ class AHGMH_Form_Handler {
         $option_key = 'abschuss_category_limits_' . sanitize_key($species);
         $limits = get_option($option_key, array());
         
+        // Load species-specific allow exceeding settings
+        $exceeding_option_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
+        $allow_exceeding = get_option($exceeding_option_key, array());
+        
         wp_send_json_success(array(
-            'limits' => $limits
+            'limits' => $limits,
+            'allowExceeding' => $allow_exceeding
         ));
     }
 }
