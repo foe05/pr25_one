@@ -1,0 +1,126 @@
+/**
+ * Custom Form Display plugin styles
+ */
+
+/* Form styles */
+.custom-form-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    border-radius: 0.375rem;
+    background-color: var(--bs-dark-bg-subtle);
+}
+
+.custom-form .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.custom-form .form-error {
+    color: var(--bs-danger);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: none;
+}
+
+.custom-form .submit-btn {
+    margin-top: 1rem;
+}
+
+#form-response {
+    margin-top: 1rem;
+    display: none;
+}
+
+/* Table styles */
+.submissions-table-container {
+    margin: 2rem 0;
+    overflow-x: auto;
+}
+
+.submissions-table {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.submissions-table th {
+    background-color: var(--bs-dark-bg-subtle);
+    position: sticky;
+    top: 0;
+}
+
+.submissions-table th, 
+.submissions-table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+.submissions-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    background-color: var(--bs-dark-bg-subtle);
+    border-radius: 0.375rem;
+}
+
+/* Pagination styles */
+.pagination {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.page-count {
+    text-align: center;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    color: var(--bs-secondary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .custom-form-container,
+    .submissions-table-container {
+        padding: 1rem;
+    }
+    
+    .submissions-table thead {
+        display: none;
+    }
+    
+    .submissions-table tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+    }
+    
+    .submissions-table tbody td {
+        display: block;
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+        border-bottom: 1px solid var(--bs-border-color);
+    }
+    
+    .submissions-table tbody td:last-child {
+        border-bottom: none;
+    }
+    
+    .submissions-table tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0.75rem;
+        width: 45%;
+        text-align: left;
+        font-weight: 600;
+    }
+}
+
+/* Dark theme compatibility */
+[data-bs-theme=dark] .custom-form-container,
+[data-bs-theme=dark] .submissions-table th,
+[data-bs-theme=dark] .submissions-empty {
+    background-color: var(--bs-dark);
+}
+
+[data-bs-theme=dark] .submissions-table tbody tr {
+    background-color: var(--bs-dark-bg-subtle);
+}
