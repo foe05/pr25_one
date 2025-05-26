@@ -933,7 +933,7 @@ class AHGMH_Admin_Page {
                     <p><?php echo esc_html__('Hier können Sie die Abschusszahlen (Soll-Werte) für jede Wildart konfigurieren.', 'abschussplan-hgmh'); ?></p>
                     
                     <form id="limits-form">
-                        <?php wp_nonce_field('limits_nonce', 'limits_nonce_field'); ?>
+                        <?php wp_nonce_field('species_limits_nonce', 'species_limits_nonce_field'); ?>
                         
                         <div class="tablenav">
                             <div class="alignleft">
