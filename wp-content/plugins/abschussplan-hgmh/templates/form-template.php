@@ -49,13 +49,34 @@ if (!defined('ABSPATH')) {
             <select class="form-select" id="field2" name="field2" required>
                 <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'custom-form-display'); ?></option>
                 
-                <?php foreach ($categories as $category) : 
+                <?php 
+                // Get allow exceeding settings for the selected species
+                $allow_exceeding = array();
+                $categories_obj = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+                $default_exceeding = array();
+                foreach ($categories_obj as $cat) {
+                    $default_exceeding[$cat] = false;
+                }
+                $exceeding_option_key = 'abschuss_category_allow_exceeding_' . sanitize_key($selected_species);
+                $allow_exceeding = get_option($exceeding_option_key, $default_exceeding);
+                
+                foreach ($categories as $category) : 
                     // Check if category has reached its limit
                     $current_count = isset($counts[$category]) ? $counts[$category] : 0;
                     $max_count = isset($limits[$category]) ? $limits[$category] : 0;
-                    $disabled = ($max_count > 0 && $current_count >= $max_count) ? 'disabled' : '';
-                    $limit_text = ($max_count > 0 && $current_count >= $max_count) ? 
-                        ' (' . esc_html__('Limit erreicht', 'custom-form-display') . ')' : '';
+                    $exceeding_allowed = isset($allow_exceeding[$category]) ? $allow_exceeding[$category] : false;
+                    
+                    // Only disable if limit is reached AND exceeding is not allowed
+                    $disabled = ($max_count > 0 && $current_count >= $max_count && !$exceeding_allowed) ? 'disabled' : '';
+                    $limit_text = '';
+                    
+                    if ($max_count > 0 && $current_count >= $max_count) {
+                        if ($exceeding_allowed) {
+                            $limit_text = ' (' . esc_html__('Limit erreicht - Überschreitung erlaubt', 'custom-form-display') . ')';
+                        } else {
+                            $limit_text = ' (' . esc_html__('Limit erreicht', 'custom-form-display') . ')';
+                        }
+                    }
                 ?>
                     <option value="<?php echo esc_attr($category); ?>" <?php echo $disabled; ?>>
                         <?php echo esc_html($category . $limit_text); ?>

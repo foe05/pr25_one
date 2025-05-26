@@ -544,6 +544,9 @@ class AHGMH_Form_Handler {
             return '<p>' . __('Sie haben keine Berechtigung, diese Seite anzuzeigen.', 'abschussplan-hgmh') . '</p>';
         }
         
+        // Enqueue jQuery
+        wp_enqueue_script('jquery');
+        
         $selected_species = sanitize_text_field($atts['species']);
         
         // Get dynamic categories
@@ -661,14 +664,21 @@ class AHGMH_Form_Handler {
                 var formData = new FormData(this);
                 formData.append('action', 'save_species_limits');
                 formData.append('species', species);
+                 
+                 // Debug: Log form data
+                 console.log('Submitting form for species:', species);
+                 for (var pair of formData.entries()) {
+                     console.log(pair[0] + ': ' + pair[1]);
+                 }
                 
                 $.ajax({
-                    url: ajaxurl || '<?php echo admin_url('admin-ajax.php'); ?>',
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
                     type: 'POST',
                     data: formData,
                     processData: false,
                     contentType: false,
                     success: function(response) {
+                        console.log('AJAX Response:', response);
                         if (response.success) {
                             $('#limits-response')
                                 .removeClass('notice-error')
@@ -679,11 +689,13 @@ class AHGMH_Form_Handler {
                             $('#limits-response')
                                 .removeClass('notice-success')
                                 .addClass('notice notice-error')
-                                .html('<p>' + response.data.message + '</p>')
+                                .html('<p>' + (response.data && response.data.message ? response.data.message : 'Unbekannter Fehler') + '</p>')
                                 .show();
                         }
                     },
-                    error: function() {
+                    error: function(xhr, textStatus, errorThrown) {
+                        console.log('AJAX Error:', textStatus, errorThrown);
+                        console.log('Response Text:', xhr.responseText);
                         $('#limits-response')
                             .removeClass('notice-success')
                             .addClass('notice notice-error')
