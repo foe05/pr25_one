@@ -28,30 +28,48 @@ class AHGMH_Admin_Page {
      */
     public function add_admin_menu() {
         add_menu_page(
-            __('Custom Form Display', 'custom-form-display'),
-            __('Custom Form', 'custom-form-display'),
+            __('Abschussplan HGMH', 'abschussplan-hgmh'),
+            __('Abschussplan', 'abschussplan-hgmh'),
             'manage_options',
-            'custom-form-display',
-            array($this, 'render_main_page'),
-            'dashicons-feedback',
+            'abschussplan-hgmh',
+            array($this, 'render_summary_page'),
+            'dashicons-chart-pie',
             30
         );
         
         add_submenu_page(
-            'custom-form-display',
-            __('Form Submissions', 'custom-form-display'),
-            __('Submissions', 'custom-form-display'),
+            'abschussplan-hgmh',
+            __('Übersicht', 'abschussplan-hgmh'),
+            __('Übersicht', 'abschussplan-hgmh'),
             'manage_options',
-            'custom-form-display-submissions',
+            'abschussplan-hgmh',
+            array($this, 'render_summary_page')
+        );
+        
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Abschussmeldungen', 'abschussplan-hgmh'),
+            __('Meldungen', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-submissions',
             array($this, 'render_submissions_page')
         );
         
         add_submenu_page(
-            'custom-form-display',
-            __('Settings', 'custom-form-display'),
-            __('Settings', 'custom-form-display'),
+            'abschussplan-hgmh',
+            __('Konfiguration', 'abschussplan-hgmh'),
+            __('Konfiguration', 'abschussplan-hgmh'),
             'manage_options',
-            'custom-form-display-settings',
+            'abschussplan-hgmh-admin',
+            array($this, 'render_admin_page')
+        );
+        
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Einstellungen', 'abschussplan-hgmh'),
+            __('Einstellungen', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-settings',
             array($this, 'render_settings_page')
         );
     }
@@ -191,27 +209,28 @@ class AHGMH_Admin_Page {
     public function render_main_page() {
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Custom Form Display', 'custom-form-display'); ?></h1>
+            <h1><?php echo esc_html__('Abschussplan HGMH', 'abschussplan-hgmh'); ?></h1>
             
             <div class="card">
-                <h2><?php echo esc_html__('Usage Instructions', 'custom-form-display'); ?></h2>
+                <h2><?php echo esc_html__('Anweisungen', 'abschussplan-hgmh'); ?></h2>
                 <div class="card-body">
-                    <p><?php echo esc_html__('Use the following shortcodes to display the form and submissions table on your pages:', 'custom-form-display'); ?></p>
+                    <p><?php echo esc_html__('Verwenden Sie die folgenden Shortcodes, um das Formular und die Tabellen auf Ihren Seiten anzuzeigen:', 'abschussplan-hgmh'); ?></p>
                     
-                    <h3><?php echo esc_html__('Form Shortcode', 'custom-form-display'); ?></h3>
-                    <code>[custom_form]</code>
-                    <p class="description"><?php echo esc_html__('Add this shortcode to any page or post where you want the form to appear.', 'custom-form-display'); ?></p>
+                    <h3><?php echo esc_html__('Formular Shortcode', 'abschussplan-hgmh'); ?></h3>
+                    <code>[abschuss_form]</code>
+                    <p class="description"><?php echo esc_html__('Fügen Sie diesen Shortcode zu jeder Seite hinzu, auf der das Formular erscheinen soll.', 'abschussplan-hgmh'); ?></p>
                     
-                    <h3><?php echo esc_html__('Submissions Table Shortcode', 'custom-form-display'); ?></h3>
-                    <code>[custom_form_submissions]</code>
-                    <p class="description"><?php echo esc_html__('Add this shortcode to display the table of form submissions.', 'custom-form-display'); ?></p>
+                    <h3><?php echo esc_html__('Tabellen Shortcode', 'abschussplan-hgmh'); ?></h3>
+                    <code>[abschuss_table]</code>
+                    <p class="description"><?php echo esc_html__('Zeigt die Tabelle der Abschussmeldungen an.', 'abschussplan-hgmh'); ?></p>
                     
-                    <h4><?php echo esc_html__('Table Parameters', 'custom-form-display'); ?></h4>
-                    <ul>
-                        <li><code>limit</code> - <?php echo esc_html__('Number of entries per page (default: 10)', 'custom-form-display'); ?></li>
-                        <li><code>page</code> - <?php echo esc_html__('Initial page number (default: 1)', 'custom-form-display'); ?></li>
-                    </ul>
-                    <p><strong><?php echo esc_html__('Example:', 'custom-form-display'); ?></strong> <code>[custom_form_submissions limit="20" page="1"]</code></p>
+                    <h3><?php echo esc_html__('Zusammenfassung Shortcode', 'abschussplan-hgmh'); ?></h3>
+                    <code>[abschuss_summary]</code>
+                    <p class="description"><?php echo esc_html__('Zeigt eine Zusammenfassung der Abschusszahlen an.', 'abschussplan-hgmh'); ?></p>
+                    
+                    <h3><?php echo esc_html__('Admin Shortcode', 'abschussplan-hgmh'); ?></h3>
+                    <code>[abschuss_admin]</code>
+                    <p class="description"><?php echo esc_html__('Zeigt die Admin-Konfiguration an.', 'abschussplan-hgmh'); ?></p>
                 </div>
             </div>
         </div>
@@ -245,7 +264,7 @@ class AHGMH_Admin_Page {
         $total_pages = ceil($total_submissions / $limit);
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Form Submissions', 'custom-form-display'); ?></h1>
+            <h1><?php echo esc_html__('Abschussmeldungen', 'abschussplan-hgmh'); ?></h1>
             
             <?php if (empty($submissions)) : ?>
                 <div class="notice notice-info">
@@ -332,7 +351,7 @@ class AHGMH_Admin_Page {
     public function render_settings_page() {
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('Custom Form Display Settings', 'custom-form-display'); ?></h1>
+            <h1><?php echo esc_html__('Abschussplan Einstellungen', 'abschussplan-hgmh'); ?></h1>
             
             <form method="post" action="options.php">
                 <?php
@@ -365,7 +384,7 @@ class AHGMH_Admin_Page {
             // Redirect back to the submissions page with a message
             $redirect_url = add_query_arg(
                 array(
-                    'page' => 'custom-form-display-submissions',
+                    'page' => 'abschussplan-hgmh-submissions',
                     'message' => $success ? 'deleted' : 'error'
                 ),
                 admin_url('admin.php')
@@ -395,5 +414,53 @@ class AHGMH_Admin_Page {
             
             settings_errors('custom_form_display_messages');
         }
+    }
+
+    /**
+     * Render the summary page (like [abschuss_summary] shortcode)
+     */
+    public function render_summary_page() {
+        // Get form handler instance to use its methods
+        $form_handler = abschussplan_hgmh()->form;
+        
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Abschussplan Übersicht', 'abschussplan-hgmh'); ?></h1>
+            
+            <?php
+            // Use the same logic as the summary shortcode
+            echo $form_handler->render_summary();
+            ?>
+            
+            <div class="mt-4">
+                <h3><?php echo esc_html__('Verfügbare Shortcodes', 'abschussplan-hgmh'); ?></h3>
+                <ul>
+                    <li><code>[abschuss_form]</code> - <?php echo esc_html__('Abschussformular anzeigen', 'abschussplan-hgmh'); ?></li>
+                    <li><code>[abschuss_table]</code> - <?php echo esc_html__('Tabelle der Meldungen anzeigen', 'abschussplan-hgmh'); ?></li>
+                    <li><code>[abschuss_summary]</code> - <?php echo esc_html__('Zusammenfassung anzeigen', 'abschussplan-hgmh'); ?></li>
+                    <li><code>[abschuss_admin]</code> - <?php echo esc_html__('Admin-Konfiguration anzeigen', 'abschussplan-hgmh'); ?></li>
+                </ul>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render the admin configuration page (like [abschuss_admin] shortcode)
+     */
+    public function render_admin_page() {
+        // Get form handler instance to use its methods
+        $form_handler = abschussplan_hgmh()->form;
+        
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Abschussplan Konfiguration', 'abschussplan-hgmh'); ?></h1>
+            
+            <?php
+            // Use the same logic as the admin shortcode
+            echo $form_handler->render_admin();
+            ?>
+        </div>
+        <?php
     }
 }

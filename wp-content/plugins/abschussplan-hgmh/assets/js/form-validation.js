@@ -24,7 +24,7 @@
             
             // Get form data
             const formData = new FormData($form[0]);
-            formData.append('action', 'submit_custom_form');
+            formData.append('action', 'submit_abschuss_form');
             formData.append('nonce', ahgmh_ajax.nonce);
             
             // Send AJAX request

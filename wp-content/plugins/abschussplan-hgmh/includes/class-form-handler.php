@@ -145,7 +145,7 @@ class AHGMH_Form_Handler {
      */
     public function process_form_submission() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'abschuss_form_nonce')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'ahgmh_form_nonce')) {
             wp_send_json_error(array(
                 'message' => __('Sicherheitscheck fehlgeschlagen. Bitte laden Sie die Seite neu und versuchen Sie es erneut.', 'custom-form-display')
             ));

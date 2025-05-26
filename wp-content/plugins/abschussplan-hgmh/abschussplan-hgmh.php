@@ -24,6 +24,9 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page.php';
 
+// Include debug file (remove in production)
+require_once AHGMH_PLUGIN_DIR . 'debug.php';
+
 /**
  * Main plugin class
  */

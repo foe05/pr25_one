@@ -126,4 +126,23 @@ class AHGMH_Database_Handler {
         
         return $result !== false;
     }
+
+    /**
+     * Get submission counts per category
+     *
+     * @return array Array with category counts
+     */
+    public function get_category_counts() {
+        global $wpdb;
+        
+        $query = "SELECT field2 as category, COUNT(*) as count FROM $this->table_name WHERE field2 != '' GROUP BY field2";
+        $results = $wpdb->get_results($query, ARRAY_A);
+        
+        $counts = array();
+        foreach ($results as $result) {
+            $counts[$result['category']] = (int) $result['count'];
+        }
+        
+        return $counts;
+    }
 }

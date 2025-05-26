@@ -37,9 +37,9 @@ class AHGMH_Table_Display {
             'ahgmh_submissions'
         );
 
-        // Convert to integers
-        $limit = intval($atts['limit']);
-        $page = max(1, intval($atts['page'])); // Ensure page is at least 1
+        // Convert to integers and check URL parameters
+        $limit = isset($_GET['ahgmh_limit']) ? max(1, intval($_GET['ahgmh_limit'])) : intval($atts['limit']);
+        $page = isset($_GET['ahgmh_page']) ? max(1, intval($_GET['ahgmh_page'])) : max(1, intval($atts['page']));
         $offset = ($page - 1) * $limit;
 
         // Get database instance
