@@ -199,10 +199,10 @@ if (!defined('ABSPATH')) {
                                            value="<?php echo isset($limits['Mittelalter Hirsch (AK 3)']) ? esc_attr($limits['Mittelalter Hirsch (AK 3)']) : '0'; ?>">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="limit-alte-hirsch-ak-4" class="form-label">Alte Hirsch (AK 4)</label>
+                                    <label for="limit-alte-hirsch-ak-4" class="form-label">Alter Hirsch (AK 4)</label>
                                     <input type="number" class="form-control" id="limit-alte-hirsch-ak-4" 
                                            name="limit-alte-hirsch-ak-4" min="0" 
-                                           value="<?php echo isset($limits['Alte Hirsch (AK 4)']) ? esc_attr($limits['Alte Hirsch (AK 4)']) : '0'; ?>">
+                                           value="<?php echo isset($limits['Alter Hirsch (AK 4)']) ? esc_attr($limits['Alter Hirsch (AK 4)']) : '0'; ?>">
                                 </div>
                             </div>
                         </div>

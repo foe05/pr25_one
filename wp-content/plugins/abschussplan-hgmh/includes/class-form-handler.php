@@ -21,23 +21,45 @@ class AHGMH_Form_Handler {
         add_shortcode('abschuss_table', array($this, 'render_table'));
         add_shortcode('abschuss_admin', array($this, 'render_admin'));
         add_shortcode('abschuss_summary', array($this, 'render_summary'));
+        add_shortcode('abschuss_limits', array($this, 'render_limits_config'));
         
         // Handle form submissions via AJAX
         add_action('wp_ajax_submit_abschuss_form', array($this, 'process_form_submission'));
         add_action('wp_ajax_nopriv_submit_abschuss_form', array($this, 'process_form_submission'));
         
+        // Handle table refresh via AJAX
+        add_action('wp_ajax_refresh_abschuss_table', array($this, 'refresh_table'));
+        add_action('wp_ajax_nopriv_refresh_abschuss_table', array($this, 'refresh_table'));
+        
         // Handle admin settings via AJAX
         add_action('wp_ajax_save_db_config', array($this, 'save_db_config'));
         add_action('wp_ajax_test_db_connection', array($this, 'test_db_connection'));
         add_action('wp_ajax_save_limits', array($this, 'save_limits'));
+        add_action('wp_ajax_save_categories', array($this, 'save_categories'));
+        add_action('wp_ajax_save_species', array($this, 'save_species'));
+        add_action('wp_ajax_save_species_limits', array($this, 'save_species_limits'));
     }
 
     /**
-     * Render the form using shortcode
-     *
-     * @return string HTML output of the form
+    * Render the form using shortcode
+    * 
+    * @param array $atts Shortcode attributes
+    * @return string HTML output of the form
      */
-    public function render_form() {
+    public function render_form($atts = array()) {
+        // Parse shortcode attributes
+        $atts = shortcode_atts(array(
+            'species' => 'Rotwild'
+        ), $atts, 'abschuss_form');
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            return '<div class="alert alert-warning" role="alert">' . 
+                   '<h4>' . __('Anmeldung erforderlich', 'abschussplan-hgmh') . '</h4>' .
+                   '<p>' . __('Sie müssen angemeldet sein, um eine Abschussmeldung zu erstellen.', 'abschussplan-hgmh') . '</p>' .
+                   '<a href="' . wp_login_url(get_permalink()) . '" class="btn btn-primary">' . __('Jetzt anmelden', 'abschussplan-hgmh') . '</a>' .
+                   '</div>';
+        }
+
         // Enqueue form-specific scripts
         wp_enqueue_script('jquery-ui-datepicker');
         wp_enqueue_style('jquery-ui-css', 'https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css');
@@ -45,16 +67,30 @@ class AHGMH_Form_Handler {
         // Set up the yesterday's date as default
         $yesterday = date('Y-m-d', strtotime('-1 day'));
         
-        // Get limits to check if any category has reached its limit
-        $limits = $this->get_category_limits();
-        $counts = $this->get_category_counts();
+        // Get the selected species
+        $selected_species = sanitize_text_field($atts['species']);
         
-        // Generate list of available categories (those not at their limit)
-        $categories = array(
+        // Get available species
+        $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+        
+        // Validate selected species
+        if (!in_array($selected_species, $available_species)) {
+            $selected_species = !empty($available_species) ? $available_species[0] : 'Rotwild';
+        }
+        
+        // Get limits to check if any category has reached its limit
+        $limits = $this->get_category_limits($selected_species);
+        $counts = $this->get_category_counts($selected_species);
+        
+        // Get dynamic categories from options
+        $saved_categories = get_option('ahgmh_categories', array(
             "Wildkalb (AK 0)", "Schmaltier (AK 1)", "Alttier (AK 2)", 
             "Hirschkalb (AK 0)", "Schmalspießer (AK1)", "Junger Hirsch (AK 2)", 
-            "Mittelalter Hirsch (AK 3)", "Alte Hirsch (AK 4)"
-        );
+            "Mittelalter Hirsch (AK 3)", "Alter Hirsch (AK 4)"
+        ));
+        
+        // Generate list of available categories (those not at their limit)
+        $categories = !empty($saved_categories) ? $saved_categories : array();
         
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/form-template.php';
@@ -72,6 +108,7 @@ class AHGMH_Form_Handler {
             array(
                 'limit' => 10,
                 'page' => 1,
+                'species' => '',
             ),
             $atts,
             'abschuss_table'
@@ -83,8 +120,15 @@ class AHGMH_Form_Handler {
         
         // Get submissions data
         $database = abschussplan_hgmh()->database;
-        $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
-        $total_count = $database->count_submissions();
+        $species = sanitize_text_field($atts['species']);
+        
+        if (!empty($species)) {
+            $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
+            $total_count = $database->count_submissions_by_species($species);
+        } else {
+            $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
+            $total_count = $database->count_submissions();
+        }
         $total_pages = ceil($total_count / $limit);
         
         ob_start();
@@ -107,7 +151,7 @@ class AHGMH_Form_Handler {
         $categories = array(
             "Wildkalb (AK 0)", "Schmaltier (AK 1)", "Alttier (AK 2)", 
             "Hirschkalb (AK 0)", "Schmalspießer (AK1)", "Junger Hirsch (AK 2)", 
-            "Mittelalter Hirsch (AK 3)", "Alte Hirsch (AK 4)"
+            "Mittelalter Hirsch (AK 3)", "Alter Hirsch (AK 4)"
         );
         
         $limits = $this->get_category_limits();
@@ -115,7 +159,7 @@ class AHGMH_Form_Handler {
         $db_config = $this->get_db_config();
         
         ob_start();
-        include AHGMH_PLUGIN_DIR . 'templates/admin-template.php';
+        include AHGMH_PLUGIN_DIR . 'templates/admin-template-modern.php';
         return ob_get_clean();
     }
     
@@ -124,16 +168,23 @@ class AHGMH_Form_Handler {
      * 
      * @return string HTML output of the summary table
      */
-    public function render_summary() {
-        // Get categories, limits and counts
-        $categories = array(
+    public function render_summary($atts = array()) {
+        // Parse shortcode attributes
+        $atts = shortcode_atts(array(
+            'species' => 'Rotwild'
+        ), $atts, 'abschuss_summary');
+        
+        $selected_species = sanitize_text_field($atts['species']);
+        
+        // Get dynamic categories
+        $categories = get_option('ahgmh_categories', array(
             "Wildkalb (AK 0)", "Schmaltier (AK 1)", "Alttier (AK 2)", 
             "Hirschkalb (AK 0)", "Schmalspießer (AK1)", "Junger Hirsch (AK 2)", 
-            "Mittelalter Hirsch (AK 3)", "Alte Hirsch (AK 4)"
-        );
+            "Mittelalter Hirsch (AK 3)", "Alter Hirsch (AK 4)"
+        ));
         
-        $limits = $this->get_category_limits();
-        $counts = $this->get_category_counts();
+        $limits = $this->get_category_limits($selected_species);
+        $counts = $this->get_category_counts($selected_species);
         
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/summary-template.php';
@@ -144,6 +195,13 @@ class AHGMH_Form_Handler {
      * Process form submission
      */
     public function process_form_submission() {
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array(
+                'message' => __('Sie müssen angemeldet sein, um eine Abschussmeldung zu erstellen.', 'abschussplan-hgmh')
+            ));
+        }
+
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'ahgmh_form_nonce')) {
             wp_send_json_error(array(
@@ -151,7 +209,11 @@ class AHGMH_Form_Handler {
             ));
         }
 
+        // Get current user
+        $current_user = wp_get_current_user();
+
         // Get form data
+        $game_species = isset($_POST['game_species']) ? sanitize_text_field($_POST['game_species']) : 'Rotwild';
         $field1 = isset($_POST['field1']) ? sanitize_text_field($_POST['field1']) : ''; // Abschussdatum
         $field2 = isset($_POST['field2']) ? sanitize_text_field($_POST['field2']) : ''; // Abschuss
         $field3 = isset($_POST['field3']) ? sanitize_text_field($_POST['field3']) : ''; // WUS (optional)
@@ -181,14 +243,10 @@ class AHGMH_Form_Handler {
         if (empty($field2)) {
             $errors['field2'] = __('Dieses Feld ist erforderlich.', 'custom-form-display');
         } else {
-            // Validate dropdown value is in the allowed list
-            $valid_options = array(
-                "Wildkalb (AK 0)", "Schmaltier (AK 1)", "Alttier (AK 2)", 
-                "Hirschkalb (AK 0)", "Schmalspießer (AK1)", "Junger Hirsch (AK 2)", 
-                "Mittelalter Hirsch (AK 3)", "Alte Hirsch (AK 4)"
-            );
+            // Validate dropdown value is in the allowed list (use dynamic categories)
+            $categories = get_option('ahgmh_categories', array('Wildkalb (AK 0)', 'Schmaltier (AK 1)', 'Alttier (AK 2)'));
             
-            if (!in_array($field2, $valid_options)) {
+            if (!in_array($field2, $categories)) {
                 $errors['field2'] = __('Bitte wählen Sie einen gültigen Wert aus.', 'custom-form-display');
             }
         }
@@ -200,8 +258,8 @@ class AHGMH_Form_Handler {
         
         // Check if the selected category has reached its maximum limit
         if (empty($errors['field2'])) {
-            $limits = $this->get_category_limits();
-            $counts = $this->get_category_counts();
+            $limits = $this->get_category_limits($game_species);
+            $counts = $this->get_category_counts($game_species);
             
             $current_count = isset($counts[$field2]) ? $counts[$field2] : 0;
             $max_count = isset($limits[$field2]) ? $limits[$field2] : 0;
@@ -224,6 +282,8 @@ class AHGMH_Form_Handler {
 
         // Process form data
         $data = array(
+            'user_id' => $current_user->ID,
+            'game_species' => $game_species,
             'field1' => $field1,
             'field2' => $field2,
             'field3' => $field3,
@@ -243,6 +303,41 @@ class AHGMH_Form_Handler {
                 'message' => __('Es gab einen Fehler beim Speichern der Meldung. Bitte versuchen Sie es erneut.', 'custom-form-display')
             ));
         }
+    }
+    
+    /**
+     * Refresh table via AJAX
+     */
+    public function refresh_table() {
+        // Get parameters from AJAX request
+        $species = isset($_POST['species']) ? sanitize_text_field($_POST['species']) : '';
+        $limit = isset($_POST['limit']) ? max(1, intval($_POST['limit'])) : 10;
+        $page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
+        
+        // Get submissions data
+        $database = abschussplan_hgmh()->database;
+        
+        if (!empty($species)) {
+            $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
+            $total_count = $database->count_submissions_by_species($species);
+        } else {
+            $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
+            $total_count = $database->count_submissions();
+        }
+        
+        $total_pages = ceil($total_count / $limit);
+        
+        // Capture the table content HTML
+        ob_start();
+        include AHGMH_PLUGIN_DIR . 'templates/table-content.php';
+        $table_html = ob_get_clean();
+        
+        wp_send_json_success(array(
+            'table_html' => $table_html,
+            'total_count' => $total_count,
+            'current_page' => $page,
+            'total_pages' => $total_pages
+        ));
     }
     
     /**
@@ -392,7 +487,7 @@ class AHGMH_Form_Handler {
         $categories = array(
             "Wildkalb (AK 0)", "Schmaltier (AK 1)", "Alttier (AK 2)", 
             "Hirschkalb (AK 0)", "Schmalspießer (AK1)", "Junger Hirsch (AK 2)", 
-            "Mittelalter Hirsch (AK 3)", "Alte Hirsch (AK 4)"
+            "Mittelalter Hirsch (AK 3)", "Alter Hirsch (AK 4)"
         );
         
         $limits = array();
@@ -431,30 +526,322 @@ class AHGMH_Form_Handler {
     }
     
     /**
-     * Get category limits
+     * Get category limits for a specific species
+     * 
+     * @param string $species Game species
      */
-    private function get_category_limits() {
-        $categories = array(
+    private function get_category_limits($species = 'Rotwild') {
+        // Get dynamic categories
+        $categories = get_option('ahgmh_categories', array(
             "Wildkalb (AK 0)", "Schmaltier (AK 1)", "Alttier (AK 2)", 
             "Hirschkalb (AK 0)", "Schmalspießer (AK1)", "Junger Hirsch (AK 2)", 
-            "Mittelalter Hirsch (AK 3)", "Alte Hirsch (AK 4)"
-        );
+            "Mittelalter Hirsch (AK 3)", "Alter Hirsch (AK 4)"
+        ));
         
         $default = array();
         foreach ($categories as $category) {
             $default[$category] = 0;
         }
         
-        $limits = get_option('abschuss_category_limits', $default);
+        // Get species-specific limits
+        $option_key = 'abschuss_category_limits_' . sanitize_key($species);
+        $limits = get_option($option_key, $default);
         
         return $limits;
     }
     
     /**
-     * Get submission counts per category
+     * Get submission counts per category for a specific species
+     * 
+     * @param string $species Game species
      */
-    private function get_category_counts() {
+    private function get_category_counts($species = '') {
         $database = abschussplan_hgmh()->database;
-        return $database->get_category_counts();
+        return $database->get_category_counts($species);
+    }
+
+    /**
+     * Render limits configuration for specific species
+     * 
+     * @param array $atts Shortcode attributes
+     * @return string HTML output of the limits configuration
+     */
+    public function render_limits_config($atts = array()) {
+        // Parse shortcode attributes
+        $atts = shortcode_atts(array(
+            'species' => 'Rotwild'
+        ), $atts, 'abschuss_limits');
+        
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            return '<p>' . __('Sie haben keine Berechtigung, diese Seite anzuzeigen.', 'abschussplan-hgmh') . '</p>';
+        }
+        
+        $selected_species = sanitize_text_field($atts['species']);
+        
+        // Get dynamic categories
+        $categories = get_option('ahgmh_categories', array(
+            "Wildkalb (AK 0)", "Schmaltier (AK 1)", "Alttier (AK 2)", 
+            "Hirschkalb (AK 0)", "Schmalspießer (AK1)", "Junger Hirsch (AK 2)", 
+            "Mittelalter Hirsch (AK 3)", "Alter Hirsch (AK 4)"
+        ));
+        
+        $limits = $this->get_category_limits($selected_species);
+        $counts = $this->get_category_counts($selected_species);
+        
+        ob_start();
+        ?>
+        <div class="ahgmh-limits-config">
+            <div id="limits-response" class="notice" style="display: none;"></div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0"><?php echo esc_html(sprintf(__('Abschuss (Soll) für %s', 'abschussplan-hgmh'), $selected_species)); ?></h3>
+                </div>
+                <div class="card-body">
+                    <form id="species-limits-form" data-species="<?php echo esc_attr($selected_species); ?>">
+                        <?php wp_nonce_field('species_limits_nonce', 'species_limits_nonce_field'); ?>
+                        
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Abschuss (Ist)', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Abschuss (Soll)', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($categories as $category): 
+                                    $current_count = isset($counts[$category]) ? $counts[$category] : 0;
+                                    $limit = isset($limits[$category]) ? $limits[$category] : 0;
+                                    $percentage = $limit > 0 ? ($current_count / $limit) * 100 : 0;
+                                    $status_class = '';
+                                    if ($percentage >= 100) {
+                                        $status_class = 'bg-danger text-white';
+                                    } elseif ($percentage >= 90) {
+                                        $status_class = 'bg-warning text-dark';
+                                    } else {
+                                        $status_class = 'bg-success text-white';
+                                    }
+                                ?>
+                                <tr>
+                                    <td><strong><?php echo esc_html($category); ?></strong></td>
+                                    <td><span class="badge bg-primary"><?php echo esc_html($current_count); ?></span></td>
+                                    <td>
+                                        <input type="number" 
+                                               name="limits[<?php echo esc_attr($category); ?>]" 
+                                               value="<?php echo esc_attr($limit); ?>" 
+                                               min="0" 
+                                               max="999" 
+                                               class="form-control" 
+                                               style="width: 100px;" />
+                                    </td>
+                                    <td>
+                                        <?php if ($limit > 0): ?>
+                                            <span class="badge <?php echo esc_attr($status_class); ?>" style="padding: 6px 12px;">
+                                                <?php echo esc_html(round($percentage, 1)); ?>%
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary text-white"><?php echo esc_html__('Unbegrenzt', 'abschussplan-hgmh'); ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <?php echo esc_html__('Grenzen speichern', 'abschussplan-hgmh'); ?>
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="reset-species-limits">
+                                <?php echo esc_html__('Alle zurücksetzen', 'abschussplan-hgmh'); ?>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            // Species-specific limits form
+            $('#species-limits-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                var $submitBtn = $(this).find('button[type="submit"]');
+                var originalText = $submitBtn.text();
+                var species = $(this).data('species');
+                
+                $submitBtn.prop('disabled', true).text('<?php echo esc_js(__('Speichern...', 'abschussplan-hgmh')); ?>');
+                
+                var formData = new FormData(this);
+                formData.append('action', 'save_species_limits');
+                formData.append('species', species);
+                
+                $.ajax({
+                    url: ajaxurl || '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            $('#limits-response')
+                                .removeClass('notice-error')
+                                .addClass('notice notice-success')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                        } else {
+                            $('#limits-response')
+                                .removeClass('notice-success')
+                                .addClass('notice notice-error')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                        }
+                    },
+                    error: function() {
+                        $('#limits-response')
+                            .removeClass('notice-success')
+                            .addClass('notice notice-error')
+                            .html('<p><?php echo esc_js(__('Ein Fehler ist aufgetreten.', 'abschussplan-hgmh')); ?></p>')
+                            .show();
+                    },
+                    complete: function() {
+                        $submitBtn.prop('disabled', false).text(originalText);
+                        $('html, body').animate({ scrollTop: 0 }, 500);
+                    }
+                });
+            });
+            
+            // Reset limits button
+            $('#reset-species-limits').click(function() {
+                if (confirm('<?php echo esc_js(__('Sind Sie sicher, dass Sie alle Grenzen auf 0 zurücksetzen möchten?', 'abschussplan-hgmh')); ?>')) {
+                    $('#species-limits-form input[type="number"]').val('0');
+                }
+            });
+        });
+        </script>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Save categories
+     */
+    public function save_categories() {
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['categories_nonce_field']) || !wp_verify_nonce($_POST['categories_nonce_field'], 'categories_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        $categories = isset($_POST['categories']) ? array_filter($_POST['categories']) : array();
+        
+        // Sanitize categories
+        $sanitized_categories = array();
+        foreach ($categories as $category) {
+            $sanitized = sanitize_text_field($category);
+            if (!empty($sanitized)) {
+                $sanitized_categories[] = $sanitized;
+            }
+        }
+        
+        // Save categories
+        update_option('ahgmh_categories', $sanitized_categories);
+        
+        wp_send_json_success(array(
+            'message' => sprintf(__('%d Kategorien gespeichert.', 'abschussplan-hgmh'), count($sanitized_categories))
+        ));
+    }
+
+    /**
+     * Save species
+     */
+    public function save_species() {
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['species_nonce_field']) || !wp_verify_nonce($_POST['species_nonce_field'], 'species_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        $species = isset($_POST['species']) ? array_filter($_POST['species']) : array();
+        
+        // Sanitize species
+        $sanitized_species = array();
+        foreach ($species as $specie) {
+            $sanitized = sanitize_text_field($specie);
+            if (!empty($sanitized)) {
+                $sanitized_species[] = $sanitized;
+            }
+        }
+        
+        // Save species
+        update_option('ahgmh_species', $sanitized_species);
+        
+        wp_send_json_success(array(
+            'message' => sprintf(__('%d Wildarten gespeichert.', 'abschussplan-hgmh'), count($sanitized_species))
+        ));
+    }
+
+    /**
+     * Save species-specific limits
+     */
+    public function save_species_limits() {
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['species_limits_nonce_field']) || !wp_verify_nonce($_POST['species_limits_nonce_field'], 'species_limits_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        $species = isset($_POST['species']) ? sanitize_text_field($_POST['species']) : '';
+        $limits = isset($_POST['limits']) ? $_POST['limits'] : array();
+        
+        if (empty($species)) {
+            wp_send_json_error(array(
+                'message' => __('Keine Wildart angegeben.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Sanitize limits
+        $sanitized_limits = array();
+        foreach ($limits as $category => $limit) {
+            $sanitized_category = sanitize_text_field($category);
+            $sanitized_limit = max(0, intval($limit));
+            $sanitized_limits[$sanitized_category] = $sanitized_limit;
+        }
+        
+        // Save species-specific limits
+        $option_key = 'abschuss_category_limits_' . sanitize_key($species);
+        update_option($option_key, $sanitized_limits);
+        
+        wp_send_json_success(array(
+            'message' => sprintf(__('Grenzen für %s gespeichert.', 'abschussplan-hgmh'), $species)
+        ));
     }
 }

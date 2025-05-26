@@ -14,8 +14,29 @@ if (!defined('ABSPATH')) {
     
     <div id="abschuss-form-response" class="alert" role="alert" style="display: none;"></div>
     
+    <?php
+    // Get current user info
+    $current_user = wp_get_current_user();
+    $first_name = get_user_meta($current_user->ID, 'first_name', true);
+    $last_name = get_user_meta($current_user->ID, 'last_name', true);
+    $display_name = !empty($first_name) || !empty($last_name) 
+                   ? trim($first_name . ' ' . $last_name) 
+                   : $current_user->display_name;
+    ?>
+    
+    <div class="alert alert-info mb-4" role="alert">
+        <strong><?php echo esc_html__('Meldung wird erstellt für:', 'abschussplan-hgmh'); ?></strong> 
+        <?php echo esc_html($display_name); ?>
+        <small class="d-block mt-1 text-muted">
+            <?php echo esc_html__('Sie sind angemeldet als', 'abschussplan-hgmh'); ?> <?php echo esc_html($current_user->user_login); ?>
+        </small>
+    </div>
+
     <form class="abschuss-form" id="abschuss-form" method="post">
-        <?php wp_nonce_field('abschuss_form_nonce', 'abschuss_nonce'); ?>
+        <?php wp_nonce_field('ahgmh_form_nonce', 'ahgmh_nonce'); ?>
+        
+        <!-- Hidden field for game species (set via shortcode) -->
+        <input type="hidden" id="game_species" name="game_species" value="<?php echo esc_attr($selected_species); ?>" />
         
         <div class="mb-3">
             <label for="field1" class="form-label"><?php echo esc_html__('Abschussdatum', 'custom-form-display'); ?></label>
@@ -102,7 +123,8 @@ jQuery(document).ready(function($) {
         // Get form data
         const formData = new FormData();
         formData.append('action', 'submit_abschuss_form');
-        formData.append('nonce', $('#abschuss_nonce').val());
+        formData.append('nonce', $('#ahgmh_nonce').val());
+        formData.append('game_species', $('#game_species').val());
         formData.append('field1', $('#field1').val());
         formData.append('field2', $('#field2').val());
         formData.append('field3', $('#field3').val());
@@ -124,6 +146,13 @@ jQuery(document).ready(function($) {
                     const currentDate = $('#field1').val();
                     $form[0].reset();
                     $('#field1').val(currentDate);
+                    
+                    // Refresh the table if it exists on the same page
+                    if (typeof window.abschussRefreshTable === 'function') {
+                        setTimeout(() => {
+                            window.abschussRefreshTable(false); // Don't show loading for auto-refresh
+                        }, 500); // Small delay to let the success message show
+                    }
                 } else {
                     // Show error message
                     $responseContainer.removeClass('alert-success').addClass('alert-danger').text(response.data.message).show();

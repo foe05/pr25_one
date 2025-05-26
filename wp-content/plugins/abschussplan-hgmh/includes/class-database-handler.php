@@ -35,6 +35,8 @@ class AHGMH_Database_Handler {
         
         $sql = "CREATE TABLE $this->table_name (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL DEFAULT 0,
+            game_species varchar(100) NOT NULL DEFAULT 'Rotwild',
             field1 text NOT NULL,
             field2 text NOT NULL,
             field3 text NOT NULL,
@@ -128,14 +130,52 @@ class AHGMH_Database_Handler {
     }
 
     /**
-     * Get submission counts per category
+     * Delete all submissions
      *
-     * @return array Array with category counts
+     * @return bool True on success, false on failure
      */
-    public function get_category_counts() {
+    public function delete_all_submissions() {
         global $wpdb;
         
-        $query = "SELECT field2 as category, COUNT(*) as count FROM $this->table_name WHERE field2 != '' GROUP BY field2";
+        $result = $wpdb->query("TRUNCATE TABLE $this->table_name");
+        
+        return $result !== false;
+    }
+
+    /**
+     * Delete all submissions for a specific species
+     *
+     * @param string $species The game species
+     * @return bool True on success, false on failure
+     */
+    public function delete_submissions_by_species($species) {
+        global $wpdb;
+        
+        $result = $wpdb->delete(
+            $this->table_name,
+            array('game_species' => $species),
+            array('%s')
+        );
+        
+        return $result !== false;
+    }
+
+    /**
+     * Get submission counts per category
+     *
+     * @param string $species Filter by game species (optional)
+     * @return array Array with category counts
+     */
+    public function get_category_counts($species = '') {
+        global $wpdb;
+        
+        $query = "SELECT field2 as category, COUNT(*) as count FROM $this->table_name WHERE field2 != ''";
+        
+        if (!empty($species)) {
+            $query .= $wpdb->prepare(" AND game_species = %s", $species);
+        }
+        
+        $query .= " GROUP BY field2";
         $results = $wpdb->get_results($query, ARRAY_A);
         
         $counts = array();
@@ -144,5 +184,53 @@ class AHGMH_Database_Handler {
         }
         
         return $counts;
+    }
+
+    /**
+     * Get submissions filtered by species
+     *
+     * @param int $limit Number of results to get
+     * @param int $offset Offset for pagination
+     * @param string $species Filter by game species (optional)
+     * @return array Array of submissions
+     */
+    public function get_submissions_by_species($limit = 10, $offset = 0, $species = '') {
+        global $wpdb;
+        
+        $query = "SELECT * FROM $this->table_name";
+        
+        if (!empty($species)) {
+            $query .= $wpdb->prepare(" WHERE game_species = %s", $species);
+        }
+        
+        $query .= " ORDER BY created_at DESC";
+        
+        if ($limit > 0) {
+            $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
+        }
+        
+        $results = $wpdb->get_results($query, ARRAY_A);
+        
+        return $results;
+    }
+
+    /**
+     * Count submissions filtered by species
+     *
+     * @param string $species Filter by game species (optional)
+     * @return int Total count of submissions
+     */
+    public function count_submissions_by_species($species = '') {
+        global $wpdb;
+        
+        $query = "SELECT COUNT(*) FROM $this->table_name";
+        
+        if (!empty($species)) {
+            $query .= $wpdb->prepare(" WHERE game_species = %s", $species);
+        }
+        
+        $count = $wpdb->get_var($query);
+        
+        return (int) $count;
     }
 }
