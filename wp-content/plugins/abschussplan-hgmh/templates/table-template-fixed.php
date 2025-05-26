@@ -29,14 +29,12 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
 
 <script>
 jQuery(document).ready(function($) {
-    // Store table configuration
     var tableConfig = {
         species: '<?php echo esc_js(isset($species) ? $species : ''); ?>',
         limit: <?php echo intval($current_limit); ?>,
         page: <?php echo intval($current_page); ?>
     };
     
-    // Function to refresh table
     function refreshTable(showLoading) {
         if (typeof showLoading === 'undefined') {
             showLoading = true;
@@ -46,7 +44,7 @@ jQuery(document).ready(function($) {
         var $refreshBtn = $('#refresh-table-btn');
         
         if (showLoading) {
-            $refreshBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> <?php echo esc_js(__('Lädt...', 'abschussplan-hgmh')); ?>');
+            $refreshBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Lädt...');
             $container.css('opacity', '0.6');
         }
         
@@ -63,10 +61,9 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     $container.html(response.data.table_html);
                     
-                    // Show brief success indicator for auto-refreshes
                     if (!showLoading) {
                         $container.css('position', 'relative');
-                        var indicator = $('<div class="alert alert-success auto-refresh-indicator" style="position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 10px; font-size: 12px;">Aktualisiert</div>');
+                        var indicator = $('<div class="alert alert-success" style="position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 10px; font-size: 12px;">Aktualisiert</div>');
                         $container.prepend(indicator);
                         setTimeout(function() {
                             indicator.fadeOut(function() {
@@ -81,19 +78,17 @@ jQuery(document).ready(function($) {
             },
             complete: function() {
                 if (showLoading) {
-                    $refreshBtn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> <?php echo esc_js(__('Aktualisieren', 'abschussplan-hgmh')); ?>');
+                    $refreshBtn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Aktualisieren');
                     $container.css('opacity', '1');
                 }
             }
         });
     }
     
-    // Manual refresh button
     $('#refresh-table-btn').on('click', function() {
         refreshTable(true);
     });
     
-    // Make refreshTable function globally available for form submissions
     window.abschussRefreshTable = refreshTable;
 });
 </script>

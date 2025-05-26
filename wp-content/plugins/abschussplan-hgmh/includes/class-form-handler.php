@@ -328,9 +328,16 @@ class AHGMH_Form_Handler {
         
         $total_pages = ceil($total_count / $limit);
         
+        // Set variables needed for the table template
+        $current_page = $page;
+        $current_limit = $limit;
+        
         // Capture the table content HTML
         ob_start();
-        include AHGMH_PLUGIN_DIR . 'templates/table-content.php';
+        // Make sure we don't output any PHP errors
+        if (file_exists(AHGMH_PLUGIN_DIR . 'templates/table-content.php')) {
+            include AHGMH_PLUGIN_DIR . 'templates/table-content.php';
+        }
         $table_html = ob_get_clean();
         
         wp_send_json_success(array(

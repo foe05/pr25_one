@@ -9,10 +9,10 @@ if (!defined('ABSPATH')) {
 }
 
 // Get current page from URL or use the one from shortcode attributes
-$current_page = isset($_GET['abschuss_page']) ? max(1, intval($_GET['abschuss_page'])) : $page;
+$current_page = isset($_GET['abschuss_page']) ? max(1, intval($_GET['abschuss_page'])) : (isset($page) ? $page : 1);
 
-// Get limit from URL or use the one from shortcode attributes
-$current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : $limit;
+// Get limit from URL or use the one from shortcode attributes  
+$current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : (isset($limit) ? $limit : 10);
 ?>
 
 <?php if (empty($submissions)) : ?>
