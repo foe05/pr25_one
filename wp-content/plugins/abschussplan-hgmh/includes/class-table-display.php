@@ -11,13 +11,13 @@ if (!defined('ABSPATH')) {
 /**
  * Class for displaying form submissions in a table
  */
-class CFD_Table_Display {
+class AHGMH_Table_Display {
     /**
      * Constructor
      */
     public function __construct() {
         // Register shortcode for displaying submissions table
-        add_shortcode('custom_form_submissions', array($this, 'render_table'));
+        add_shortcode('ahgmh_submissions', array($this, 'render_table'));
     }
 
     /**
@@ -34,7 +34,7 @@ class CFD_Table_Display {
                 'page' => 1,   // Default page
             ),
             $atts,
-            'custom_form_submissions'
+            'ahgmh_submissions'
         );
 
         // Convert to integers
@@ -43,7 +43,7 @@ class CFD_Table_Display {
         $offset = ($page - 1) * $limit;
 
         // Get database instance
-        $database = custom_form_display()->database;
+        $database = abschussplan_hgmh()->database;
 
         // Get submissions
         $submissions = $database->get_submissions($limit, $offset);
@@ -58,7 +58,7 @@ class CFD_Table_Display {
         ob_start();
         
         // Include template
-        include CFD_PLUGIN_DIR . 'templates/table-template.php';
+        include AHGMH_PLUGIN_DIR . 'templates/table-template.php';
         
         // Return the output
         return ob_get_clean();
@@ -84,9 +84,9 @@ class CFD_Table_Display {
         $prev_disabled = ($current_page <= 1) ? 'disabled' : '';
         $output .= '<li class="page-item ' . $prev_disabled . '">';
         if ($current_page > 1) {
-            $output .= '<a class="page-link" href="' . add_query_arg(array('cfd_page' => $current_page - 1, 'cfd_limit' => $limit)) . '">&laquo; ' . __('Previous', 'custom-form-display') . '</a>';
+            $output .= '<a class="page-link" href="' . add_query_arg(array('ahgmh_page' => $current_page - 1, 'ahgmh_limit' => $limit)) . '">&laquo; ' . __('Previous', 'abschussplan-hgmh') . '</a>';
         } else {
-            $output .= '<span class="page-link">&laquo; ' . __('Previous', 'custom-form-display') . '</span>';
+            $output .= '<span class="page-link">&laquo; ' . __('Previous', 'abschussplan-hgmh') . '</span>';
         }
         $output .= '</li>';
         
@@ -101,7 +101,7 @@ class CFD_Table_Display {
         
         // Show first page if not in range
         if ($start > 1) {
-            $output .= '<li class="page-item"><a class="page-link" href="' . add_query_arg(array('cfd_page' => 1, 'cfd_limit' => $limit)) . '">1</a></li>';
+            $output .= '<li class="page-item"><a class="page-link" href="' . add_query_arg(array('ahgmh_page' => 1, 'ahgmh_limit' => $limit)) . '">1</a></li>';
             if ($start > 2) {
                 $output .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
             }
@@ -114,7 +114,7 @@ class CFD_Table_Display {
             if ($i == $current_page) {
                 $output .= '<span class="page-link">' . $i . '</span>';
             } else {
-                $output .= '<a class="page-link" href="' . add_query_arg(array('cfd_page' => $i, 'cfd_limit' => $limit)) . '">' . $i . '</a>';
+                $output .= '<a class="page-link" href="' . add_query_arg(array('ahgmh_page' => $i, 'ahgmh_limit' => $limit)) . '">' . $i . '</a>';
             }
             $output .= '</li>';
         }
@@ -124,16 +124,16 @@ class CFD_Table_Display {
             if ($end < $total_pages - 1) {
                 $output .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
             }
-            $output .= '<li class="page-item"><a class="page-link" href="' . add_query_arg(array('cfd_page' => $total_pages, 'cfd_limit' => $limit)) . '">' . $total_pages . '</a></li>';
+            $output .= '<li class="page-item"><a class="page-link" href="' . add_query_arg(array('ahgmh_page' => $total_pages, 'ahgmh_limit' => $limit)) . '">' . $total_pages . '</a></li>';
         }
         
         // Next page link
         $next_disabled = ($current_page >= $total_pages) ? 'disabled' : '';
         $output .= '<li class="page-item ' . $next_disabled . '">';
         if ($current_page < $total_pages) {
-            $output .= '<a class="page-link" href="' . add_query_arg(array('cfd_page' => $current_page + 1, 'cfd_limit' => $limit)) . '">' . __('Next', 'custom-form-display') . ' &raquo;</a>';
+            $output .= '<a class="page-link" href="' . add_query_arg(array('ahgmh_page' => $current_page + 1, 'ahgmh_limit' => $limit)) . '">' . __('Next', 'abschussplan-hgmh') . ' &raquo;</a>';
         } else {
-            $output .= '<span class="page-link">' . __('Next', 'custom-form-display') . ' &raquo;</span>';
+            $output .= '<span class="page-link">' . __('Next', 'abschussplan-hgmh') . ' &raquo;</span>';
         }
         $output .= '</li>';
         

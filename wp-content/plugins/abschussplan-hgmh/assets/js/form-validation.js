@@ -25,11 +25,11 @@
             // Get form data
             const formData = new FormData($form[0]);
             formData.append('action', 'submit_custom_form');
-            formData.append('nonce', cfd_ajax.nonce);
+            formData.append('nonce', ahgmh_ajax.nonce);
             
             // Send AJAX request
             $.ajax({
-                url: cfd_ajax.ajax_url,
+                url: ahgmh_ajax.ajax_url,
                 type: 'POST',
                 data: formData,
                 processData: false,

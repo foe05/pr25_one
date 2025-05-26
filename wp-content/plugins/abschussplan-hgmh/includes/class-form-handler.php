@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 /**
  * Class for handling form operations
  */
-class CFD_Form_Handler {
+class AHGMH_Form_Handler {
     /**
      * Constructor
      */
@@ -57,7 +57,7 @@ class CFD_Form_Handler {
         );
         
         ob_start();
-        include CFD_PLUGIN_DIR . 'templates/form-template.php';
+        include AHGMH_PLUGIN_DIR . 'templates/form-template.php';
         return ob_get_clean();
     }
     
@@ -82,13 +82,13 @@ class CFD_Form_Handler {
         $limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : intval($atts['limit']);
         
         // Get submissions data
-        $database = custom_form_display()->database;
+        $database = abschussplan_hgmh()->database;
         $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
         $total_count = $database->count_submissions();
         $total_pages = ceil($total_count / $limit);
         
         ob_start();
-        include CFD_PLUGIN_DIR . 'templates/table-template.php';
+        include AHGMH_PLUGIN_DIR . 'templates/table-template.php';
         return ob_get_clean();
     }
     
@@ -115,7 +115,7 @@ class CFD_Form_Handler {
         $db_config = $this->get_db_config();
         
         ob_start();
-        include CFD_PLUGIN_DIR . 'templates/admin-template.php';
+        include AHGMH_PLUGIN_DIR . 'templates/admin-template.php';
         return ob_get_clean();
     }
     
@@ -136,7 +136,7 @@ class CFD_Form_Handler {
         $counts = $this->get_category_counts();
         
         ob_start();
-        include CFD_PLUGIN_DIR . 'templates/summary-template.php';
+        include AHGMH_PLUGIN_DIR . 'templates/summary-template.php';
         return ob_get_clean();
     }
 
@@ -230,7 +230,7 @@ class CFD_Form_Handler {
             'field4' => $field4
         );
         
-        $database = custom_form_display()->database;
+        $database = abschussplan_hgmh()->database;
         $submission_id = $database->insert_submission($data);
 
         if ($submission_id) {
@@ -454,7 +454,7 @@ class CFD_Form_Handler {
      * Get submission counts per category
      */
     private function get_category_counts() {
-        $database = custom_form_display()->database;
+        $database = abschussplan_hgmh()->database;
         return $database->get_category_counts();
     }
 }

@@ -14,20 +14,20 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CFD_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('CFD_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CFD_PLUGIN_VERSION', '1.0.0');
+define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('AHGMH_PLUGIN_VERSION', '1.0.0');
 
 // Include required files
-require_once CFD_PLUGIN_DIR . 'includes/class-database-handler.php';
-require_once CFD_PLUGIN_DIR . 'includes/class-form-handler.php';
-require_once CFD_PLUGIN_DIR . 'includes/class-table-display.php';
-require_once CFD_PLUGIN_DIR . 'admin/class-admin-page.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
+require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page.php';
 
 /**
  * Main plugin class
  */
-class Custom_Form_Display {
+class Abschussplan_HGMH {
     /**
      * Instance of this class
      */
@@ -85,16 +85,16 @@ class Custom_Form_Display {
      */
     private function init() {
         // Initialize database handler
-        $this->database = new CFD_Database_Handler();
+        $this->database = new AHGMH_Database_Handler();
 
         // Initialize form handler
-        $this->form = new CFD_Form_Handler();
+        $this->form = new AHGMH_Form_Handler();
 
         // Initialize table display
-        $this->table = new CFD_Table_Display();
+        $this->table = new AHGMH_Table_Display();
 
         // Initialize admin page
-        $this->admin = new CFD_Admin_Page();
+        $this->admin = new AHGMH_Admin_Page();
     }
 
     /**
@@ -123,9 +123,9 @@ class Custom_Form_Display {
         // Enqueue Bootstrap from CDN
         wp_enqueue_style(
             'bootstrap-css',
-            'https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css',
+            'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
             array(),
-            CFD_PLUGIN_VERSION
+            AHGMH_PLUGIN_VERSION
         );
 
         // Enqueue jQuery
@@ -142,37 +142,37 @@ class Custom_Form_Display {
 
         // Enqueue custom styles
         wp_enqueue_style(
-            'cfd-style',
-            CFD_PLUGIN_URL . 'assets/css/style.css',
+            'ahgmh-style',
+            AHGMH_PLUGIN_URL . 'assets/css/style.css',
             array('bootstrap-css'),
-            CFD_PLUGIN_VERSION
+            AHGMH_PLUGIN_VERSION
         );
 
         // Enqueue form validation script
         wp_enqueue_script(
-            'cfd-form-validation',
-            CFD_PLUGIN_URL . 'assets/js/form-validation.js',
+            'ahgmh-form-validation',
+            AHGMH_PLUGIN_URL . 'assets/js/form-validation.js',
             array('jquery'),
-            CFD_PLUGIN_VERSION,
+            AHGMH_PLUGIN_VERSION,
             true
         );
 
         // Localize script with AJAX URL and nonce
         wp_localize_script(
-            'cfd-form-validation',
-            'cfd_ajax',
+            'ahgmh-form-validation',
+            'ahgmh_ajax',
             array(
                 'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('cfd_form_nonce')
+                'nonce' => wp_create_nonce('ahgmh_form_nonce')
             )
         );
     }
 }
 
 // Initialize the plugin
-function custom_form_display() {
-    return Custom_Form_Display::get_instance();
+function abschussplan_hgmh() {
+    return Abschussplan_HGMH::get_instance();
 }
 
 // Start the plugin
-custom_form_display();
+abschussplan_hgmh();

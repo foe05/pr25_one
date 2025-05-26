@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 /**
  * Class for handling database operations
  */
-class CFD_Database_Handler {
+class AHGMH_Database_Handler {
     /**
      * Table name
      */
@@ -22,7 +22,7 @@ class CFD_Database_Handler {
      */
     public function __construct() {
         global $wpdb;
-        $this->table_name = $wpdb->prefix . 'custom_form_submissions';
+        $this->table_name = $wpdb->prefix . 'ahgmh_submissions';
     }
 
     /**

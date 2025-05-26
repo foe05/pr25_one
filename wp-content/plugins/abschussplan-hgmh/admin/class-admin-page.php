@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 /**
  * Class for handling admin pages and settings
  */
-class CFD_Admin_Page {
+class AHGMH_Admin_Page {
     /**
      * Constructor
      */
@@ -233,7 +233,7 @@ class CFD_Admin_Page {
         $offset = ($page - 1) * $limit;
         
         // Get database instance
-        $database = custom_form_display()->database;
+        $database = abschussplan_hgmh()->database;
         
         // Get submissions
         $submissions = $database->get_submissions($limit, $offset);
@@ -359,7 +359,7 @@ class CFD_Admin_Page {
             }
             
             // Delete the submission
-            $database = custom_form_display()->database;
+            $database = abschussplan_hgmh()->database;
             $success = $database->delete_submission($id);
             
             // Redirect back to the submissions page with a message
