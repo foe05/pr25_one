@@ -314,6 +314,15 @@ def submit_form():
     if field3:
         try:
             field3 = int(field3)
+            # Check if WUS number already exists in database
+            conn = sqlite3.connect('form_submissions.db')
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM custom_form_submissions WHERE field3 = ?', (field3,))
+            wus_count = cursor.fetchone()[0]
+            conn.close()
+            
+            if wus_count > 0:
+                errors['field3'] = 'Diese WUS-Nummer ist bereits vergeben. Bitte geben Sie eine andere WUS-Nummer an.'
         except ValueError:
             errors['field3'] = 'WUS muss eine ganze Zahl sein.'
     
