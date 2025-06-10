@@ -381,6 +381,9 @@ class AHGMH_Admin_Page {
         // Handle table name update
         $this->handle_table_name_update();
         
+        // Handle export filename update
+        $this->handle_export_filename_update();
+        
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Über Abschussplan HGMH', 'abschussplan-hgmh'); ?></h1>
@@ -498,9 +501,15 @@ class AHGMH_Admin_Page {
                         <tr>
                             <th scope="row"><?php echo esc_html__('Export Dateiname', 'abschussplan-hgmh'); ?></th>
                             <td>
-                                <code><?php echo esc_html(get_option('abschuss_export_filename', 'abschuss_export')); ?></code>
+                                <form method="post" action="" style="display: inline-block;">
+                                    <?php wp_nonce_field('update_export_filename', 'export_filename_nonce'); ?>
+                                    <input type="text" name="export_filename" value="<?php echo esc_attr(get_option('abschuss_export_filename', 'abschuss_export')); ?>" class="regular-text" />
+                                    <button type="submit" class="button button-primary" style="margin-left: 10px;">
+                                        <?php echo esc_html__('Speichern', 'abschussplan-hgmh'); ?>
+                                    </button>
+                                </form>
                                 <p class="description">
-                                    <?php echo esc_html__('Aktueller Dateiname für CSV-Exporte. Kann in den Datenbankeinstellungen geändert werden.', 'abschussplan-hgmh'); ?>
+                                    <?php echo esc_html__('Dateiname für CSV-Exporte (ohne .csv Endung).', 'abschussplan-hgmh'); ?>
                                 </p>
                             </td>
                         </tr>
@@ -1785,5 +1794,23 @@ class AHGMH_Admin_Page {
         });
         </script>
         <?php
+    }
+    
+    /**
+     * Handle export filename update
+     */
+    private function handle_export_filename_update() {
+        if (isset($_POST['export_filename']) && wp_verify_nonce($_POST['export_filename_nonce'], 'update_export_filename')) {
+            $export_filename = sanitize_text_field($_POST['export_filename']);
+            update_option('abschuss_export_filename', $export_filename);
+            
+            add_settings_error(
+                'abschuss_messages',
+                'export_filename_updated',
+                __('Export-Dateiname erfolgreich aktualisiert.', 'abschussplan-hgmh'),
+                'updated'
+            );
+            settings_errors('abschuss_messages');
+        }
     }
 }

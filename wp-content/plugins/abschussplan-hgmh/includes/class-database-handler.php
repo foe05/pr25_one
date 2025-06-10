@@ -54,6 +54,13 @@ class AHGMH_Database_Handler {
     }
     
     /**
+     * Get the table name
+     */
+    public function get_table_name() {
+        return $this->table_name;
+    }
+    
+    /**
      * Create the Jagdbezirk configuration table
      */
     public function create_jagdbezirk_table() {
