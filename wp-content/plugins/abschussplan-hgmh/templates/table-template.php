@@ -29,8 +29,8 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
             <table class="table table-striped abschuss-table">
                 <thead>
                     <tr>
-                        <th scope="col">#</th>
                         <th scope="col"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></th>
@@ -41,15 +41,20 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                 <tbody>
                     <?php foreach ($submissions as $submission) : ?>
                         <tr>
-                            <td data-label="<?php echo esc_attr__('#', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['id']); ?></td>
                             <td data-label="<?php echo esc_attr__('Abschussdatum', 'abschussplan-hgmh'); ?>">
                                 <?php 
-                                // Format the date in German format if possible
+                                // Format the date in German format dd.mm.yy
                                 if (!empty($submission['field1'])) {
-                                    echo esc_html(date_i18n(get_option('date_format'), strtotime($submission['field1'])));
+                                    $date = DateTime::createFromFormat('Y-m-d', $submission['field1']);
+                                    if ($date) {
+                                        echo esc_html($date->format('d.m.y'));
+                                    } else {
+                                        echo esc_html($submission['field1']);
+                                    }
                                 }
                                 ?>
                             </td>
+                            <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field5'] ?? ''); ?></td>
                             <td data-label="<?php echo esc_attr__('Abschuss', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field2']); ?></td>
                             <td data-label="<?php echo esc_attr__('WUS', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field3']); ?></td>
                             <td data-label="<?php echo esc_attr__('Bemerkung', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field4']); ?></td>
@@ -86,8 +91,15 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                             </td>
                             <td data-label="<?php echo esc_attr__('Erstellt am', 'abschussplan-hgmh'); ?>">
                                 <?php 
+                                // Format the datetime in German format dd.MM.yy hh:mm
                                 if (!empty($submission['created_at'])) {
-                                    echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($submission['created_at'])));
+                                    $datetime = DateTime::createFromFormat('Y-m-d H:i:s', $submission['created_at']);
+                                    if ($datetime) {
+                                        echo esc_html($datetime->format('d.m.y H:i'));
+                                    } else {
+                                        // Fallback to original format if parsing fails
+                                        echo esc_html(date_i18n('d.m.y H:i', strtotime($submission['created_at'])));
+                                    }
                                 }
                                 ?>
                             </td>
