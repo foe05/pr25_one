@@ -163,6 +163,13 @@ jQuery(document).ready(function($) {
             return;
         }
         
+        // Validate Jagdbezirk selection
+        if (!$('#field5').val()) {
+            $('#field5').addClass('is-invalid');
+            $('#field5').siblings('.form-error').text('<?php echo esc_js(__('Bitte wählen Sie einen Jagdbezirk aus.', 'custom-form-display')); ?>').show();
+            return;
+        }
+        
         // Disable the submit button to prevent multiple submissions
         $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <?php echo esc_js(__('Wird gespeichert...', 'custom-form-display')); ?>');
         
@@ -175,6 +182,7 @@ jQuery(document).ready(function($) {
         formData.append('field2', $('#field2').val());
         formData.append('field3', $('#field3').val());
         formData.append('field4', $('#field4').val());
+        formData.append('field5', $('#field5').val());
         
         // Send AJAX request
         $.ajax({

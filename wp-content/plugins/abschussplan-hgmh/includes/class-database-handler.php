@@ -376,7 +376,7 @@ class AHGMH_Database_Handler {
         $sanitized_data = array(
             'jagdbezirk' => sanitize_text_field($data['jagdbezirk']),
             'meldegruppe' => sanitize_text_field($data['meldegruppe']),
-            'ungueltig' => isset($data['ungueltig']) ? 1 : 0,
+            'ungueltig' => (isset($data['ungueltig']) && ($data['ungueltig'] === '1' || $data['ungueltig'] === 1)) ? 1 : 0,
             'bemerkung' => sanitize_textarea_field($data['bemerkung'])
         );
         
@@ -400,7 +400,7 @@ class AHGMH_Database_Handler {
         $sanitized_data = array(
             'jagdbezirk' => sanitize_text_field($data['jagdbezirk']),
             'meldegruppe' => sanitize_text_field($data['meldegruppe']),
-            'ungueltig' => isset($data['ungueltig']) ? 1 : 0,
+            'ungueltig' => (isset($data['ungueltig']) && ($data['ungueltig'] === '1' || $data['ungueltig'] === 1)) ? 1 : 0,
             'bemerkung' => sanitize_textarea_field($data['bemerkung'])
         );
         
