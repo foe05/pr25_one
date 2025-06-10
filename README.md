@@ -283,6 +283,266 @@ Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
 - Benutzer-ID-Verknüpfung für Nachverfolgbarkeit
 - Unveränderlichkeit gespeicherter Meldungen
 
+## 13. Systemarchitektur-Diagramme
+
+Die folgenden Diagramme veranschaulichen die technische Architektur und Datenflüsse des Abschussplan HGMH Plugins.
+
+### 13.1 Plugin-Architektur-Übersicht
+
+Dieses Diagramm zeigt die Gesamtarchitektur des Plugins mit allen Hauptkomponenten, Benutzerrollen und deren Interaktionen.
+
+```mermaid
+graph TB
+    %% Main Plugin Structure
+    subgraph "WordPress Plugin: Abschussplan HGMH"
+        MainPlugin[abschussplan-hgmh.php<br/>Main Plugin File]
+        
+        subgraph "Core Classes"
+            FormHandler[AHGMH_Form_Handler<br/>Form Operations & Shortcodes]
+            AdminPage[AHGMH_Admin_Page<br/>Backend Administration]
+            Database[AHGMH_Database<br/>Data Persistence]
+        end
+        
+        subgraph "Frontend Shortcodes"
+            FormShortcode["[abschuss_form]<br/>Submission Form"]
+            TableShortcode["[abschuss_table]<br/>Data Display"]
+            SummaryShortcode["[abschuss_summary]<br/>Statistics Overview"]
+            LimitsShortcode["[abschuss_limits]<br/>Limits Configuration"]
+        end
+        
+        subgraph "Admin Backend"
+            OverviewPage[Übersicht<br/>Species-specific Overview]
+            PlanningPage[Abschussplanung<br/>Limits Management]
+            SpeciesPage[Wildarten<br/>Species Management]
+            CategoriesPage[Kategorien<br/>Categories Management]
+            DatabasePage[Datenbankeinstellungen<br/>DB Configuration]
+        end
+        
+        subgraph "Data Storage"
+            WPOptions[WordPress Options<br/>Configuration Data]
+            SubmissionDB[Database Tables<br/>Submission Records]
+        end
+    end
+    
+    %% User Interactions
+    subgraph "User Roles"
+        Hunters[Hunters<br/>Logged-in Users]
+        Admins[Administrators<br/>manage_options]
+        Anonymous[Anonymous Users]
+    end
+    
+    %% External Systems
+    subgraph "External Dependencies"
+        WordPress[WordPress Core<br/>Authentication & Capabilities]
+        jQuery[jQuery/jQuery UI<br/>Frontend Interactions]
+        DBSystems[Database Systems<br/>SQLite/MySQL/PostgreSQL]
+    end
+    
+    %% Connections - Main Plugin Structure
+    MainPlugin --> FormHandler
+    MainPlugin --> AdminPage
+    MainPlugin --> Database
+    
+    %% Frontend Shortcode Connections
+    FormHandler --> FormShortcode
+    FormHandler --> TableShortcode
+    FormHandler --> SummaryShortcode
+    FormHandler --> LimitsShortcode
+    
+    %% Backend Admin Connections
+    AdminPage --> OverviewPage
+    AdminPage --> PlanningPage
+    AdminPage --> SpeciesPage
+    AdminPage --> CategoriesPage
+    AdminPage --> DatabasePage
+    
+    %% Data Flow Connections
+    FormHandler --> WPOptions
+    FormHandler --> SubmissionDB
+    AdminPage --> WPOptions
+    Database --> SubmissionDB
+    Database --> DBSystems
+    
+    %% User Access Patterns
+    Hunters --> FormShortcode
+    Hunters --> TableShortcode
+    Hunters --> SummaryShortcode
+    Anonymous -.-> FormShortcode
+    Anonymous -.-> |Redirect to Login| WordPress
+    
+    Admins --> LimitsShortcode
+    Admins --> OverviewPage
+    Admins --> PlanningPage
+    Admins --> SpeciesPage
+    Admins --> CategoriesPage
+    Admins --> DatabasePage
+    
+    %% External Dependencies
+    FormHandler --> WordPress
+    AdminPage --> WordPress
+    FormShortcode --> jQuery
+    LimitsShortcode --> jQuery
+    
+    %% AJAX Connections
+    FormShortcode -.-> |AJAX| FormHandler
+    LimitsShortcode -.-> |AJAX| FormHandler
+    PlanningPage -.-> |AJAX| AdminPage
+    
+    %% Data Relationships
+    WPOptions --> |Species Config| SpeciesPage
+    WPOptions --> |Categories Config| CategoriesPage
+    WPOptions --> |Limits Config| PlanningPage
+    WPOptions --> |Allow Exceeding Config| LimitsShortcode
+    
+    %% Styling
+    classDef userClass fill:#e1f5fe
+    classDef adminClass fill:#fff3e0
+    classDef shortcodeClass fill:#f3e5f5
+    classDef storageClass fill:#e8f5e8
+    classDef externalClass fill:#fce4ec
+    
+    class Hunters,Anonymous userClass
+    class Admins adminClass
+    class FormShortcode,TableShortcode,SummaryShortcode,LimitsShortcode shortcodeClass
+    class WPOptions,SubmissionDB storageClass
+    class WordPress,jQuery,DBSystems externalClass
+```
+
+**Beschreibung:** Die Architektur zeigt die drei Kernklassen (Form Handler, Admin Page, Database), vier Frontend-Shortcodes, fünf Admin-Backend-Seiten und deren Verbindungen. Farbkodierte Bereiche unterscheiden zwischen Benutzerrollen (blau), Admin-Funktionen (orange), Shortcodes (lila), Datenspeicherung (grün) und externen Abhängigkeiten (pink).
+
+### 13.2 Prozessfluss-Diagramm
+
+Dieses Sequenzdiagramm illustriert die wichtigsten Arbeitsabläufe und Datenflüsse zwischen Benutzern, Frontend, Backend und Datenbank.
+
+```mermaid
+sequenceDiagram
+    participant H as Hunter (User)
+    participant F as Frontend Form
+    participant FH as Form Handler
+    participant DB as Database
+    participant A as Admin
+    participant AP as Admin Panel
+    participant WP as WordPress Options
+    
+    Note over H,WP: Hunting Submission Workflow
+    
+    H->>F: Accesses [abschuss_form]
+    F->>FH: Check user authentication
+    FH->>WP: Load species & categories
+    FH->>DB: Get current counts & limits
+    F->>H: Display form with available categories
+    
+    H->>F: Submit hunting record
+    F->>FH: AJAX submission
+    FH->>WP: Check allow_exceeding settings
+    FH->>DB: Validate against limits
+    alt Submission valid
+        FH->>DB: Insert submission
+        FH->>F: Success response
+        F->>H: Show success message
+    else Limit exceeded & no override
+        FH->>F: Error response
+        F->>H: Show limit error
+    end
+    
+    Note over A,WP: Administration Workflow
+    
+    A->>AP: Access admin backend
+    AP->>WP: Load current configuration
+    A->>AP: Modify species/categories/limits
+    AP->>FH: AJAX save request
+    FH->>WP: Update configuration
+    FH->>AP: Confirmation response
+    AP->>A: Show success message
+    
+    Note over H,WP: Data Display Workflow
+    
+    H->>F: View [abschuss_table]
+    F->>FH: Request submission data
+    FH->>DB: Query submissions by species
+    DB->>FH: Return paginated results
+    FH->>F: Render table
+    F->>H: Display submissions
+    
+    H->>F: View [abschuss_summary]
+    F->>FH: Request summary data
+    FH->>DB: Get category counts
+    FH->>WP: Get limits & settings
+    FH->>F: Calculate percentages & status
+    F->>H: Display summary with status badges
+```
+
+**Beschreibung:** Das Sequenzdiagramm zeigt drei Hauptprozesse: 1) **Abschussmeldung-Workflow** - von der Formularanzeige bis zur Validierung und Speicherung, 2) **Administrations-Workflow** - Konfigurationsänderungen durch Administratoren, und 3) **Datenanzeige-Workflow** - wie Tabellen und Zusammenfassungen generiert werden. Besondere Aufmerksamkeit liegt auf der Limitvalidierung mit Überschreitungslogik.
+
+### 13.3 Datenmodell und Beziehungen
+
+Dieses Entity-Relationship-Diagramm zeigt die Datenbankstruktur und die Beziehungen zwischen den verschiedenen Datenentitäten.
+
+```mermaid
+erDiagram
+    WORDPRESS_OPTIONS {
+        string option_name PK
+        longtext option_value
+        string autoload
+    }
+    
+    SUBMISSIONS {
+        int id PK
+        int user_id FK
+        string game_species
+        date field1 "Abschussdatum"
+        string field2 "Kategorie"
+        int field3 "WUS (optional)"
+        text field4 "Bemerkung (optional)"
+        timestamp created_at
+    }
+    
+    WP_USERS {
+        int ID PK
+        string user_login
+        string user_email
+        string display_name
+    }
+    
+    CONFIG_SPECIES {
+        string species_name
+        boolean active
+    }
+    
+    CONFIG_CATEGORIES {
+        string category_name
+        boolean active
+    }
+    
+    CONFIG_LIMITS {
+        string species
+        string category
+        int limit_value
+        boolean allow_exceeding
+    }
+    
+    %% Relationships
+    SUBMISSIONS ||--|| WP_USERS : "user_id references ID"
+    WORDPRESS_OPTIONS ||--o{ CONFIG_SPECIES : "ahgmh_species stores"
+    WORDPRESS_OPTIONS ||--o{ CONFIG_CATEGORIES : "ahgmh_categories stores"
+    WORDPRESS_OPTIONS ||--o{ CONFIG_LIMITS : "abschuss_category_limits_* stores"
+    WORDPRESS_OPTIONS ||--o{ CONFIG_LIMITS : "abschuss_category_allow_exceeding_* stores"
+    
+    CONFIG_SPECIES ||--o{ SUBMISSIONS : "game_species references species_name"
+    CONFIG_CATEGORIES ||--o{ SUBMISSIONS : "field2 references category_name"
+    CONFIG_LIMITS ||--o{ SUBMISSIONS : "validates against limits"
+```
+
+**Beschreibung:** Das Datenmodell zeigt die zentrale **SUBMISSIONS**-Tabelle mit Verknüpfungen zur WordPress-Benutzertabelle. Konfigurationsdaten werden in der **WORDPRESS_OPTIONS**-Tabelle gespeichert, einschließlich Wildarten (`ahgmh_species`), Kategorien (`ahgmh_categories`), Limits (`abschuss_category_limits_*`) und Überschreitungseinstellungen (`abschuss_category_allow_exceeding_*`). Die Stern-Notation (*) steht für wildartspezifische Option-Keys.
+
+### 13.4 Technische Hinweise zu den Diagrammen
+
+- **Architektur-Diagramm**: Zeigt die Plugin-Struktur und Komponentenbeziehungen
+- **Prozessfluss-Diagramm**: Illustriert typische Benutzerinteraktionen und Systemresponses  
+- **Datenmodell-Diagramm**: Dokumentiert die Datenbankstruktur und Referential Integrity
+
+Diese Diagramme dienen als technische Referenz für Entwickler, Systemadministratoren und zur Dokumentation der Plugin-Architektur.
+
 ---
 
 **Version:** 1.0  
