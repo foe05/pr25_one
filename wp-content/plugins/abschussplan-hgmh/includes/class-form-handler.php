@@ -259,9 +259,13 @@ class AHGMH_Form_Handler {
             }
         }
         
-        // Validate WUS to ensure it's an integer if provided
-        if (!empty($field3) && !is_numeric($field3)) {
-            $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'custom-form-display');
+        // Validate WUS to ensure it's an integer if provided and within range
+        if (!empty($field3)) {
+            if (!is_numeric($field3)) {
+                $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'custom-form-display');
+            } elseif ($field3 < 1000000 || $field3 > 9999999) {
+                $errors['field3'] = __('WUS muss zwischen 1000000 und 9999999 liegen.', 'custom-form-display');
+            }
         }
         
         // Check if WUS number is unique (if provided)

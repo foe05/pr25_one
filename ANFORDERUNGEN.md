@@ -285,7 +285,7 @@ Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
 
 ---
 
-**Version:** 1.0  
+**Version:** 1.5.0  
 **Erstellt:** 2025  
 **Zielgruppe:** Entwickler, Systemadministratoren, Jagdrevierverwalter  
-**Status:** Vollständig implementiert
+**Status:** Vollständig implementiert mit CSV Export

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Abschussmeldungen</title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
@@ -55,6 +56,9 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="limits-tab" data-bs-toggle="tab" data-bs-target="#limits-content" type="button" role="tab" aria-controls="limits-content" aria-selected="false">Höchstgrenzen</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="export-tab" data-bs-toggle="tab" data-bs-target="#export-content" type="button" role="tab" aria-controls="export-content" aria-selected="false">Übersicht & Export</button>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/">Zurück zum Formular</a>
@@ -132,6 +136,11 @@
                                     <label for="sqlite_file" class="form-label">SQLite Datei-Pfad</label>
                                     <input type="text" class="form-control" id="sqlite_file" name="sqlite_file" value="form_submissions.db">
                                     <small class="text-muted">Relativer oder absoluter Pfad zur Datenbank-Datei</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="export_filename" class="form-label">Export Dateiname</label>
+                                    <input type="text" class="form-control" id="export_filename" name="export_filename" value="{{ export_filename }}">
+                                    <small class="text-muted">Dateiname für CSV-Exporte (ohne .csv Endung)</small>
                                 </div>
                             </div>
                             
@@ -232,8 +241,125 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Export Overview Tab -->
+            <div class="tab-pane fade" id="export-content" role="tabpanel" aria-labelledby="export-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">Übersicht & CSV Export URLs</h2>
+                    </div>
+                    <div class="card-body">
+                        <h4>Export URLs</h4>
+                        <p class="text-muted">Verwenden Sie diese URLs für automatische CSV-Exporte:</p>
+                        
+                        <div class="mb-4">
+                            <h5>Grundlegende Export URLs</h5>
+                            <div class="code-block bg-dark p-3 rounded mb-2">
+                                <code id="base-url">{{ request.url_root }}export_csv</code>
+                                <button class="btn btn-sm btn-outline-light ms-2" onclick="copyToClipboard('base-url')">
+                                    <i class="bi bi-clipboard"></i> Kopieren
+                                </button>
+                            </div>
+                            <small class="text-muted">Exportiert alle Einträge</small>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Filteroptionen</h5>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Beispiel</th>
+                                        <th>Beschreibung</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>category</code></td>
+                                        <td><code>?category=Wildkalb</code></td>
+                                        <td>Filtert nach spezifischer Wildart</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>from</code></td>
+                                        <td><code>?from=2024-01-01</code></td>
+                                        <td>Exportiert ab Datum (YYYY-MM-DD)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>to</code></td>
+                                        <td><code>?to=2024-12-31</code></td>
+                                        <td>Exportiert bis Datum (YYYY-MM-DD)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Beispiel URLs</h5>
+                            <div class="mb-3">
+                                <strong>Export für Rotwild:</strong>
+                                <div class="code-block bg-dark p-3 rounded">
+                                    <code id="rotwild-url">{{ request.url_root }}export_csv?category=Rotwild</code>
+                                    <button class="btn btn-sm btn-outline-light ms-2" onclick="copyToClipboard('rotwild-url')">
+                                        <i class="bi bi-clipboard"></i> Kopieren
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Export mit Datumsbereich:</strong>
+                                <div class="code-block bg-dark p-3 rounded">
+                                    <code id="date-range-url">{{ request.url_root }}export_csv?from=2024-01-01&to=2024-12-31</code>
+                                    <button class="btn btn-sm btn-outline-light ms-2" onclick="copyToClipboard('date-range-url')">
+                                        <i class="bi bi-clipboard"></i> Kopieren
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Export für Damwild im Jahr 2024:</strong>
+                                <div class="code-block bg-dark p-3 rounded">
+                                    <code id="damwild-2024-url">{{ request.url_root }}export_csv?category=Damwild&from=2024-01-01&to=2024-12-31</code>
+                                    <button class="btn btn-sm btn-outline-light ms-2" onclick="copyToClipboard('damwild-2024-url')">
+                                        <i class="bi bi-clipboard"></i> Kopieren
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> Hinweise:</h6>
+                            <ul class="mb-0">
+                                <li>URLs können direkt in Browser eingegeben oder per Script aufgerufen werden</li>
+                                <li>Export ist öffentlich zugänglich - keine Anmeldung erforderlich</li>
+                                <li>Dateiname wird automatisch aus Einstellungen und Filtern generiert</li>
+                                <li>CSV-Format: Standard kommagetrennt, UTF-8 kodiert</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+    
+    <script>
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success feedback
+                const button = document.querySelector(`#${elementId} + button`);
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check"></i> Kopiert!';
+                button.classList.remove('btn-outline-light');
+                button.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-light');
+                }, 2000);
+            });
+        }
+    </script>
     
     <script>
         $(document).ready(function() {

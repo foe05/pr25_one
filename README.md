@@ -1,629 +1,397 @@
-# Anforderungsdokumentation: Abschussplan HGMH WordPress Plugin
+# Abschussplan HGMH - Hunting Management System
 
-## 1. Überblick
+**Version:** 1.5.0  
+**Status:** Vollständig implementiert mit CSV Export  
+**Typ:** Flask Web Application & WordPress Plugin
 
-Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung für die Verwaltung von Jagdabschussmeldungen in deutschen Jagdrevieren. Das Plugin ermöglicht es Jägern, ihre Abschüsse digital zu melden und Administratoren, diese zu verwalten und auszuwerten.
+## 🎯 Überblick
 
-### 1.1 Zweck
-- Digitale Erfassung von Jagdabschüssen
-- Verwaltung von Abschusslimits (Soll-Werte)
-- Überwachung und Auswertung der Abschussstatistiken
-- Compliance mit behördlichen Meldepflichten
+Das **Abschussplan HGMH** System ist eine spezialisierte Lösung für die digitale Verwaltung von Jagdabschussmeldungen in deutschen Jagdrevieren. Verfügbar als Flask-Webanwendung und WordPress-Plugin.
 
-### 1.2 Zielgruppe
-- **Jäger**: Melden ihre Abschüsse über Webformulare
-- **Revierleiter/Administratoren**: Verwalten Limits, Wildarten und werten Statistiken aus
-- **Behörden**: Erhalten strukturierte Abschussberichte
+### ✨ Kernfunktionen
+- ✅ **Digitale Abschussmeldungen** - Webformular für Jäger
+- ✅ **Limitverwaltung** - Konfigurierbare Soll-Werte pro Kategorie  
+- ✅ **CSV Export** - Vollständige Datenexporte mit Filteroptionen
+- ✅ **Responsive Design** - Mobile-optimierte Bedienung
+- ✅ **Multi-Database** - SQLite, MySQL, PostgreSQL Unterstützung
 
-## 2. Benutzerrollen und Berechtigungen
-
-### 2.1 Angemeldete Benutzer
-- **Berechtigung**: Abschussmeldungen erstellen
-- **Zugriff**: Frontend-Formulare via Shortcodes
-- **Einschränkungen**: Nur eigene Meldungen, keine Administrationsrechte
-
-### 2.2 Administratoren
-- **Berechtigung**: Vollzugriff auf alle Funktionen
-- **Zugriff**: Backend-Administration, Konfiguration, Berichte
-- **Capabilities**: WordPress `manage_options` Berechtigung erforderlich
-
-### 2.3 Nicht angemeldete Benutzer
-- **Berechtigung**: Keine
-- **Verhalten**: Weiterleitung zur Anmeldung bei Zugriff auf Formulare
-
-## 3. Kernanforderungen
-
-### 3.1 Wildartenverwaltung
-- **Dynamische Wildarten**: Konfigurierbare Liste von Wildarten (Standard: Rotwild, Damwild)
-- **Verwaltung**: Hinzufügen, Bearbeiten, Löschen von Wildarten
-- **Persistenz**: Wildarten bleiben über alle Systemteile synchron
-
-### 3.2 Kategorienverwaltung
-- **Dynamische Kategorien**: Konfigurierbare Abschusskategorien
-- **Wildartspezifisch**: Jede Wildart kann eigene Kategorien haben
-- **Flexibilität**: Administratoren können Kategorien anpassen
-
-### 3.3 Limitverwaltung (Soll-Werte)
-- **Wildartspezifische Limits**: Separate Limits pro Wildart und Kategorie
-- **Überschreitungsregelung**: Konfigurierbare "Überschießen möglich?" Option pro Kategorie
-- **Dynamische Anpassung**: Limits können jederzeit geändert werden
-
-## 4. Frontend-Funktionalität (Shortcodes)
-
-> **Hinweis:** Die folgenden Screenshots zeigen die tatsächliche Darstellung der Shortcodes im Frontend.
-
-### 4.1 Abschussformular `[abschuss_form]`
-```
-[abschuss_form species="Rotwild"]
-```
-
-**Parameter:**
-- `species`: Wildart (Pflicht)
-
-**Funktionalität:**
-- Authentifizierung erforderlich
-- Felder:
-  - **Abschussdatum**: Datumswähler (nicht in der Zukunft)
-  - **Abschuss**: Dropdown mit verfügbaren Kategorien
-  - **WUS**: Numerisches Feld (optional)
-  - **Bemerkung**: Textfeld (optional)
-- **Validierung**:
-  - Limitprüfung mit Überschreitungslogik
-  - Datumsvalidierung
-  - AJAX-basierte Echtzeitvalidierung
-- **Verhalten**: Kategorien werden automatisch deaktiviert wenn Limit erreicht und Überschreitung nicht erlaubt
-
-#### Screenshot: Abschussformular
-![Abschussformular Screenshot](screenshots/abschuss-form.png)
-*Das Abschussformular zeigt die Benutzerauthentifizierung, Eingabefelder für Datum, Kategorie-Dropdown, WUS und Bemerkung. Kategorien sind entsprechend ihrer Limit-Status aktiviert/deaktiviert.*
-
-### 4.2 Abschusstabelle `[abschuss_table]`
-```
-[abschuss_table species="Rotwild" limit="10" page="1"]
-```
-
-**Parameter:**
-- `species`: Wildart (optional, zeigt alle wenn leer)
-- `limit`: Anzahl Einträge pro Seite (Standard: 10)
-- `page`: Seitennummer (Standard: 1)
-
-**Funktionalität:**
-- Paginierte Anzeige aller Abschussmeldungen
-- Filterung nach Wildart
-- Sortierung nach Datum (neueste zuerst)
-- Responsive Tabellendarstellung
-
-#### Screenshot: Abschusstabelle
-![Abschusstabelle Screenshot](screenshots/abschuss-table.png)
-*Die Abschusstabelle zeigt eine paginierte Liste aller Meldungen mit Spalten für Datum, Kategorie, WUS, Bemerkung und Benutzer. Navigation zwischen Seiten und responsive Layout.*
-
-### 4.3 Zusammenfassung `[abschuss_summary]`
-```
-[abschuss_summary species="Rotwild"]
-```
-
-**Parameter:**
-- `species`: Wildart (Pflicht)
-
-**Funktionalität:**
-- Übersichtstabelle: Kategorie, Ist-Werte, Soll-Werte, Status
-- Prozentuale Auslastung der Limits
-- Farbkodierte Statusanzeige:
-  - Grün: < 90% des Limits
-  - Gelb: 90-99% des Limits
-  - Rot: ≥ 100% des Limits
-
-#### Screenshot: Zusammenfassung
-![Zusammenfassung Screenshot](screenshots/abschuss-summary.png)
-*Die Zusammenfassungsansicht zeigt eine Übersichtstabelle mit aktuellen Zählerständen, konfigurierten Limits und farbkodierten Statusbadges (grün/gelb/rot) für jede Kategorie.*
-
-### 4.4 Limitkonfiguration `[abschuss_limits]`
-```
-[abschuss_limits species="Rotwild"]
-```
-
-**Parameter:**
-- `species`: Wildart (Pflicht)
-
-**Funktionalität:**
-- **Administrationstool** (nur für Benutzer mit `manage_options`)
-- Konfiguration von Soll-Werten pro Kategorie
-- "Überschießen möglich?" Checkbox pro Kategorie
-- AJAX-basiertes Speichern
-- Echtzeit-Statusanzeige der aktuellen Auslastung
-
-#### Screenshot: Limitkonfiguration
-![Limitkonfiguration Screenshot](screenshots/abschuss-limits.png)
-*Die Limitkonfiguration zeigt eine Administrationstabelle mit Eingabefeldern für Soll-Werte, Checkboxen für "Überschießen möglich?" und Live-Statusanzeige der aktuellen Auslastung.*
-
-## 5. Backend-Administration
-
-> **Hinweis:** Die folgenden Screenshots zeigen die Backend-Administrationsseiten für Benutzer mit `manage_options` Berechtigung.
-
-### 5.1 Hauptnavigation
-Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
-
-### 5.2 Übersicht
-- **Wildartauswahl**: Dropdown zur Auswahl der anzuzeigenden Wildart
-- **Zusammenfassungsstatistiken**: Gesamtanzahl Meldungen, aktuelle Zählstände
-- **Kategorienübersicht**: Tabelle aller Kategorien mit:
-  - Aktueller Zählerstand (Ist)
-  - Konfiguriertes Limit (Soll)
-  - Überschreitungsstatus
-  - Prozentuale Auslastung
-  - Farbkodierte Statusbadges
-
-#### Screenshot: Backend Übersicht
-![Backend Übersicht Screenshot](screenshots/backend-overview.png)
-*Die Backend-Übersicht zeigt die Wildartauswahl, Zusammenfassungsstatistiken und eine detaillierte Kategorienübersicht mit Ist/Soll-Werten und Statusbadges.*
-
-### 5.3 Abschussplanung
-- **Wildartspezifische Konfiguration**: Dropdown zur Wildartauswahl
-- **Limitverwaltung**: 
-  - Numerische Eingabe für Soll-Werte pro Kategorie
-  - Checkbox "Überschießen möglich?" pro Kategorie
-  - Live-Vorschau der aktuellen Auslastung
-- **Speicherfunktion**: AJAX-basiert mit Erfolgsmeldungen
-- **Validierung**: Numerische Limits, Sicherheitschecks
-
-#### Screenshot: Abschussplanung
-![Abschussplanung Screenshot](screenshots/backend-planning.png)
-*Die Abschussplanung zeigt die wildartspezifische Konfiguration mit Dropdown-Auswahl, Eingabefeldern für Limits, Checkboxen für Überschreitungen und Live-Vorschau der Auslastung.*
-
-### 5.4 Wildarten
-- **CRUD-Operationen**: Erstellen, Lesen, Bearbeiten, Löschen von Wildarten
-- **Dynamische Liste**: Eingabefelder mit Hinzufügen/Entfernen-Buttons
-- **Persistierung**: Änderungen werden sofort in allen anderen Bereichen übernommen
-
-#### Screenshot: Wildarten-Verwaltung
-![Wildarten Screenshot](screenshots/backend-species.png)
-*Die Wildarten-Verwaltung zeigt dynamische Eingabefelder mit Hinzufügen/Entfernen-Buttons und Speicherfunktion für die Konfiguration verfügbarer Wildarten.*
-
-### 5.5 Kategorien
-- **CRUD-Operationen**: Erstellen, Lesen, Bearbeiten, Löschen von Kategorien
-- **Dynamische Liste**: Eingabefelder mit Hinzufügen/Entfernen-Buttons
-- **Globale Verfügbarkeit**: Kategorien stehen für alle Wildarten zur Verfügung
-
-#### Screenshot: Kategorien-Verwaltung
-![Kategorien Screenshot](screenshots/backend-categories.png)
-*Die Kategorien-Verwaltung zeigt die CRUD-Operationen mit dynamischen Eingabefeldern und globaler Verfügbarkeit für alle Wildarten.*
-
-### 5.6 Datenbankeinstellungen
-- **Multi-Datenbank-Unterstützung**:
-  - SQLite (Standard)
-  - MySQL
-  - PostgreSQL
-- **Konfigurationsoptionen**:
-  - Datenbanktyp-Auswahl
-  - Verbindungsparameter (Host, Port, Benutzername, Passwort)
-  - Dateiname für SQLite
-- **Verbindungstest**: Test-Button zur Validierung der Datenbankverbindung
-
-#### Screenshot: Datenbankeinstellungen
-![Datenbankeinstellungen Screenshot](screenshots/backend-database.png)
-*Die Datenbankeinstellungen zeigen die Multi-Datenbank-Unterstützung mit Auswahloptionen für SQLite/MySQL/PostgreSQL, Konfigurationsfeldern und Verbindungstest-Funktionalität.*
-
-## 6. Datenmodell
-
-### 6.1 Abschussmeldungen
-```sql
-- ID: Eindeutige Kennung
-- user_id: WordPress Benutzer-ID
-- game_species: Wildart
-- field1: Abschussdatum (DATUM)
-- field2: Kategorie (TEXT)
-- field3: WUS (INTEGER, optional)
-- field4: Bemerkung (TEXT, optional)
-- created_at: Erstellungszeitpunkt
-```
-
-### 6.2 WordPress Options
-- `ahgmh_species`: Array der verfügbaren Wildarten
-- `ahgmh_categories`: Array der verfügbaren Kategorien
-- `abschuss_category_limits_{species}`: Limits pro Wildart
-- `abschuss_category_allow_exceeding_{species}`: Überschreitungseinstellungen pro Wildart
-- `abschuss_db_config`: Datenbankkonfiguration
-
-## 7. Technische Anforderungen
-
-### 7.1 WordPress-Anforderungen
-- **WordPress Version**: 5.0 oder höher
-- **PHP Version**: 7.4 oder höher
-- **MySQL Version**: 5.6 oder höher (falls MySQL verwendet)
-
-### 7.2 Abhängigkeiten
-- **jQuery**: Für Frontend-Interaktivität
-- **jQuery UI**: Für Datepicker-Funktionalität
-- **Bootstrap CSS**: Für responsive Layouts (optional)
-
-### 7.3 Datenbankunterstützung
-- **SQLite**: Standard, keine zusätzliche Konfiguration erforderlich
-- **MySQL**: WordPress-Standard-Datenbank
-- **PostgreSQL**: Erweiterte Option für große Installationen
-
-## 8. Sicherheitsanforderungen
-
-### 8.1 Authentifizierung
-- WordPress-native Authentifizierung erforderlich
-- Capability-basierte Zugriffskontrollen (`manage_options` für Administration)
-
-### 8.2 Datenvalidierung
-- **Nonce-Verifikation**: Alle AJAX-Calls und Formulare
-- **Sanitization**: Alle Benutzereingaben werden bereinigt
-- **Validation**: Datentyp- und Wertebereichsprüfungen
-
-### 8.3 SQL-Injection-Schutz
-- Prepared Statements für alle Datenbankoperationen
-- WordPress Database Abstraction Layer
-
-### 8.4 Cross-Site-Scripting (XSS) Schutz
-- `esc_html()`, `esc_attr()` für alle Ausgaben
-- Validierung von HTML-Inhalten
-
-## 9. Benutzerfreundlichkeit
-
-### 9.1 Responsive Design
-- Mobile-optimierte Formulare und Tabellen
-- Touch-freundliche Bedienelemente
-- Adaptive Layouts für verschiedene Bildschirmgrößen
-
-### 9.2 Internationalisierung
-- Deutsche Übersetzungen für alle Texte
-- Verwendung von WordPress `__()` Funktionen
-- Textdomain: `abschussplan-hgmh`
-
-### 9.3 Barrierefreiheit
-- Semantic HTML-Struktur
-- Tastaturnavigation möglich
-- Screen-Reader-kompatible Labels
-
-## 10. Performance-Anforderungen
-
-### 10.1 Ladezeiten
-- AJAX-basierte Interaktionen für schnelle Responsivität
-- Paginierung für große Datenmengen
-- Optimierte Datenbankabfragen
-
-### 10.2 Skalierbarkeit
-- Unterstützung für mehrere tausend Abschussmeldungen
-- Effiziente Indexierung der Datenbank
-- Caching-freundliche Implementierung
-
-## 11. Wartung und Support
-
-### 11.1 Logging
-- Detaillierte Fehlerprotokollierung
-- Debug-Modi für Entwicklung
-- Console-Logging für AJAX-Operationen
-
-### 11.2 Backup-Kompatibilität
-- Unterstützung für WordPress-Backup-Plugins
-- Exportierbare Konfiguration
-- Datenbank-agnostische Datenstruktur
-
-### 11.3 Update-Sicherheit
-- Rückwärtskompatible Datenstrukturen
-- Migrationsroutinen für Datenbankänderungen
-- Konfigurationssicherung bei Updates
-
-## 12. Compliance und Rechtskonformität
-
-### 12.1 Datenschutz (DSGVO)
-- Minimale Datenerfassung
-- Benutzer-ID-Verknüpfung zu WordPress-Konten
-- Löschbarkeit von Benutzerdaten
-
-### 12.2 Jagdrechtliche Anforderungen
-- Vollständige Erfassung aller relevanten Abschussdaten
-- Nachvollziehbare Dokumentation
-- Exportierbare Berichte für Behörden
-
-### 12.3 Audit-Trail
-- Zeitstempel für alle Änderungen
-- Benutzer-ID-Verknüpfung für Nachverfolgbarkeit
-- Unveränderlichkeit gespeicherter Meldungen
-
-## 13. Systemarchitektur-Diagramme
-
-Die folgenden Diagramme veranschaulichen die technische Architektur und Datenflüsse des Abschussplan HGMH Plugins.
-
-### 13.1 Plugin-Architektur-Übersicht
-
-Dieses Diagramm zeigt die Gesamtarchitektur des Plugins mit allen Hauptkomponenten, Benutzerrollen und deren Interaktionen.
-
-```mermaid
-graph TB
-    %% Main Plugin Structure
-    subgraph "WordPress Plugin: Abschussplan HGMH"
-        MainPlugin[abschussplan-hgmh.php<br/>Main Plugin File]
-        
-        subgraph "Core Classes"
-            FormHandler[AHGMH_Form_Handler<br/>Form Operations & Shortcodes]
-            AdminPage[AHGMH_Admin_Page<br/>Backend Administration]
-            Database[AHGMH_Database<br/>Data Persistence]
-        end
-        
-        subgraph "Frontend Shortcodes"
-            FormShortcode["[abschuss_form]<br/>Submission Form"]
-            TableShortcode["[abschuss_table]<br/>Data Display"]
-            SummaryShortcode["[abschuss_summary]<br/>Statistics Overview"]
-            LimitsShortcode["[abschuss_limits]<br/>Limits Configuration"]
-        end
-        
-        subgraph "Admin Backend"
-            OverviewPage[Übersicht<br/>Species-specific Overview]
-            PlanningPage[Abschussplanung<br/>Limits Management]
-            SpeciesPage[Wildarten<br/>Species Management]
-            CategoriesPage[Kategorien<br/>Categories Management]
-            DatabasePage[Datenbankeinstellungen<br/>DB Configuration]
-        end
-        
-        subgraph "Data Storage"
-            WPOptions[WordPress Options<br/>Configuration Data]
-            SubmissionDB[Database Tables<br/>Submission Records]
-        end
-    end
-    
-    %% User Interactions
-    subgraph "User Roles"
-        Hunters[Hunters<br/>Logged-in Users]
-        Admins[Administrators<br/>manage_options]
-        Anonymous[Anonymous Users]
-    end
-    
-    %% External Systems
-    subgraph "External Dependencies"
-        WordPress[WordPress Core<br/>Authentication & Capabilities]
-        jQuery[jQuery/jQuery UI<br/>Frontend Interactions]
-        DBSystems[Database Systems<br/>SQLite/MySQL/PostgreSQL]
-    end
-    
-    %% Connections - Main Plugin Structure
-    MainPlugin --> FormHandler
-    MainPlugin --> AdminPage
-    MainPlugin --> Database
-    
-    %% Frontend Shortcode Connections
-    FormHandler --> FormShortcode
-    FormHandler --> TableShortcode
-    FormHandler --> SummaryShortcode
-    FormHandler --> LimitsShortcode
-    
-    %% Backend Admin Connections
-    AdminPage --> OverviewPage
-    AdminPage --> PlanningPage
-    AdminPage --> SpeciesPage
-    AdminPage --> CategoriesPage
-    AdminPage --> DatabasePage
-    
-    %% Data Flow Connections
-    FormHandler --> WPOptions
-    FormHandler --> SubmissionDB
-    AdminPage --> WPOptions
-    Database --> SubmissionDB
-    Database --> DBSystems
-    
-    %% User Access Patterns
-    Hunters --> FormShortcode
-    Hunters --> TableShortcode
-    Hunters --> SummaryShortcode
-    Anonymous -.-> FormShortcode
-    Anonymous -.-> |Redirect to Login| WordPress
-    
-    Admins --> LimitsShortcode
-    Admins --> OverviewPage
-    Admins --> PlanningPage
-    Admins --> SpeciesPage
-    Admins --> CategoriesPage
-    Admins --> DatabasePage
-    
-    %% External Dependencies
-    FormHandler --> WordPress
-    AdminPage --> WordPress
-    FormShortcode --> jQuery
-    LimitsShortcode --> jQuery
-    
-    %% AJAX Connections
-    FormShortcode -.-> |AJAX| FormHandler
-    LimitsShortcode -.-> |AJAX| FormHandler
-    PlanningPage -.-> |AJAX| AdminPage
-    
-    %% Data Relationships
-    WPOptions --> |Species Config| SpeciesPage
-    WPOptions --> |Categories Config| CategoriesPage
-    WPOptions --> |Limits Config| PlanningPage
-    WPOptions --> |Allow Exceeding Config| LimitsShortcode
-    
-    %% Styling
-    classDef userClass fill:#e1f5fe
-    classDef adminClass fill:#fff3e0
-    classDef shortcodeClass fill:#f3e5f5
-    classDef storageClass fill:#e8f5e8
-    classDef externalClass fill:#fce4ec
-    
-    class Hunters,Anonymous userClass
-    class Admins adminClass
-    class FormShortcode,TableShortcode,SummaryShortcode,LimitsShortcode shortcodeClass
-    class WPOptions,SubmissionDB storageClass
-    class WordPress,jQuery,DBSystems externalClass
-```
-
-**Beschreibung:** Die Architektur zeigt die drei Kernklassen (Form Handler, Admin Page, Database), vier Frontend-Shortcodes, fünf Admin-Backend-Seiten und deren Verbindungen. Farbkodierte Bereiche unterscheiden zwischen Benutzerrollen (blau), Admin-Funktionen (orange), Shortcodes (lila), Datenspeicherung (grün) und externen Abhängigkeiten (pink).
-
-### 13.2 Prozessfluss-Diagramm
-
-Dieses Sequenzdiagramm illustriert die wichtigsten Arbeitsabläufe und Datenflüsse zwischen Benutzern, Frontend, Backend und Datenbank.
-
-```mermaid
-sequenceDiagram
-    participant H as Hunter (User)
-    participant F as Frontend Form
-    participant FH as Form Handler
-    participant DB as Database
-    participant A as Admin
-    participant AP as Admin Panel
-    participant WP as WordPress Options
-    
-    Note over H,WP: Hunting Submission Workflow
-    
-    H->>F: Accesses [abschuss_form]
-    F->>FH: Check user authentication
-    FH->>WP: Load species & categories
-    FH->>DB: Get current counts & limits
-    F->>H: Display form with available categories
-    
-    H->>F: Submit hunting record
-    F->>FH: AJAX submission
-    FH->>WP: Check allow_exceeding settings
-    FH->>DB: Validate against limits
-    alt Submission valid
-        FH->>DB: Insert submission
-        FH->>F: Success response
-        F->>H: Show success message
-    else Limit exceeded & no override
-        FH->>F: Error response
-        F->>H: Show limit error
-    end
-    
-    Note over A,WP: Administration Workflow
-    
-    A->>AP: Access admin backend
-    AP->>WP: Load current configuration
-    A->>AP: Modify species/categories/limits
-    AP->>FH: AJAX save request
-    FH->>WP: Update configuration
-    FH->>AP: Confirmation response
-    AP->>A: Show success message
-    
-    Note over H,WP: Data Display Workflow
-    
-    H->>F: View [abschuss_table]
-    F->>FH: Request submission data
-    FH->>DB: Query submissions by species
-    DB->>FH: Return paginated results
-    FH->>F: Render table
-    F->>H: Display submissions
-    
-    H->>F: View [abschuss_summary]
-    F->>FH: Request summary data
-    FH->>DB: Get category counts
-    FH->>WP: Get limits & settings
-    FH->>F: Calculate percentages & status
-    F->>H: Display summary with status badges
-```
-
-**Beschreibung:** Das Sequenzdiagramm zeigt drei Hauptprozesse: 1) **Abschussmeldung-Workflow** - von der Formularanzeige bis zur Validierung und Speicherung, 2) **Administrations-Workflow** - Konfigurationsänderungen durch Administratoren, und 3) **Datenanzeige-Workflow** - wie Tabellen und Zusammenfassungen generiert werden. Besondere Aufmerksamkeit liegt auf der Limitvalidierung mit Überschreitungslogik.
-
-### 13.3 Datenmodell und Beziehungen
-
-Dieses Entity-Relationship-Diagramm zeigt die Datenbankstruktur und die Beziehungen zwischen den verschiedenen Datenentitäten.
-
-```mermaid
-erDiagram
-    WORDPRESS_OPTIONS {
-        string option_name PK
-        longtext option_value
-        string autoload
-    }
-    
-    SUBMISSIONS {
-        int id PK
-        int user_id FK
-        string game_species
-        date field1 "Abschussdatum"
-        string field2 "Kategorie"
-        int field3 "WUS (optional)"
-        text field4 "Bemerkung (optional)"
-        timestamp created_at
-    }
-    
-    WP_USERS {
-        int ID PK
-        string user_login
-        string user_email
-        string display_name
-    }
-    
-    CONFIG_SPECIES {
-        string species_name
-        boolean active
-    }
-    
-    CONFIG_CATEGORIES {
-        string category_name
-        boolean active
-    }
-    
-    CONFIG_LIMITS {
-        string species
-        string category
-        int limit_value
-        boolean allow_exceeding
-    }
-    
-    %% Relationships
-    SUBMISSIONS ||--|| WP_USERS : "user_id references ID"
-    WORDPRESS_OPTIONS ||--o{ CONFIG_SPECIES : "ahgmh_species stores"
-    WORDPRESS_OPTIONS ||--o{ CONFIG_CATEGORIES : "ahgmh_categories stores"
-    WORDPRESS_OPTIONS ||--o{ CONFIG_LIMITS : "abschuss_category_limits_* stores"
-    WORDPRESS_OPTIONS ||--o{ CONFIG_LIMITS : "abschuss_category_allow_exceeding_* stores"
-    
-    CONFIG_SPECIES ||--o{ SUBMISSIONS : "game_species references species_name"
-    CONFIG_CATEGORIES ||--o{ SUBMISSIONS : "field2 references category_name"
-    CONFIG_LIMITS ||--o{ SUBMISSIONS : "validates against limits"
-```
-
-**Beschreibung:** Das Datenmodell zeigt die zentrale **SUBMISSIONS**-Tabelle mit Verknüpfungen zur WordPress-Benutzertabelle. Konfigurationsdaten werden in der **WORDPRESS_OPTIONS**-Tabelle gespeichert, einschließlich Wildarten (`ahgmh_species`), Kategorien (`ahgmh_categories`), Limits (`abschuss_category_limits_*`) und Überschreitungseinstellungen (`abschuss_category_allow_exceeding_*`). Die Stern-Notation (*) steht für wildartspezifische Option-Keys.
-
-### 13.4 Technische Hinweise zu den Diagrammen
-
-- **Architektur-Diagramm**: Zeigt die Plugin-Struktur und Komponentenbeziehungen
-- **Prozessfluss-Diagramm**: Illustriert typische Benutzerinteraktionen und Systemresponses  
-- **Datenmodell-Diagramm**: Dokumentiert die Datenbankstruktur und Referential Integrity
-
-Diese Diagramme dienen als technische Referenz für Entwickler, Systemadministratoren und zur Dokumentation der Plugin-Architektur.
-
-## 14. Screenshots und Visuelle Dokumentation
-
-### 14.1 Verzeichnisstruktur für Screenshots
-```
-screenshots/
-├── abschuss-form.png          # [abschuss_form] Shortcode
-├── abschuss-table.png         # [abschuss_table] Shortcode  
-├── abschuss-summary.png       # [abschuss_summary] Shortcode
-├── abschuss-limits.png        # [abschuss_limits] Shortcode
-├── backend-overview.png       # Übersicht Administrationsseite
-├── backend-planning.png       # Abschussplanung Administrationsseite
-├── backend-species.png        # Wildarten Administrationsseite
-├── backend-categories.png     # Kategorien Administrationsseite
-└── backend-database.png       # Datenbankeinstellungen Administrationsseite
-```
-
-### 14.2 Anleitung für Screenshot-Erstellung
-
-#### Frontend Screenshots (Shortcodes):
-1. **[abschuss_form]**: Zeige das vollständige Formular mit allen Feldern, Validierung und Benutzerauthentifizierung
-2. **[abschuss_table]**: Zeige paginierte Tabelle mit mehreren Einträgen und Navigationselementen
-3. **[abschuss_summary]**: Zeige Übersichtstabelle mit verschiedenen Statusbadges (grün/gelb/rot)
-4. **[abschuss_limits]**: Zeige Administratorformular mit Eingabefeldern und Checkboxen
-
-#### Backend Screenshots:
-1. **Übersicht**: Wildartauswahl-Dropdown und vollständige Kategorienübersicht
-2. **Abschussplanung**: Limitkonfiguration mit Live-Vorschau der Auslastung
-3. **Wildarten**: Dynamische Eingabefelder mit Hinzufügen/Entfernen-Buttons
-4. **Kategorien**: CRUD-Interface für Kategorieverwaltung
-5. **Datenbankeinstellungen**: Datenbanktyp-Auswahl und Konfigurationsoptionen
-
-#### Technische Anforderungen für Screenshots:
-- **Auflösung**: Mindestens 1200px Breite für Desktop-Ansicht
-- **Format**: PNG für beste Qualität
-- **Browser**: Aktueller Chrome/Firefox für konsistente Darstellung
-- **Responsive**: Zusätzliche mobile Screenshots bei Bedarf
-- **Datenschutz**: Keine echten Benutzerdaten in Screenshots verwenden
+### 🎮 Demo & Screenshots
+Live-Demo der Flask-Version verfügbar. Screenshots aller Funktionen im [Screenshots-Verzeichnis](screenshots/).
 
 ---
 
-**Version:** 1.0  
-**Erstellt:** 2025  
-**Zielgruppe:** Entwickler, Systemadministratoren, Jagdrevierverwalter  
-**Status:** Vollständig implementiert
+## 🚀 Quick Start
+
+### Flask Version (Empfohlen für lokale Tests)
+```bash
+# Repository klonen
+git clone https://github.com/foe05/pr25_one.git
+cd pr25_one
+
+# Dependencies installieren
+uv sync
+
+# Entwicklungsserver starten
+python main.py
+```
+➡️ **Öffne:** http://localhost:5000
+
+### WordPress Plugin
+1. Upload `wp-content/plugins/abschussplan-hgmh/` nach WordPress
+2. Plugin in Admin-Panel aktivieren
+3. Shortcodes verwenden (siehe [Shortcode-Referenz](#-shortcode-referenz))
+
+---
+
+## 📊 CSV Export Funktionen
+
+### 🔗 Export URLs
+| Funktion | URL Format | Beispiel |
+|----------|------------|----------|
+| **Alle Einträge** | `/export_csv` | `yourdomain.com/export_csv` |
+| **Nach Wildart** | `/export_csv?category=Rotwild` | Filter nach spezifischer Wildart |
+| **Datumsbereich** | `/export_csv?from=2024-01-01&to=2024-12-31` | Zeitraum-Filter |
+| **Kombiniert** | `/export_csv?category=Damwild&from=2024-01-01` | Wildart + Datum |
+
+### 📋 Exportierte Spalten
+1. **ID** - Eindeutige Datensatz-ID
+2. **Wildart** - Game Species (Rotwild, Damwild, etc.)
+3. **Abschussdatum** - Hunting Date
+4. **Abschuss** - Category (Wildkalb, Schmaltier, etc.)
+5. **WUS** - Wildlife Identification Number (1000000-9999999)
+6. **Bemerkung** - Remarks/Comments
+7. **Erstellt von** - Created by User
+8. **Erstellt am** - Creation Timestamp
+
+### ⚙️ Export-Konfiguration
+- **Dateiname**: Konfigurierbar im Admin-Backend
+- **Format**: Standard CSV (kommagetrennt, UTF-8)
+- **Zugriff**: Öffentlich (keine Authentifizierung erforderlich)
+- **Automatisierung**: Geeignet für Scripts und externe Systeme
+
+---
+
+## 🎨 Frontend Funktionen
+
+### 📝 Abschussformular
+```html
+[abschuss_form species="Rotwild"]
+```
+- **WUS Validierung**: 7-stellige Nummer (1000000-9999999)
+- **Limitprüfung**: Automatische Validierung gegen Soll-Werte
+- **AJAX Submission**: Echtzeitvalidierung ohne Seitenneuladung
+
+### 📊 Datenübersicht
+```html
+[abschuss_table species="Rotwild" limit="10"]
+```
+- **Export Button**: Direkter CSV-Download mit aktuellen Filtern
+- **Paginierung**: Effiziente Darstellung großer Datenmengen
+- **Responsive**: Mobile-optimierte Tabellendarstellung
+
+### 📈 Zusammenfassung
+```html
+[abschuss_summary species="Rotwild"]
+```
+- **Status-Badges**: Farbkodierte Limit-Auslastung (🟢 🟡 🔴)
+- **Prozentanzeige**: Live-Kalkulation der Zielerreichung
+
+---
+
+## ⚙️ Administration
+
+### 🎛️ Konfigurationsbereiche
+
+#### **Datenbank & Export**
+- **Multi-DB Support**: SQLite, MySQL, PostgreSQL
+- **Export-Dateiname**: Anpassbarer CSV-Dateiname
+- **Verbindungstest**: Validierung der DB-Einstellungen
+
+#### **Wildarten & Kategorien**
+- **Dynamische Verwaltung**: CRUD-Operationen für alle Wildarten
+- **Globale Kategorien**: Verfügbar für alle Wildarten
+- **Live-Updates**: Sofortige Übernahme in Frontend
+
+#### **Limit-Management**
+- **Spezies-spezifisch**: Separate Limits pro Wildart
+- **Überschreitungslogik**: "Überschießen möglich?" Option
+- **Live-Vorschau**: Aktuelle Auslastung in Echtzeit
+
+### 🔗 Export URL Generator
+Automatisch generierte URLs mit Copy-to-Clipboard Funktionalität:
+```
+Basis-Export:     /export_csv
+Rotwild-Export:   /export_csv?category=Rotwild  
+Jahres-Export:    /export_csv?from=2024-01-01&to=2024-12-31
+Kombiniert:       /export_csv?category=Damwild&from=2024-01-01&to=2024-12-31
+```
+
+---
+
+## 🛠️ Technische Details
+
+### 📦 Systemanforderungen
+- **Flask Version**: Python 3.11+, Flask 2.0+
+- **WordPress Version**: 5.0+, PHP 7.4+
+- **Databases**: SQLite (default), MySQL 5.6+, PostgreSQL 9.0+
+
+### 🏗️ Architektur
+```
+├── 🌐 Frontend Layer
+│   ├── Flask Templates (Jinja2)
+│   ├── WordPress Shortcodes
+│   └── Responsive Bootstrap UI
+│
+├── 🔧 Application Layer  
+│   ├── Form Validation & Processing
+│   ├── CSV Export Engine
+│   ├── AJAX API Endpoints
+│   └── Authentication & Authorization
+│
+└── 💾 Data Layer
+    ├── Multi-Database Abstraction
+    ├── Settings Management
+    └── Migration Support
+```
+
+### 🔐 Sicherheitsfeatures
+- **Input Validation**: Server & Client-side validation
+- **SQL Injection Protection**: Prepared statements
+- **XSS Prevention**: Output escaping
+- **CSRF Protection**: Nonce verification (WordPress)
+
+### 📊 Datenmodell
+```sql
+-- Haupttabelle: Abschussmeldungen
+custom_form_submissions:
+  - id (PRIMARY KEY)
+  - field1 (Abschussdatum)
+  - field2 (Kategorie) 
+  - field3 (WUS, 1000000-9999999)
+  - field4 (Bemerkung)
+  - created_at (Timestamp)
+
+-- Konfiguration (Key-Value Store)
+settings:
+  - key (export_filename, db_config, etc.)
+  - value (JSON/Text)
+
+-- Kategorielimits
+category_limits:
+  - category (PRIMARY KEY)
+  - max_count (INTEGER)
+```
+
+---
+
+## 📖 API Referenz
+
+### 🎯 Export Endpoints
+
+#### `GET /export_csv`
+Exportiert Abschussmeldungen als CSV-Datei.
+
+**Parameter:**
+- `category` (optional): Filtert nach Wildart (z.B. "Rotwild")
+- `from` (optional): Start-Datum (YYYY-MM-DD)
+- `to` (optional): End-Datum (YYYY-MM-DD)
+
+**Response:**
+- **Content-Type**: `text/csv`
+- **Headers**: `Content-Disposition: attachment; filename=export.csv`
+
+**Beispiele:**
+```bash
+# Alle Daten exportieren
+curl "http://localhost:5000/export_csv" -o export.csv
+
+# Rotwild des Jahres 2024
+curl "http://localhost:5000/export_csv?category=Rotwild&from=2024-01-01&to=2024-12-31" -o rotwild_2024.csv
+
+# Automatisiertes Backup-Script
+#!/bin/bash
+DATE=$(date +%Y-%m-%d)
+curl "http://localhost:5000/export_csv" -o "backup_${DATE}.csv"
+```
+
+### 🔧 Admin Endpoints (Flask)
+- `POST /admin/save_db_config` - Datenbank-Konfiguration speichern
+- `POST /admin/save_limits` - Kategorie-Limits aktualisieren
+- `GET /admin` - Admin-Panel anzeigen
+
+---
+
+## 🎮 Shortcode-Referenz (WordPress)
+
+### `[abschuss_form]`
+```html
+[abschuss_form species="Rotwild"]
+```
+**Parameter:**
+- `species` (required): Wildart-Name
+
+**Features:**
+- ✅ Benutzer-Authentifizierung erforderlich
+- ✅ WUS-Validierung (1000000-9999999)
+- ✅ Limit-basierte Kategorie-Deaktivierung
+- ✅ AJAX-Submission mit Echtzeit-Feedback
+
+### `[abschuss_table]` 
+```html
+[abschuss_table species="Rotwild" limit="20" page="1"]
+```
+**Parameter:**
+- `species` (optional): Wildart-Filter
+- `limit` (optional): Einträge pro Seite (default: 10)
+- `page` (optional): Aktuelle Seite (default: 1)
+
+**Features:**
+- ✅ **CSV Export Button** mit aktuellen Filtern
+- ✅ Paginierte Anzeige mit Navigation
+- ✅ Responsive Tabellenlayout
+
+### `[abschuss_summary]`
+```html
+[abschuss_summary species="Rotwild"]
+```
+**Parameter:**
+- `species` (required): Wildart-Name
+
+**Features:**
+- ✅ Ist/Soll-Vergleich mit Prozentanzeige
+- ✅ Status-Badges: 🟢 (<90%) 🟡 (90-99%) 🔴 (≥100%)
+- ✅ Live-Kalkulation der Zielerreichung
+
+### `[abschuss_limits]`
+```html
+[abschuss_limits species="Rotwild"]
+```
+**Parameter:**
+- `species` (required): Wildart-Name
+
+**Features:**
+- ✅ Nur für `manage_options` Benutzer
+- ✅ AJAX-basierte Konfiguration
+- ✅ "Überschießen möglich?" Checkboxen
+
+---
+
+## 🔧 Entwicklung & Deployment
+
+### 🛠️ Lokale Entwicklung
+```bash
+# Repository Setup
+git clone https://github.com/foe05/pr25_one.git
+cd pr25_one
+
+# Python Dependencies (uv empfohlen)
+uv sync
+# oder mit pip:
+pip install -r requirements.txt
+
+# Development Server
+python main.py
+
+# Production Server (Gunicorn)
+gunicorn --bind 0.0.0.0:5000 main:app
+```
+
+### 🐳 Docker Deployment
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
+```
+
+### ☁️ Replit Deployment
+1. **Import Repository**: `https://github.com/foe05/pr25_one`
+2. **Auto-Configuration**: `.replit` wird automatisch erkannt
+3. **Run**: Click "Run" - Gunicorn startet automatisch
+
+### 🌐 WordPress Installation
+1. **Upload**: `wp-content/plugins/abschussplan-hgmh/`
+2. **Aktivierung**: WordPress Admin → Plugins → Aktivieren
+3. **Konfiguration**: Abschussplan → Datenbankeinstellungen
+4. **Shortcodes**: In Seiten/Posts verwenden
+
+---
+
+## 📂 Projektstruktur
+
+```
+pr25_one/
+├── 📄 main.py                 # Flask Hauptanwendung
+├── 📁 templates/              # Jinja2 Templates
+│   ├── index.html            # Hauptformular
+│   ├── admin.html            # Admin-Panel mit Export-URLs
+│   └── submissions.html      # Datentabelle mit Export-Button
+├── 📁 wp-content/plugins/     # WordPress Plugin
+│   └── abschussplan-hgmh/    # Plugin-Verzeichnis
+├── 📁 screenshots/           # UI Screenshots
+├── 📊 form_submissions.db     # SQLite Datenbank
+├── ⚙️ pyproject.toml          # Python Dependencies (uv)
+├── 🐳 .replit                 # Replit Konfiguration
+├── 📖 README.md               # Diese Dokumentation
+├── 🤖 AGENT.md                # KI-Assistent Notizen
+└── 📋 ANFORDERUNGEN.md        # Deutsche Spezifikation
+```
+
+---
+
+## 🆕 Changelog
+
+### Version 1.5.0 (Aktuell) - CSV Export Update
+- ✅ **CSV Export Engine** - Vollständige Datenexporte
+- ✅ **Export-Button** - Direkter Download aus Datentabelle
+- ✅ **URL-basierter Export** - Automatisierung & externe Zugriffe
+- ✅ **Datumsfilter** - from/to Parameter für Zeitraum-Exporte
+- ✅ **Admin Export-URLs** - Copy-to-Clipboard Generator
+- ✅ **WUS Validierung** - Aktualisierte Constraints (1000000-9999999)
+- ✅ **Bootstrap Icons** - Verbesserte UI mit Icons
+
+### Version 1.0 - Basis Implementation
+- ✅ **Multi-Database Support** (SQLite/MySQL/PostgreSQL)
+- ✅ **WordPress Shortcodes** (4 Shortcodes)
+- ✅ **Admin Backend** (5 Konfigurationsbereiche)
+- ✅ **Responsive Design** & Mobile Support
+- ✅ **AJAX Forms** & Real-time Validation
+- ✅ **Limit Management** mit Überschreitungslogik
+
+---
+
+## 🤝 Support & Kontakt
+
+### 📋 Bug Reports & Feature Requests
+- **GitHub Issues**: https://github.com/foe05/pr25_one/issues
+- **Dokumentation**: Siehe diese README.md
+- **Screenshots**: [screenshots/](screenshots/) Verzeichnis
+
+### 🏷️ Labels & Kategorien
+- `enhancement` - Neue Features
+- `bug` - Fehlerbehebungen  
+- `documentation` - Dokumentation
+- `csv-export` - CSV Export Features
+- `wordpress` - WordPress-spezifische Issues
+
+### 📞 Support-Kanäle
+1. **GitHub Issues** (bevorzugt)
+2. **Code Review** via Pull Requests
+3. **Dokumentation** in README.md
+
+---
+
+## 📜 Lizenz
+
+**MIT License** - Siehe [LICENSE](LICENSE) Datei.
+
+**Entwickelt für:** Deutsche Jagdreviere & Wildtiermanagement  
+**Sprache:** Deutsch (UI) + Englisch (Code/Docs)  
+**Status:** Production Ready ✅
+
+---
+
+*⭐ Star dieses Repository wenn es hilfreich war!*

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 import os
 import sqlite3
 import json
@@ -139,11 +139,23 @@ def admin_panel():
     limits = get_category_limits()
     counts = get_category_counts()
     
+    # Get current export filename setting
+    try:
+        conn = sqlite3.connect('form_submissions.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT value FROM settings WHERE key = ?', ('export_filename',))
+        result = cursor.fetchone()
+        export_filename = result[0] if result else 'abschuss_export'
+        conn.close()
+    except Exception:
+        export_filename = 'abschuss_export'
+    
     return render_template(
         'admin.html',
         categories=categories,
         limits=limits,
-        counts=counts
+        counts=counts,
+        export_filename=export_filename
     )
 
 # Admin - Save database configuration
@@ -156,7 +168,21 @@ def save_db_config():
     
     if db_type == 'sqlite':
         db_config['sqlite_file'] = request.form.get('sqlite_file', 'form_submissions.db')
-    elif db_type == 'postgresql':
+    
+    # Save export filename setting regardless of database type
+    export_filename = request.form.get('export_filename', 'abschuss_export')
+    try:
+        cursor = sqlite3.connect('form_submissions.db').cursor()
+        cursor.execute(
+            'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+            ('export_filename', export_filename)
+        )
+        cursor.connection.commit()
+        cursor.connection.close()
+    except Exception:
+        pass  # Ignore errors if settings table doesn't exist yet
+        
+    if db_type == 'postgresql':
         db_config['host'] = request.form.get('pg_host', 'localhost')
         db_config['port'] = request.form.get('pg_port', '5432')
         db_config['dbname'] = request.form.get('pg_dbname', '')
@@ -430,6 +456,93 @@ def view_submissions():
             total_count=0,
             error=str(e)
         )
+
+# CSV Export Route
+@app.route('/export_csv')
+def export_csv():
+    category = request.args.get('category', '')
+    from_date = request.args.get('from', '')
+    to_date = request.args.get('to', '')
+    
+    # Get export filename from settings
+    try:
+        conn = sqlite3.connect('form_submissions.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT value FROM settings WHERE key = ?', ('export_filename',))
+        result = cursor.fetchone()
+        export_filename = result[0] if result else 'abschuss_export'
+        conn.close()
+    except Exception:
+        export_filename = 'abschuss_export'
+    
+    # Build query based on filters
+    query = '''SELECT id, field2 as game_species, field1 as datum, field2 as abschuss, 
+                      field3 as wus, field4 as bemerkung, 'System' as erstellt_von, 
+                      created_at as erstellt_am
+               FROM custom_form_submissions WHERE 1=1'''
+    params = []
+    
+    if category:
+        query += ' AND field2 = ?'
+        params.append(category)
+    
+    if from_date:
+        query += ' AND date(field1) >= ?'
+        params.append(from_date)
+        
+    if to_date:
+        query += ' AND date(field1) <= ?'
+        params.append(to_date)
+    
+    query += ' ORDER BY created_at DESC'
+    
+    try:
+        conn = sqlite3.connect('form_submissions.db')
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        submissions = cursor.fetchall()
+        conn.close()
+        
+        # Create CSV content
+        import csv
+        import io
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['ID', 'Wildart', 'Abschussdatum', 'Abschuss', 'WUS', 'Bemerkung', 'Erstellt von', 'Erstellt am'])
+        
+        # Write data rows
+        for row in submissions:
+            writer.writerow(row)
+        
+        # Prepare response
+        csv_content = output.getvalue()
+        output.close()
+        
+        # Build filename with filters
+        filename_parts = [export_filename]
+        if category:
+            filename_parts.append(category.lower().replace(' ', '_'))
+        if from_date or to_date:
+            if from_date and to_date:
+                filename_parts.append(f"{from_date}_to_{to_date}")
+            elif from_date:
+                filename_parts.append(f"from_{from_date}")
+            elif to_date:
+                filename_parts.append(f"until_{to_date}")
+        
+        filename = '_'.join(filename_parts) + '.csv'
+        
+        return Response(
+            csv_content,
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
+        )
+        
+    except Exception as e:
+        return jsonify({'error': f'Export failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

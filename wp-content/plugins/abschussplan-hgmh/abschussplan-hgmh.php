@@ -3,7 +3,7 @@
  * Plugin Name: Abschussplan HGMH
  * Plugin URI: #
  * Description: Collect and view game shoots for registration with local hunting authorities in Germany.
- * Version: 1.0.0
+ * Version: 1.5.0
  * Author: foe05
  * Text Domain: abschussplan-hgmh
  */
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('AHGMH_PLUGIN_VERSION', '1.0.0');
+define('AHGMH_PLUGIN_VERSION', '1.5.0');
 
 // Include required files
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';

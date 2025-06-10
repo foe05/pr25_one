@@ -395,7 +395,7 @@ class AHGMH_Admin_Page {
                     <table class="form-table" role="presentation">
                         <tr>
                             <th scope="row"><?php echo esc_html__('Version', 'abschussplan-hgmh'); ?></th>
-                            <td><?php echo esc_html(defined('AHGMH_PLUGIN_VERSION') ? AHGMH_PLUGIN_VERSION : '1.0.0'); ?></td>
+                            <td><?php echo esc_html(defined('AHGMH_PLUGIN_VERSION') ? AHGMH_PLUGIN_VERSION : '1.5.0'); ?></td>
                         </tr>
                         <tr>
                             <th scope="row"><?php echo esc_html__('Plugin-Verzeichnis', 'abschussplan-hgmh'); ?></th>

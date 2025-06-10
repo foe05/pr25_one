@@ -107,11 +107,18 @@
         $('#field3').on('input', function() {
             const $field = $(this);
             const fieldValue = $field.val();
+            const numValue = parseInt(fieldValue);
             
             // Check if WUS exceeds 7 digits
             if (fieldValue && fieldValue.length > 7) {
                 alert('WUS-Nummer darf maximal 7 Stellen haben.');
                 $field.val(fieldValue.substring(0, 7)); // Truncate to 7 digits
+            }
+            
+            // Check if WUS is below minimum (1000000)
+            if (fieldValue && !isNaN(numValue) && numValue < 1000000) {
+                alert('WUS-Nummer muss mindestens 1000000 sein.');
+                $field.val('');
             }
         });
     });
