@@ -50,6 +50,8 @@ Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung f
 
 ## 4. Frontend-Funktionalität (Shortcodes)
 
+> **Hinweis:** Die folgenden Screenshots zeigen die tatsächliche Darstellung der Shortcodes im Frontend.
+
 ### 4.1 Abschussformular `[abschuss_form]`
 ```
 [abschuss_form species="Rotwild"]
@@ -71,6 +73,10 @@ Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung f
   - AJAX-basierte Echtzeitvalidierung
 - **Verhalten**: Kategorien werden automatisch deaktiviert wenn Limit erreicht und Überschreitung nicht erlaubt
 
+#### Screenshot: Abschussformular
+![Abschussformular Screenshot](screenshots/abschuss-form.png)
+*Das Abschussformular zeigt die Benutzerauthentifizierung, Eingabefelder für Datum, Kategorie-Dropdown, WUS und Bemerkung. Kategorien sind entsprechend ihrer Limit-Status aktiviert/deaktiviert.*
+
 ### 4.2 Abschusstabelle `[abschuss_table]`
 ```
 [abschuss_table species="Rotwild" limit="10" page="1"]
@@ -86,6 +92,10 @@ Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung f
 - Filterung nach Wildart
 - Sortierung nach Datum (neueste zuerst)
 - Responsive Tabellendarstellung
+
+#### Screenshot: Abschusstabelle
+![Abschusstabelle Screenshot](screenshots/abschuss-table.png)
+*Die Abschusstabelle zeigt eine paginierte Liste aller Meldungen mit Spalten für Datum, Kategorie, WUS, Bemerkung und Benutzer. Navigation zwischen Seiten und responsive Layout.*
 
 ### 4.3 Zusammenfassung `[abschuss_summary]`
 ```
@@ -103,6 +113,10 @@ Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung f
   - Gelb: 90-99% des Limits
   - Rot: ≥ 100% des Limits
 
+#### Screenshot: Zusammenfassung
+![Zusammenfassung Screenshot](screenshots/abschuss-summary.png)
+*Die Zusammenfassungsansicht zeigt eine Übersichtstabelle mit aktuellen Zählerständen, konfigurierten Limits und farbkodierten Statusbadges (grün/gelb/rot) für jede Kategorie.*
+
 ### 4.4 Limitkonfiguration `[abschuss_limits]`
 ```
 [abschuss_limits species="Rotwild"]
@@ -118,7 +132,13 @@ Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung f
 - AJAX-basiertes Speichern
 - Echtzeit-Statusanzeige der aktuellen Auslastung
 
+#### Screenshot: Limitkonfiguration
+![Limitkonfiguration Screenshot](screenshots/abschuss-limits.png)
+*Die Limitkonfiguration zeigt eine Administrationstabelle mit Eingabefeldern für Soll-Werte, Checkboxen für "Überschießen möglich?" und Live-Statusanzeige der aktuellen Auslastung.*
+
 ## 5. Backend-Administration
+
+> **Hinweis:** Die folgenden Screenshots zeigen die Backend-Administrationsseiten für Benutzer mit `manage_options` Berechtigung.
 
 ### 5.1 Hauptnavigation
 Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
@@ -133,6 +153,10 @@ Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
   - Prozentuale Auslastung
   - Farbkodierte Statusbadges
 
+#### Screenshot: Backend Übersicht
+![Backend Übersicht Screenshot](screenshots/backend-overview.png)
+*Die Backend-Übersicht zeigt die Wildartauswahl, Zusammenfassungsstatistiken und eine detaillierte Kategorienübersicht mit Ist/Soll-Werten und Statusbadges.*
+
 ### 5.3 Abschussplanung
 - **Wildartspezifische Konfiguration**: Dropdown zur Wildartauswahl
 - **Limitverwaltung**: 
@@ -142,15 +166,27 @@ Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
 - **Speicherfunktion**: AJAX-basiert mit Erfolgsmeldungen
 - **Validierung**: Numerische Limits, Sicherheitschecks
 
+#### Screenshot: Abschussplanung
+![Abschussplanung Screenshot](screenshots/backend-planning.png)
+*Die Abschussplanung zeigt die wildartspezifische Konfiguration mit Dropdown-Auswahl, Eingabefeldern für Limits, Checkboxen für Überschreitungen und Live-Vorschau der Auslastung.*
+
 ### 5.4 Wildarten
 - **CRUD-Operationen**: Erstellen, Lesen, Bearbeiten, Löschen von Wildarten
 - **Dynamische Liste**: Eingabefelder mit Hinzufügen/Entfernen-Buttons
 - **Persistierung**: Änderungen werden sofort in allen anderen Bereichen übernommen
 
+#### Screenshot: Wildarten-Verwaltung
+![Wildarten Screenshot](screenshots/backend-species.png)
+*Die Wildarten-Verwaltung zeigt dynamische Eingabefelder mit Hinzufügen/Entfernen-Buttons und Speicherfunktion für die Konfiguration verfügbarer Wildarten.*
+
 ### 5.5 Kategorien
 - **CRUD-Operationen**: Erstellen, Lesen, Bearbeiten, Löschen von Kategorien
 - **Dynamische Liste**: Eingabefelder mit Hinzufügen/Entfernen-Buttons
 - **Globale Verfügbarkeit**: Kategorien stehen für alle Wildarten zur Verfügung
+
+#### Screenshot: Kategorien-Verwaltung
+![Kategorien Screenshot](screenshots/backend-categories.png)
+*Die Kategorien-Verwaltung zeigt die CRUD-Operationen mit dynamischen Eingabefeldern und globaler Verfügbarkeit für alle Wildarten.*
 
 ### 5.6 Datenbankeinstellungen
 - **Multi-Datenbank-Unterstützung**:
@@ -162,6 +198,10 @@ Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
   - Verbindungsparameter (Host, Port, Benutzername, Passwort)
   - Dateiname für SQLite
 - **Verbindungstest**: Test-Button zur Validierung der Datenbankverbindung
+
+#### Screenshot: Datenbankeinstellungen
+![Datenbankeinstellungen Screenshot](screenshots/backend-database.png)
+*Die Datenbankeinstellungen zeigen die Multi-Datenbank-Unterstützung mit Auswahloptionen für SQLite/MySQL/PostgreSQL, Konfigurationsfeldern und Verbindungstest-Funktionalität.*
 
 ## 6. Datenmodell
 
@@ -542,6 +582,44 @@ erDiagram
 - **Datenmodell-Diagramm**: Dokumentiert die Datenbankstruktur und Referential Integrity
 
 Diese Diagramme dienen als technische Referenz für Entwickler, Systemadministratoren und zur Dokumentation der Plugin-Architektur.
+
+## 14. Screenshots und Visuelle Dokumentation
+
+### 14.1 Verzeichnisstruktur für Screenshots
+```
+screenshots/
+├── abschuss-form.png          # [abschuss_form] Shortcode
+├── abschuss-table.png         # [abschuss_table] Shortcode  
+├── abschuss-summary.png       # [abschuss_summary] Shortcode
+├── abschuss-limits.png        # [abschuss_limits] Shortcode
+├── backend-overview.png       # Übersicht Administrationsseite
+├── backend-planning.png       # Abschussplanung Administrationsseite
+├── backend-species.png        # Wildarten Administrationsseite
+├── backend-categories.png     # Kategorien Administrationsseite
+└── backend-database.png       # Datenbankeinstellungen Administrationsseite
+```
+
+### 14.2 Anleitung für Screenshot-Erstellung
+
+#### Frontend Screenshots (Shortcodes):
+1. **[abschuss_form]**: Zeige das vollständige Formular mit allen Feldern, Validierung und Benutzerauthentifizierung
+2. **[abschuss_table]**: Zeige paginierte Tabelle mit mehreren Einträgen und Navigationselementen
+3. **[abschuss_summary]**: Zeige Übersichtstabelle mit verschiedenen Statusbadges (grün/gelb/rot)
+4. **[abschuss_limits]**: Zeige Administratorformular mit Eingabefeldern und Checkboxen
+
+#### Backend Screenshots:
+1. **Übersicht**: Wildartauswahl-Dropdown und vollständige Kategorienübersicht
+2. **Abschussplanung**: Limitkonfiguration mit Live-Vorschau der Auslastung
+3. **Wildarten**: Dynamische Eingabefelder mit Hinzufügen/Entfernen-Buttons
+4. **Kategorien**: CRUD-Interface für Kategorieverwaltung
+5. **Datenbankeinstellungen**: Datenbanktyp-Auswahl und Konfigurationsoptionen
+
+#### Technische Anforderungen für Screenshots:
+- **Auflösung**: Mindestens 1200px Breite für Desktop-Ansicht
+- **Format**: PNG für beste Qualität
+- **Browser**: Aktueller Chrome/Firefox für konsistente Darstellung
+- **Responsive**: Zusätzliche mobile Screenshots bei Bedarf
+- **Datenschutz**: Keine echten Benutzerdaten in Screenshots verwenden
 
 ---
 
