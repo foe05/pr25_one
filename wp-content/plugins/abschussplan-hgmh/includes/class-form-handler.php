@@ -241,6 +241,15 @@ class AHGMH_Form_Handler {
             $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'custom-form-display');
         }
         
+        // Check if WUS number is unique (if provided)
+        if (!empty($field3) && is_numeric($field3)) {
+            $database = abschussplan_hgmh()->database;
+            $existing_wus = $database->check_wus_exists($field3);
+            if ($existing_wus) {
+                $errors['field3'] = __('Diese WUS-Nummer ist bereits vergeben. Bitte geben Sie eine andere WUS-Nummer an.', 'custom-form-display');
+            }
+        }
+        
         // Check if the selected category has reached its maximum limit (only if exceeding is not allowed)
         if (empty($errors['field2'])) {
             $limits = $this->get_category_limits($game_species);

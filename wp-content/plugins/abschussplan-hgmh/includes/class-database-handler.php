@@ -235,4 +235,30 @@ class AHGMH_Database_Handler {
         
         return (int) $count;
     }
+    
+    /**
+     * Check if WUS number already exists in database
+     * 
+     * @param string $wus_number The WUS number to check
+     * @return bool True if WUS exists, false otherwise
+     */
+    public function check_wus_exists($wus_number) {
+        global $wpdb;
+        
+        $query = "SELECT COUNT(*) FROM $this->table_name WHERE field3 = %s";
+        $count = $wpdb->get_var($wpdb->prepare($query, $wus_number));
+        
+        return (int) $count > 0;
+    }
+    
+    /**
+     * Remove all plugin data (for uninstall)
+     * This method removes the database table
+     */
+    public static function cleanup_database() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $wpdb->query("DROP TABLE IF EXISTS $table_name");
+    }
 }

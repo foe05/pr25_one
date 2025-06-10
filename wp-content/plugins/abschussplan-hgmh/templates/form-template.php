@@ -89,7 +89,7 @@ if (!defined('ABSPATH')) {
         
         <div class="mb-3">
             <label for="field3" class="form-label"><?php echo esc_html__('WUS', 'custom-form-display'); ?></label>
-            <input type="number" class="form-control" id="field3" name="field3" min="0">
+            <input type="number" class="form-control" id="field3" name="field3" min="0" maxlength="7" max="9999999">
             <div class="form-error"></div>
         </div>
         
