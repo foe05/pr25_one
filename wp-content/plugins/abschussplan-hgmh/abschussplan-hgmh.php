@@ -130,6 +130,14 @@ class Abschussplan_HGMH {
             array(),
             AHGMH_PLUGIN_VERSION
         );
+        
+        // Enqueue Bootstrap Icons
+        wp_enqueue_style(
+            'bootstrap-icons',
+            'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css',
+            array(),
+            AHGMH_PLUGIN_VERSION
+        );
 
         // Enqueue jQuery
         wp_enqueue_script('jquery');

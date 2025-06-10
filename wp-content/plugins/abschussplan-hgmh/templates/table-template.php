@@ -18,6 +18,11 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
 <div class="abschuss-table-container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0"><?php echo esc_html__('Abschussmeldungen', 'abschussplan-hgmh'); ?></h2>
+        <div class="export-controls">
+            <button class="btn btn-success export-btn" onclick="exportCSV('<?php echo esc_attr($species); ?>')">
+                <i class="bi bi-download"></i> <?php echo esc_html__('CSV Export', 'abschussplan-hgmh'); ?>
+            </button>
+        </div>
     </div>
     
     <?php if (empty($submissions)) : ?>
@@ -187,3 +192,16 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
         <?php endif; ?>
     <?php endif; ?>
 </div>
+
+<script>
+function exportCSV(species) {
+    // Build export URL
+    let exportUrl = '<?php echo admin_url('admin-ajax.php'); ?>?action=export_abschuss_csv';
+    if (species) {
+        exportUrl += '&species=' + encodeURIComponent(species);
+    }
+    
+    // Trigger download
+    window.location.href = exportUrl;
+}
+</script>

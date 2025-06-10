@@ -88,7 +88,7 @@
                 
                 <div class="mb-3">
                     <label for="field3" class="form-label">WUS</label>
-                    <input type="number" class="form-control" id="field3" name="field3" maxlength="7" max="9999999">
+                    <input type="number" class="form-control" id="field3" name="field3" min="1000000" maxlength="7" max="9999999">
                     <div class="form-error"></div>
                 </div>
                 
@@ -226,6 +226,16 @@
                     if (dateValue >= tomorrow) {
                         $field.addClass('is-invalid');
                         $field.siblings('.form-error').text('Das Datum darf nicht in der Zukunft liegen.').show();
+                    }
+                }
+                
+                // Special validation for WUS field
+                if ($field.attr('id') === 'field3' && fieldValue) {
+                    const numValue = parseInt(fieldValue);
+                    
+                    if (isNaN(numValue) || numValue < 1000000 || numValue > 9999999) {
+                        $field.addClass('is-invalid');
+                        $field.siblings('.form-error').text('WUS muss zwischen 1000000 und 9999999 liegen.').show();
                     }
                 }
             });

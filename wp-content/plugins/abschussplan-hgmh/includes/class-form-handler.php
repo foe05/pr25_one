@@ -33,6 +33,10 @@ class AHGMH_Form_Handler {
         add_action('wp_ajax_save_limits', array($this, 'save_limits'));
         add_action('wp_ajax_save_categories', array($this, 'save_categories'));
         add_action('wp_ajax_save_species', array($this, 'save_species'));
+        
+        // Handle CSV export
+        add_action('wp_ajax_export_abschuss_csv', array($this, 'export_csv'));
+        add_action('wp_ajax_nopriv_export_abschuss_csv', array($this, 'export_csv'));
         add_action('wp_ajax_save_species_limits', array($this, 'save_species_limits'));
         add_action('wp_ajax_load_species_limits', array($this, 'load_species_limits'));
         
@@ -373,6 +377,12 @@ class AHGMH_Form_Handler {
         
         // Save configuration to database
         update_option('abschuss_db_config', $db_config);
+        
+        // Save export filename setting
+        if (isset($_POST['export_filename'])) {
+            $export_filename = sanitize_text_field($_POST['export_filename']);
+            update_option('abschuss_export_filename', $export_filename);
+        }
         
         wp_send_json_success(array(
             'message' => __('Datenbank-Konfiguration erfolgreich gespeichert.', 'custom-form-display')
@@ -1067,5 +1077,118 @@ class AHGMH_Form_Handler {
                 'message' => __('Fehler beim Löschen der Jagdbezirke.', 'abschussplan-hgmh')
             ));
         }
+    }
+    
+    /**
+     * Export submissions as CSV
+     */
+    public function export_csv() {
+        $species = sanitize_text_field($_GET['species'] ?? '');
+        $from_date = sanitize_text_field($_GET['from'] ?? '');
+        $to_date = sanitize_text_field($_GET['to'] ?? '');
+        
+        // Get export filename from WordPress options
+        $export_filename = get_option('abschuss_export_filename', 'abschuss_export');
+        
+        // Get database instance
+        $database = abschussplan_hgmh()->database;
+        
+        // Build query conditions
+        $conditions = array();
+        $params = array();
+        
+        if (!empty($species)) {
+            $conditions[] = 'game_species = %s';
+            $params[] = $species;
+        }
+        
+        if (!empty($from_date)) {
+            $conditions[] = 'DATE(field1) >= %s';
+            $params[] = $from_date;
+        }
+        
+        if (!empty($to_date)) {
+            $conditions[] = 'DATE(field1) <= %s';
+            $params[] = $to_date;
+        }
+        
+        // Build WHERE clause
+        $where_clause = '';
+        if (!empty($conditions)) {
+            $where_clause = 'WHERE ' . implode(' AND ', $conditions);
+        }
+        
+        // Get submissions
+        global $wpdb;
+        $table_name = $database->get_table_name();
+        
+        $query = "SELECT id, game_species, field1, field2, field3, field4, user_id, created_at 
+                  FROM {$table_name} {$where_clause} 
+                  ORDER BY created_at DESC";
+        
+        if (!empty($params)) {
+            $query = $wpdb->prepare($query, $params);
+        }
+        
+        $submissions = $wpdb->get_results($query, ARRAY_A);
+        
+        // Generate CSV content
+        $csv_output = fopen('php://output', 'w');
+        
+        // Build filename with filters
+        $filename_parts = array($export_filename);
+        if (!empty($species)) {
+            $filename_parts[] = sanitize_file_name(strtolower($species));
+        }
+        if (!empty($from_date) || !empty($to_date)) {
+            if (!empty($from_date) && !empty($to_date)) {
+                $filename_parts[] = $from_date . '_to_' . $to_date;
+            } elseif (!empty($from_date)) {
+                $filename_parts[] = 'from_' . $from_date;
+            } elseif (!empty($to_date)) {
+                $filename_parts[] = 'until_' . $to_date;
+            }
+        }
+        
+        $filename = implode('_', $filename_parts) . '.csv';
+        
+        // Set headers for CSV download
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Write CSV header
+        fputcsv($csv_output, array(
+            'ID',
+            'Wildart', 
+            'Abschussdatum',
+            'Abschuss',
+            'WUS',
+            'Bemerkung',
+            'Erstellt von',
+            'Erstellt am'
+        ));
+        
+        // Write data rows
+        foreach ($submissions as $submission) {
+            // Get user display name
+            $user = get_userdata($submission['user_id']);
+            $created_by = $user ? $user->display_name : 'System';
+            
+            fputcsv($csv_output, array(
+                $submission['id'],
+                $submission['game_species'],
+                $submission['field1'],
+                $submission['field2'],
+                $submission['field3'],
+                $submission['field4'],
+                $created_by,
+                $submission['created_at']
+            ));
+        }
+        
+        fclose($csv_output);
+        exit;
     }
 }

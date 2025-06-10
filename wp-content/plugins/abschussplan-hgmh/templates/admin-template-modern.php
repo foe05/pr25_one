@@ -62,6 +62,18 @@ if (!defined('ABSPATH')) {
                             </td>
                         </tr>
                         
+                        <tr>
+                            <th scope="row">
+                                <label for="export_filename"><?php echo esc_html__('Export Dateiname', 'abschussplan-hgmh'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" id="export_filename" name="export_filename" value="<?php echo esc_attr(get_option('abschuss_export_filename', 'abschuss_export')); ?>" class="regular-text" />
+                                <p class="description">
+                                    <?php echo esc_html__('Dateiname für CSV-Exporte (ohne .csv Endung)', 'abschussplan-hgmh'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        
                         <tr id="postgresql-config" <?php echo ($db_config['type'] !== 'postgresql') ? 'style="display: none;"' : ''; ?>>
                             <th scope="row"><?php echo esc_html__('PostgreSQL Einstellungen', 'abschussplan-hgmh'); ?></th>
                             <td>

@@ -486,6 +486,41 @@ class AHGMH_Admin_Page {
                     </table>
                 </div>
             </div>
+
+            <div class="postbox">
+                <div class="postbox-header">
+                    <h2 class="hndle ui-sortable-handle">
+                        <span><?php echo esc_html__('CSV Export Konfiguration', 'abschussplan-hgmh'); ?></span>
+                    </h2>
+                </div>
+                <div class="inside">
+                    <table class="form-table" role="presentation">
+                        <tr>
+                            <th scope="row"><?php echo esc_html__('Export Dateiname', 'abschussplan-hgmh'); ?></th>
+                            <td>
+                                <code><?php echo esc_html(get_option('abschuss_export_filename', 'abschuss_export')); ?></code>
+                                <p class="description">
+                                    <?php echo esc_html__('Aktueller Dateiname für CSV-Exporte. Kann in den Datenbankeinstellungen geändert werden.', 'abschussplan-hgmh'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php echo esc_html__('Dateiname-Schema', 'abschussplan-hgmh'); ?></th>
+                            <td>
+                                <ul>
+                                    <li><strong><?php echo esc_html__('Basis:', 'abschussplan-hgmh'); ?></strong> <code>[dateiname].csv</code></li>
+                                    <li><strong><?php echo esc_html__('Mit Wildart:', 'abschussplan-hgmh'); ?></strong> <code>[dateiname]_[wildart].csv</code></li>
+                                    <li><strong><?php echo esc_html__('Mit Datum:', 'abschussplan-hgmh'); ?></strong> <code>[dateiname]_from_[datum].csv</code></li>
+                                    <li><strong><?php echo esc_html__('Kombiniert:', 'abschussplan-hgmh'); ?></strong> <code>[dateiname]_[wildart]_[von]_to_[bis].csv</code></li>
+                                </ul>
+                                <p class="description">
+                                    <?php echo esc_html__('Automatische Dateibenennung basierend auf Filterparametern.', 'abschussplan-hgmh'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
         </div>
         <?php
     }
@@ -917,8 +952,109 @@ class AHGMH_Admin_Page {
                         </table>
                     </div>
                 </div>
+
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h4 class="hndle ui-sortable-handle">
+                            <span><?php echo esc_html__('CSV Export via URL', 'abschussplan-hgmh'); ?></span>
+                        </h4>
+                    </div>
+                    <div class="inside">
+                        <p><strong><?php echo esc_html__('Direkter CSV-Export über URL-Aufrufe für Automatisierung und externe Systeme:', 'abschussplan-hgmh'); ?></strong></p>
+                        
+                        <h5><?php echo esc_html__('Basis-URL', 'abschussplan-hgmh'); ?></h5>
+                        <div style="background: #f1f1f1; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                            <code><?php echo admin_url('admin-ajax.php?action=export_abschuss_csv'); ?></code>
+                            <button type="button" class="button button-small" onclick="copyToClipboard('<?php echo admin_url('admin-ajax.php?action=export_abschuss_csv'); ?>')" style="margin-left: 10px;">
+                                <?php echo esc_html__('Kopieren', 'abschussplan-hgmh'); ?>
+                            </button>
+                        </div>
+
+                        <h5><?php echo esc_html__('Verfügbare Filter-Parameter', 'abschussplan-hgmh'); ?></h5>
+                        <table class="widefat striped">
+                            <thead>
+                                <tr>
+                                    <th><?php echo esc_html__('Parameter', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Beschreibung', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Format', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Beispiel', 'abschussplan-hgmh'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>species</code></td>
+                                    <td><?php echo esc_html__('Filtert nach Wildart', 'abschussplan-hgmh'); ?></td>
+                                    <td><?php echo esc_html__('Text', 'abschussplan-hgmh'); ?></td>
+                                    <td><code>&species=Rotwild</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>from</code></td>
+                                    <td><?php echo esc_html__('Start-Datum für Zeitraum-Filter', 'abschussplan-hgmh'); ?></td>
+                                    <td>YYYY-MM-DD</td>
+                                    <td><code>&from=2024-01-01</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>to</code></td>
+                                    <td><?php echo esc_html__('End-Datum für Zeitraum-Filter', 'abschussplan-hgmh'); ?></td>
+                                    <td>YYYY-MM-DD</td>
+                                    <td><code>&to=2024-12-31</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h5><?php echo esc_html__('Beispiel-URLs', 'abschussplan-hgmh'); ?></h5>
+                        <div style="margin: 15px 0;">
+                            <p><strong><?php echo esc_html__('Export aller Rotwild-Meldungen:', 'abschussplan-hgmh'); ?></strong></p>
+                            <div style="background: #f1f1f1; padding: 10px; border-radius: 4px; margin: 5px 0;">
+                                <code><?php echo admin_url('admin-ajax.php?action=export_abschuss_csv&species=Rotwild'); ?></code>
+                                <button type="button" class="button button-small" onclick="copyToClipboard('<?php echo admin_url('admin-ajax.php?action=export_abschuss_csv&species=Rotwild'); ?>')" style="margin-left: 10px;">
+                                    <?php echo esc_html__('Kopieren', 'abschussplan-hgmh'); ?>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="margin: 15px 0;">
+                            <p><strong><?php echo esc_html__('Export für Zeitraum 2024:', 'abschussplan-hgmh'); ?></strong></p>
+                            <div style="background: #f1f1f1; padding: 10px; border-radius: 4px; margin: 5px 0;">
+                                <code><?php echo admin_url('admin-ajax.php?action=export_abschuss_csv&from=2024-01-01&to=2024-12-31'); ?></code>
+                                <button type="button" class="button button-small" onclick="copyToClipboard('<?php echo admin_url('admin-ajax.php?action=export_abschuss_csv&from=2024-01-01&to=2024-12-31'); ?>')" style="margin-left: 10px;">
+                                    <?php echo esc_html__('Kopieren', 'abschussplan-hgmh'); ?>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="margin: 15px 0;">
+                            <p><strong><?php echo esc_html__('Kombiniert - Damwild für 2024:', 'abschussplan-hgmh'); ?></strong></p>
+                            <div style="background: #f1f1f1; padding: 10px; border-radius: 4px; margin: 5px 0;">
+                                <code><?php echo admin_url('admin-ajax.php?action=export_abschuss_csv&species=Damwild&from=2024-01-01&to=2024-12-31'); ?></code>
+                                <button type="button" class="button button-small" onclick="copyToClipboard('<?php echo admin_url('admin-ajax.php?action=export_abschuss_csv&species=Damwild&from=2024-01-01&to=2024-12-31'); ?>')" style="margin-left: 10px;">
+                                    <?php echo esc_html__('Kopieren', 'abschussplan-hgmh'); ?>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="notice notice-info inline">
+                            <p><strong><?php echo esc_html__('Hinweise:', 'abschussplan-hgmh'); ?></strong></p>
+                            <ul>
+                                <li><?php echo esc_html__('CSV-Export ist öffentlich zugänglich (keine Anmeldung erforderlich)', 'abschussplan-hgmh'); ?></li>
+                                <li><?php echo esc_html__('URLs können für automatisierte Backups und externe Systeme verwendet werden', 'abschussplan-hgmh'); ?></li>
+                                <li><?php echo esc_html__('Dateiname wird automatisch basierend auf Filtern generiert', 'abschussplan-hgmh'); ?></li>
+                                <li><?php echo esc_html__('Export-Format: Standard CSV (kommagetrennt, UTF-8)', 'abschussplan-hgmh'); ?></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Show temporary success feedback
+                alert('<?php echo esc_js(__('URL in Zwischenablage kopiert!', 'abschussplan-hgmh')); ?>');
+            });
+        }
+        </script>
         <?php
     }
 
