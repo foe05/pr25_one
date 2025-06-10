@@ -84,6 +84,15 @@ class AHGMH_Admin_Page {
         
         add_submenu_page(
             'abschussplan-hgmh',
+            __('Jagdbezirke verwalten', 'abschussplan-hgmh'),
+            __('Jagdbezirke', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-jagdbezirke',
+            array($this, 'render_jagdbezirke_page')
+        );
+        
+        add_submenu_page(
+            'abschussplan-hgmh',
             __('Über', 'abschussplan-hgmh'),
             __('Über', 'abschussplan-hgmh'),
             'manage_options',
@@ -1287,6 +1296,352 @@ class AHGMH_Admin_Page {
                     },
                     complete: function() {
                         $submitBtn.prop('disabled', false).text(originalText);
+                        $('html, body').animate({ scrollTop: 0 }, 500);
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Render Jagdbezirke management page
+     */
+    public function render_jagdbezirke_page() {
+        $database = abschussplan_hgmh()->database;
+        $jagdbezirke = $database->get_jagdbezirke();
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html__('Jagdbezirke verwalten', 'abschussplan-hgmh'); ?></h1>
+            
+            <div id="jagdbezirk-response" class="notice" style="display: none;"></div>
+            
+            <!-- Add new Jagdbezirk section -->
+            <div class="postbox">
+                <div class="postbox-header">
+                    <h2 class="hndle ui-sortable-handle">
+                        <span><?php echo esc_html__('Neuen Jagdbezirk hinzufügen', 'abschussplan-hgmh'); ?></span>
+                    </h2>
+                </div>
+                <div class="inside">
+                    <form id="add-jagdbezirk-form">
+                        <?php wp_nonce_field('jagdbezirk_nonce', 'jagdbezirk_nonce_field'); ?>
+                        
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">
+                                    <label for="new_jagdbezirk"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></label>
+                                </th>
+                                <td>
+                                    <input type="text" id="new_jagdbezirk" name="jagdbezirk" class="regular-text" required />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="new_meldegruppe"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></label>
+                                </th>
+                                <td>
+                                    <input type="text" id="new_meldegruppe" name="meldegruppe" class="regular-text" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="new_ungueltig"><?php echo esc_html__('Ungültig', 'abschussplan-hgmh'); ?></label>
+                                </th>
+                                <td>
+                                    <input type="checkbox" id="new_ungueltig" name="ungueltig" value="1" />
+                                    <label for="new_ungueltig"><?php echo esc_html__('Als ungültig markieren', 'abschussplan-hgmh'); ?></label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="new_bemerkung"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></label>
+                                </th>
+                                <td>
+                                    <textarea id="new_bemerkung" name="bemerkung" class="large-text" rows="3"></textarea>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <p class="submit">
+                            <button type="submit" class="button button-primary"><?php echo esc_html__('Jagdbezirk hinzufügen', 'abschussplan-hgmh'); ?></button>
+                        </p>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Existing Jagdbezirke section -->
+            <div class="postbox">
+                <div class="postbox-header">
+                    <h2 class="hndle ui-sortable-handle">
+                        <span><?php echo esc_html__('Vorhandene Jagdbezirke', 'abschussplan-hgmh'); ?></span>
+                    </h2>
+                    <div class="handle-actions">
+                        <button type="button" id="delete-all-jagdbezirke" class="button button-secondary" style="margin-right: 10px;">
+                            <?php echo esc_html__('Alle löschen', 'abschussplan-hgmh'); ?>
+                        </button>
+                    </div>
+                </div>
+                <div class="inside">
+                    <?php if (empty($jagdbezirke)) : ?>
+                        <p><?php echo esc_html__('Noch keine Jagdbezirke vorhanden.', 'abschussplan-hgmh'); ?></p>
+                    <?php else : ?>
+                        <table class="wp-list-table widefat fixed striped" id="jagdbezirke-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="manage-column" style="width: 80px;"><?php echo esc_html__('ID', 'abschussplan-hgmh'); ?></th>
+                                    <th scope="col" class="manage-column"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
+                                    <th scope="col" class="manage-column"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></th>
+                                    <th scope="col" class="manage-column" style="width: 100px;"><?php echo esc_html__('Ungültig', 'abschussplan-hgmh'); ?></th>
+                                    <th scope="col" class="manage-column"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></th>
+                                    <th scope="col" class="manage-column" style="width: 150px;"><?php echo esc_html__('Aktionen', 'abschussplan-hgmh'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($jagdbezirke as $jagdbezirk) : ?>
+                                    <tr data-id="<?php echo esc_attr($jagdbezirk['id']); ?>" class="jagdbezirk-row">
+                                        <td><?php echo esc_html($jagdbezirk['id']); ?></td>
+                                        <td class="jagdbezirk-name">
+                                            <span class="view-mode"><?php echo esc_html($jagdbezirk['jagdbezirk']); ?></span>
+                                            <input type="text" class="edit-mode regular-text" value="<?php echo esc_attr($jagdbezirk['jagdbezirk']); ?>" style="display: none;" />
+                                        </td>
+                                        <td class="meldegruppe">
+                                            <span class="view-mode"><?php echo esc_html($jagdbezirk['meldegruppe']); ?></span>
+                                            <input type="text" class="edit-mode regular-text" value="<?php echo esc_attr($jagdbezirk['meldegruppe']); ?>" style="display: none;" />
+                                        </td>
+                                        <td class="ungueltig">
+                                            <span class="view-mode"><?php echo $jagdbezirk['ungueltig'] ? esc_html__('Ja', 'abschussplan-hgmh') : esc_html__('Nein', 'abschussplan-hgmh'); ?></span>
+                                            <input type="checkbox" class="edit-mode" <?php checked($jagdbezirk['ungueltig'], 1); ?> style="display: none;" />
+                                        </td>
+                                        <td class="bemerkung">
+                                            <span class="view-mode"><?php echo esc_html($jagdbezirk['bemerkung']); ?></span>
+                                            <textarea class="edit-mode regular-text" rows="2" style="display: none;"><?php echo esc_textarea($jagdbezirk['bemerkung']); ?></textarea>
+                                        </td>
+                                        <td class="actions">
+                                            <button type="button" class="button button-small edit-btn"><?php echo esc_html__('Bearbeiten', 'abschussplan-hgmh'); ?></button>
+                                            <button type="button" class="button button-small button-primary save-btn" style="display: none;"><?php echo esc_html__('Speichern', 'abschussplan-hgmh'); ?></button>
+                                            <button type="button" class="button button-small cancel-btn" style="display: none;"><?php echo esc_html__('Abbrechen', 'abschussplan-hgmh'); ?></button>
+                                            <button type="button" class="button button-small button-link-delete delete-btn"><?php echo esc_html__('Löschen', 'abschussplan-hgmh'); ?></button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            // Add new Jagdbezirk
+            $('#add-jagdbezirk-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                const $form = $(this);
+                const $submitBtn = $form.find('button[type="submit"]');
+                const originalText = $submitBtn.text();
+                
+                $submitBtn.prop('disabled', true).text('<?php echo esc_js(__('Wird hinzugefügt...', 'abschussplan-hgmh')); ?>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'save_jagdbezirk',
+                        nonce: $('#jagdbezirk_nonce_field').val(),
+                        jagdbezirk: $('#new_jagdbezirk').val(),
+                        meldegruppe: $('#new_meldegruppe').val(),
+                        ungueltig: $('#new_ungueltig').is(':checked') ? '1' : '0',
+                        bemerkung: $('#new_bemerkung').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#jagdbezirk-response')
+                                .removeClass('notice-error')
+                                .addClass('notice notice-success')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                            
+                            // Reset form and reload page to show new entry
+                            $form[0].reset();
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
+                        } else {
+                            $('#jagdbezirk-response')
+                                .removeClass('notice-success')
+                                .addClass('notice notice-error')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                        }
+                    },
+                    complete: function() {
+                        $submitBtn.prop('disabled', false).text(originalText);
+                        $('html, body').animate({ scrollTop: 0 }, 500);
+                    }
+                });
+            });
+            
+            // Edit mode toggle (using event delegation)
+            $(document).on('click', '.edit-btn', function() {
+                const $row = $(this).closest('.jagdbezirk-row');
+                $row.find('.view-mode').hide();
+                $row.find('.edit-mode').show();
+                $row.find('.edit-btn').hide();
+                $row.find('.save-btn, .cancel-btn').show();
+            });
+            
+            // Cancel edit (using event delegation)
+            $(document).on('click', '.cancel-btn', function() {
+                const $row = $(this).closest('.jagdbezirk-row');
+                $row.find('.edit-mode').hide();
+                $row.find('.view-mode').show();
+                $row.find('.save-btn, .cancel-btn').hide();
+                $row.find('.edit-btn').show();
+            });
+            
+            // Save changes (using event delegation)
+            $(document).on('click', '.save-btn', function() {
+                const $row = $(this).closest('.jagdbezirk-row');
+                const id = $row.data('id');
+                const $btn = $(this);
+                const originalText = $btn.text();
+                
+                $btn.prop('disabled', true).text('<?php echo esc_js(__('Wird gespeichert...', 'abschussplan-hgmh')); ?>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'update_jagdbezirk',
+                        nonce: $('#jagdbezirk_nonce_field').val(),
+                        id: id,
+                        jagdbezirk: $row.find('.jagdbezirk-name .edit-mode').val(),
+                        meldegruppe: $row.find('.meldegruppe .edit-mode').val(),
+                        ungueltig: $row.find('.ungueltig .edit-mode').is(':checked') ? '1' : '0',
+                        bemerkung: $row.find('.bemerkung .edit-mode').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#jagdbezirk-response')
+                                .removeClass('notice-error')
+                                .addClass('notice notice-success')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                            
+                            // Update view mode with new values and switch back
+                            $row.find('.jagdbezirk-name .view-mode').text($row.find('.jagdbezirk-name .edit-mode').val());
+                            $row.find('.meldegruppe .view-mode').text($row.find('.meldegruppe .edit-mode').val());
+                            $row.find('.ungueltig .view-mode').text($row.find('.ungueltig .edit-mode').is(':checked') ? '<?php echo esc_js(__('Ja', 'abschussplan-hgmh')); ?>' : '<?php echo esc_js(__('Nein', 'abschussplan-hgmh')); ?>');
+                            $row.find('.bemerkung .view-mode').text($row.find('.bemerkung .edit-mode').val());
+                            
+                            $row.find('.edit-mode').hide();
+                            $row.find('.view-mode').show();
+                            $row.find('.save-btn, .cancel-btn').hide();
+                            $row.find('.edit-btn').show();
+                        } else {
+                            $('#jagdbezirk-response')
+                                .removeClass('notice-success')
+                                .addClass('notice notice-error')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                        }
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).text(originalText);
+                        $('html, body').animate({ scrollTop: 0 }, 500);
+                    }
+                });
+            });
+            
+            // Delete single Jagdbezirk (using event delegation)
+            $(document).on('click', '.delete-btn', function() {
+                if (!confirm('<?php echo esc_js(__('Sind Sie sicher, dass Sie diesen Jagdbezirk löschen möchten?', 'abschussplan-hgmh')); ?>')) {
+                    return;
+                }
+                
+                const $row = $(this).closest('.jagdbezirk-row');
+                const id = $row.data('id');
+                const $btn = $(this);
+                const originalText = $btn.text();
+                
+                $btn.prop('disabled', true).text('<?php echo esc_js(__('Wird gelöscht...', 'abschussplan-hgmh')); ?>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'delete_jagdbezirk',
+                        nonce: $('#jagdbezirk_nonce_field').val(),
+                        id: id
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#jagdbezirk-response')
+                                .removeClass('notice-error')
+                                .addClass('notice notice-success')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                            
+                            $row.fadeOut(300, function() {
+                                $(this).remove();
+                            });
+                        } else {
+                            $('#jagdbezirk-response')
+                                .removeClass('notice-success')
+                                .addClass('notice notice-error')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                        }
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).text(originalText);
+                        $('html, body').animate({ scrollTop: 0 }, 500);
+                    }
+                });
+            });
+            
+            // Delete all Jagdbezirke
+            $('#delete-all-jagdbezirke').on('click', function() {
+                if (!confirm('<?php echo esc_js(__('Sind Sie sicher, dass Sie alle Jagdbezirke löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.', 'abschussplan-hgmh')); ?>')) {
+                    return;
+                }
+                
+                const $btn = $(this);
+                const originalText = $btn.text();
+                
+                $btn.prop('disabled', true).text('<?php echo esc_js(__('Wird gelöscht...', 'abschussplan-hgmh')); ?>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'delete_all_jagdbezirke',
+                        nonce: $('#jagdbezirk_nonce_field').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#jagdbezirk-response')
+                                .removeClass('notice-error')
+                                .addClass('notice notice-success')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                            
+                            $('#jagdbezirke-table tbody').fadeOut(300, function() {
+                                $(this).html('<tr><td colspan="6"><?php echo esc_js(__('Keine Jagdbezirke vorhanden.', 'abschussplan-hgmh')); ?></td></tr>').fadeIn(300);
+                            });
+                        } else {
+                            $('#jagdbezirk-response')
+                                .removeClass('notice-success')
+                                .addClass('notice notice-error')
+                                .html('<p>' + response.data.message + '</p>')
+                                .show();
+                        }
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).text(originalText);
                         $('html, body').animate({ scrollTop: 0 }, 500);
                     }
                 });

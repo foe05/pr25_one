@@ -177,5 +177,14 @@ function abschussplan_hgmh() {
     return Abschussplan_HGMH::get_instance();
 }
 
+// Plugin activation hook
+register_activation_hook(__FILE__, 'ahgmh_activate_plugin');
+
+function ahgmh_activate_plugin() {
+    // Ensure database tables are created
+    $plugin = abschussplan_hgmh();
+    $plugin->database->create_table();
+}
+
 // Start the plugin
 abschussplan_hgmh();

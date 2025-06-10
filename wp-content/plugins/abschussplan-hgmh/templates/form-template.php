@@ -94,6 +94,31 @@ if (!defined('ABSPATH')) {
         </div>
         
         <div class="mb-3">
+            <label for="field5" class="form-label"><?php echo esc_html__('Jagdbezirk', 'custom-form-display'); ?></label>
+            <select class="form-select" id="field5" name="field5" required>
+                <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'custom-form-display'); ?></option>
+                
+                <?php 
+                // Get active Jagdbezirke from database (ungueltig = 0)
+                $database = abschussplan_hgmh()->database;
+                $jagdbezirke = $database->get_active_jagdbezirke();
+                
+
+                
+                foreach ($jagdbezirke as $jagdbezirk) : ?>
+                    <option value="<?php echo esc_attr($jagdbezirk['jagdbezirk']); ?>">
+                        <?php echo esc_html($jagdbezirk['jagdbezirk']); ?>
+                        <?php if (!empty($jagdbezirk['meldegruppe'])) : ?>
+                            (<?php echo esc_html($jagdbezirk['meldegruppe']); ?>)
+                        <?php endif; ?>
+                    </option>
+                <?php endforeach; ?>
+                
+            </select>
+            <div class="form-error"></div>
+        </div>
+        
+        <div class="mb-3">
             <label for="field4" class="form-label"><?php echo esc_html__('Bemerkung', 'custom-form-display'); ?></label>
             <textarea class="form-control" id="field4" name="field4" rows="4"></textarea>
             <div class="form-error"></div>

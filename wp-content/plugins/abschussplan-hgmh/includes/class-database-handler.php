@@ -41,12 +41,72 @@ class AHGMH_Database_Handler {
             field2 text NOT NULL,
             field3 text NOT NULL,
             field4 text NOT NULL,
+            field5 text NOT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+        
+        // Create Jagdbezirk configuration table
+        $this->create_jagdbezirk_table();
+    }
+    
+    /**
+     * Create the Jagdbezirk configuration table
+     */
+    public function create_jagdbezirk_table() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        $sql = "CREATE TABLE $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            jagdbezirk varchar(255) NOT NULL,
+            meldegruppe varchar(255) NOT NULL,
+            ungueltig tinyint(1) NOT NULL DEFAULT 0,
+            bemerkung text,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+        
+        // Add some default Jagdbezirke if table is empty
+        $this->seed_default_jagdbezirke();
+    }
+    
+    /**
+     * Seed default Jagdbezirke if table is empty
+     */
+    private function seed_default_jagdbezirke() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        // Check if table has any records
+        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+        
+        if ($count == 0) {
+            // Add some default entries
+            $defaults = array(
+                array('jagdbezirk' => 'Jagdbezirk 1', 'meldegruppe' => 'Gruppe A', 'ungueltig' => 0, 'bemerkung' => 'Standard Jagdbezirk'),
+                array('jagdbezirk' => 'Jagdbezirk 2', 'meldegruppe' => 'Gruppe B', 'ungueltig' => 0, 'bemerkung' => 'Standard Jagdbezirk'),
+                array('jagdbezirk' => 'Jagdbezirk 3', 'meldegruppe' => 'Gruppe A', 'ungueltig' => 1, 'bemerkung' => 'Inaktiver Jagdbezirk')
+            );
+            
+            foreach ($defaults as $default) {
+                $wpdb->insert(
+                    $table_name,
+                    $default,
+                    array('%s', '%s', '%d', '%s')
+                );
+            }
+        }
     }
 
     /**
@@ -65,14 +125,15 @@ class AHGMH_Database_Handler {
             'field1' => sanitize_text_field($data['field1']),
             'field2' => sanitize_text_field($data['field2']),
             'field3' => sanitize_text_field($data['field3']),
-            'field4' => sanitize_text_field($data['field4'])
+            'field4' => sanitize_text_field($data['field4']),
+            'field5' => sanitize_text_field($data['field5'])
         );
         
         // Insert data
         $result = $wpdb->insert(
             $this->table_name,
             $sanitized_data,
-            array('%d', '%s', '%s', '%s', '%s', '%s')
+            array('%d', '%s', '%s', '%s', '%s', '%s', '%s')
         );
         
         return $result ? $wpdb->insert_id : false;
@@ -259,6 +320,122 @@ class AHGMH_Database_Handler {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $jagdbezirk_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
         $wpdb->query("DROP TABLE IF EXISTS $table_name");
+        $wpdb->query("DROP TABLE IF EXISTS $jagdbezirk_table");
+    }
+    
+    /**
+     * Get all Jagdbezirke
+     */
+    public function get_jagdbezirke() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        if (!$table_exists) {
+            // Create table if it doesn't exist
+            $this->create_jagdbezirk_table();
+        }
+        
+        $query = "SELECT * FROM $table_name ORDER BY jagdbezirk ASC";
+        
+        return $wpdb->get_results($query, ARRAY_A);
+    }
+    
+    /**
+     * Get active Jagdbezirke (not marked as invalid)
+     */
+    public function get_active_jagdbezirke() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        if (!$table_exists) {
+            // Create table if it doesn't exist
+            $this->create_jagdbezirk_table();
+        }
+        
+        $query = "SELECT * FROM $table_name WHERE ungueltig = 0 ORDER BY jagdbezirk ASC";
+        
+        return $wpdb->get_results($query, ARRAY_A);
+    }
+    
+    /**
+     * Insert new Jagdbezirk
+     */
+    public function insert_jagdbezirk($data) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        $sanitized_data = array(
+            'jagdbezirk' => sanitize_text_field($data['jagdbezirk']),
+            'meldegruppe' => sanitize_text_field($data['meldegruppe']),
+            'ungueltig' => isset($data['ungueltig']) ? 1 : 0,
+            'bemerkung' => sanitize_textarea_field($data['bemerkung'])
+        );
+        
+        $result = $wpdb->insert(
+            $table_name,
+            $sanitized_data,
+            array('%s', '%s', '%d', '%s')
+        );
+        
+        return $result ? $wpdb->insert_id : false;
+    }
+    
+    /**
+     * Update Jagdbezirk
+     */
+    public function update_jagdbezirk($id, $data) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        $sanitized_data = array(
+            'jagdbezirk' => sanitize_text_field($data['jagdbezirk']),
+            'meldegruppe' => sanitize_text_field($data['meldegruppe']),
+            'ungueltig' => isset($data['ungueltig']) ? 1 : 0,
+            'bemerkung' => sanitize_textarea_field($data['bemerkung'])
+        );
+        
+        return $wpdb->update(
+            $table_name,
+            $sanitized_data,
+            array('id' => $id),
+            array('%s', '%s', '%d', '%s'),
+            array('%d')
+        );
+    }
+    
+    /**
+     * Delete Jagdbezirk
+     */
+    public function delete_jagdbezirk($id) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        return $wpdb->delete(
+            $table_name,
+            array('id' => $id),
+            array('%d')
+        );
+    }
+    
+    /**
+     * Delete all Jagdbezirke
+     */
+    public function delete_all_jagdbezirke() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        return $wpdb->query("DELETE FROM $table_name");
     }
 }

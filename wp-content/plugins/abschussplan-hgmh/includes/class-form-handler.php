@@ -35,6 +35,12 @@ class AHGMH_Form_Handler {
         add_action('wp_ajax_save_species', array($this, 'save_species'));
         add_action('wp_ajax_save_species_limits', array($this, 'save_species_limits'));
         add_action('wp_ajax_load_species_limits', array($this, 'load_species_limits'));
+        
+        // Jagdbezirk management AJAX handlers
+        add_action('wp_ajax_save_jagdbezirk', array($this, 'save_jagdbezirk'));
+        add_action('wp_ajax_update_jagdbezirk', array($this, 'update_jagdbezirk'));
+        add_action('wp_ajax_delete_jagdbezirk', array($this, 'delete_jagdbezirk'));
+        add_action('wp_ajax_delete_all_jagdbezirke', array($this, 'delete_all_jagdbezirke'));
     }
 
     /**
@@ -203,6 +209,7 @@ class AHGMH_Form_Handler {
         $field2 = isset($_POST['field2']) ? sanitize_text_field($_POST['field2']) : ''; // Abschuss
         $field3 = isset($_POST['field3']) ? sanitize_text_field($_POST['field3']) : ''; // WUS (optional)
         $field4 = isset($_POST['field4']) ? sanitize_textarea_field($_POST['field4']) : ''; // Bemerkung (optional)
+        $field5 = isset($_POST['field5']) ? sanitize_text_field($_POST['field5']) : ''; // Jagdbezirk
         
         // Validate data
         $errors = array();
@@ -233,6 +240,22 @@ class AHGMH_Form_Handler {
             
             if (!in_array($field2, $categories)) {
                 $errors['field2'] = __('Bitte wählen Sie einen gültigen Wert aus.', 'custom-form-display');
+            }
+        }
+        
+        // Validate field5 (Jagdbezirk) - required field
+        if (empty($field5)) {
+            $errors['field5'] = __('Dieses Feld ist erforderlich.', 'custom-form-display');
+        } else {
+            // Validate that the selected Jagdbezirk exists and is active
+            $database = abschussplan_hgmh()->database;
+            $active_jagdbezirke = $database->get_active_jagdbezirke();
+            $valid_jagdbezirke = array_column($active_jagdbezirke, 'jagdbezirk');
+            
+
+            
+            if (!in_array($field5, $valid_jagdbezirke)) {
+                $errors['field5'] = __('Bitte wählen Sie einen gültigen Jagdbezirk aus.', 'custom-form-display');
             }
         }
         
@@ -283,7 +306,8 @@ class AHGMH_Form_Handler {
             'field1' => $field1,
             'field2' => $field2,
             'field3' => $field3,
-            'field4' => $field4
+            'field4' => $field4,
+            'field5' => $field5
         );
         
         $database = abschussplan_hgmh()->database;
@@ -893,5 +917,151 @@ class AHGMH_Form_Handler {
             'limits' => $limits,
             'allowExceeding' => $allow_exceeding
         ));
+    }
+    
+    /**
+     * Save new Jagdbezirk via AJAX
+     */
+    public function save_jagdbezirk() {
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'jagdbezirk_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitsüberprüfung fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        $data = array(
+            'jagdbezirk' => sanitize_text_field($_POST['jagdbezirk']),
+            'meldegruppe' => sanitize_text_field($_POST['meldegruppe']),
+            'ungueltig' => (isset($_POST['ungueltig']) && $_POST['ungueltig'] === '1') ? 1 : 0,
+            'bemerkung' => sanitize_textarea_field($_POST['bemerkung'])
+        );
+        
+        $database = abschussplan_hgmh()->database;
+        $result = $database->insert_jagdbezirk($data);
+        
+        if ($result) {
+            wp_send_json_success(array(
+                'message' => __('Jagdbezirk erfolgreich hinzugefügt.', 'abschussplan-hgmh'),
+                'id' => $result
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => __('Fehler beim Hinzufügen des Jagdbezirks.', 'abschussplan-hgmh')
+            ));
+        }
+    }
+    
+    /**
+     * Update Jagdbezirk via AJAX
+     */
+    public function update_jagdbezirk() {
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'jagdbezirk_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitsüberprüfung fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        $id = intval($_POST['id']);
+        $data = array(
+            'jagdbezirk' => sanitize_text_field($_POST['jagdbezirk']),
+            'meldegruppe' => sanitize_text_field($_POST['meldegruppe']),
+            'ungueltig' => (isset($_POST['ungueltig']) && $_POST['ungueltig'] === '1') ? 1 : 0,
+            'bemerkung' => sanitize_textarea_field($_POST['bemerkung'])
+        );
+        
+        $database = abschussplan_hgmh()->database;
+        $result = $database->update_jagdbezirk($id, $data);
+        
+        if ($result !== false) {
+            wp_send_json_success(array(
+                'message' => __('Jagdbezirk erfolgreich aktualisiert.', 'abschussplan-hgmh')
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => __('Fehler beim Aktualisieren des Jagdbezirks.', 'abschussplan-hgmh')
+            ));
+        }
+    }
+    
+    /**
+     * Delete Jagdbezirk via AJAX
+     */
+    public function delete_jagdbezirk() {
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'jagdbezirk_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitsüberprüfung fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        $id = intval($_POST['id']);
+        
+        $database = abschussplan_hgmh()->database;
+        $result = $database->delete_jagdbezirk($id);
+        
+        if ($result !== false) {
+            wp_send_json_success(array(
+                'message' => __('Jagdbezirk erfolgreich gelöscht.', 'abschussplan-hgmh')
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => __('Fehler beim Löschen des Jagdbezirks.', 'abschussplan-hgmh')
+            ));
+        }
+    }
+    
+    /**
+     * Delete all Jagdbezirke via AJAX
+     */
+    public function delete_all_jagdbezirke() {
+        // Check if user has admin capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'jagdbezirk_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitsüberprüfung fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+        
+        $database = abschussplan_hgmh()->database;
+        $result = $database->delete_all_jagdbezirke();
+        
+        if ($result !== false) {
+            wp_send_json_success(array(
+                'message' => __('Alle Jagdbezirke erfolgreich gelöscht.', 'abschussplan-hgmh')
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => __('Fehler beim Löschen der Jagdbezirke.', 'abschussplan-hgmh')
+            ));
+        }
     }
 }
