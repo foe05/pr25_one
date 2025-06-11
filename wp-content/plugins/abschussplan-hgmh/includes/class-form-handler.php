@@ -180,6 +180,7 @@ class AHGMH_Form_Handler {
         
         $limits = $this->get_category_limits($selected_species);
         $counts = $this->get_category_counts($selected_species);
+        $allow_exceeding = $this->get_category_allow_exceeding($selected_species);
         
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/summary-template.php';
@@ -281,23 +282,8 @@ class AHGMH_Form_Handler {
             }
         }
         
-        // Check if the selected category has reached its maximum limit (only if exceeding is not allowed)
-        if (empty($errors['field2'])) {
-            $limits = $this->get_category_limits($game_species);
-            $counts = $this->get_category_counts($game_species);
-            $allow_exceeding = $this->get_category_allow_exceeding($game_species);
-            
-            $current_count = isset($counts[$field2]) ? $counts[$field2] : 0;
-            $max_count = isset($limits[$field2]) ? $limits[$field2] : 0;
-            $exceeding_allowed = isset($allow_exceeding[$field2]) ? $allow_exceeding[$field2] : false;
-            
-            if ($max_count > 0 && $current_count >= $max_count && !$exceeding_allowed) {
-                $errors['field2'] = sprintf(
-                    __('Höchstgrenze für diese Kategorie erreicht (%d).', 'custom-form-display'),
-                    $max_count
-                );
-            }
-        }
+        // Note: Categories are always allowed regardless of limits
+        // Visual indication of limit status is handled in the frontend
 
         // If there are errors, return them
         if (!empty($errors)) {
@@ -633,12 +619,18 @@ class AHGMH_Form_Handler {
                                     $allow_exceed = isset($allow_exceeding[$category]) ? $allow_exceeding[$category] : false;
                                     $percentage = $limit > 0 ? ($current_count / $limit) * 100 : 0;
                                     $status_class = '';
-                                    if ($percentage >= 100) {
-                                        $status_class = 'bg-danger text-white';
-                                    } elseif ($percentage >= 90) {
-                                        $status_class = 'bg-warning text-dark';
-                                    } else {
+                                    if ($limit == 0) {
+                                        // No limit set: grey background
+                                        $status_class = 'bg-secondary text-white';
+                                    } elseif ($percentage < 100) {
+                                        // Under limit: green background
                                         $status_class = 'bg-success text-white';
+                                    } elseif ($allow_exceed) {
+                                        // Over limit + overshoot allowed: green background
+                                        $status_class = 'bg-success text-white';
+                                    } else {
+                                        // Over limit + overshoot not allowed: red background
+                                        $status_class = 'bg-danger text-white';
                                     }
                                 ?>
                                 <tr>

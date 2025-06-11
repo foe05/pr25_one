@@ -35,20 +35,25 @@ if (!defined('ABSPATH')) {
                             
                             // Calculate percentage and status
                             $percentage = $limit > 0 ? ($current / $limit) * 100 : 0;
+                            $exceeding_allowed = isset($allow_exceeding[$category]) ? $allow_exceeding[$category] : false;
                             $status_class = '';
                             $status_text = '';
                             
                             if ($limit == 0) {
+                                // No limit set: "Unbegrenzt", grey background
                                 $status_class = 'bg-secondary text-white';
                                 $status_text = __('Unbegrenzt', 'abschussplan-hgmh');
-                            } elseif ($percentage >= 100) {
-                                $status_class = 'bg-danger text-white';
+                            } elseif ($percentage < 100) {
+                                // Under limit: percentage on green background
+                                $status_class = 'bg-success text-white';
                                 $status_text = sprintf(__('%.1f%%', 'abschussplan-hgmh'), $percentage);
-                            } elseif ($percentage >= 90) {
-                                $status_class = 'bg-warning text-dark';
+                            } elseif ($exceeding_allowed) {
+                                // Over limit + overshoot allowed: percentage on green background
+                                $status_class = 'bg-success text-white';
                                 $status_text = sprintf(__('%.1f%%', 'abschussplan-hgmh'), $percentage);
                             } else {
-                                $status_class = 'bg-success text-white';
+                                // Over limit + overshoot not allowed: percentage on red background
+                                $status_class = 'bg-danger text-white';
                                 $status_text = sprintf(__('%.1f%%', 'abschussplan-hgmh'), $percentage);
                             }
                             ?>

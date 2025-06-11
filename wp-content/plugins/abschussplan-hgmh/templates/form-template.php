@@ -66,8 +66,8 @@ if (!defined('ABSPATH')) {
                     $max_count = isset($limits[$category]) ? $limits[$category] : 0;
                     $exceeding_allowed = isset($allow_exceeding[$category]) ? $allow_exceeding[$category] : false;
                     
-                    // Only disable if limit is reached AND exceeding is not allowed
-                    $disabled = ($max_count > 0 && $current_count >= $max_count && !$exceeding_allowed) ? 'disabled' : '';
+                    // Categories are always enabled regardless of limits
+                    $disabled = '';
                     $limit_text = '';
                     
                     if ($max_count > 0 && $current_count >= $max_count) {
