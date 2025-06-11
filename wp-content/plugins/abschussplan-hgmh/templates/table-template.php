@@ -59,7 +59,14 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                                 }
                                 ?>
                             </td>
-                            <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field5'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>">
+                                <?php 
+                                echo esc_html($submission['field5'] ?? '');
+                                if (!empty($submission['meldegruppe'])) {
+                                    echo ' (' . esc_html($submission['meldegruppe']) . ')';
+                                }
+                                ?>
+                            </td>
                             <td data-label="<?php echo esc_attr__('Abschuss', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field2']); ?></td>
                             <td data-label="<?php echo esc_attr__('WUS', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field3']); ?></td>
                             <td data-label="<?php echo esc_attr__('Bemerkung', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field4']); ?></td>

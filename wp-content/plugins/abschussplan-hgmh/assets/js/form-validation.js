@@ -107,18 +107,33 @@
         $('#field3').on('input', function() {
             const $field = $(this);
             const fieldValue = $field.val();
-            const numValue = parseInt(fieldValue);
             
-            // Check if WUS exceeds 7 digits
+            // Show feedback message if WUS exceeds 7 digits
             if (fieldValue && fieldValue.length > 7) {
                 alert('WUS-Nummer darf maximal 7 Stellen haben.');
-                $field.val(fieldValue.substring(0, 7)); // Truncate to 7 digits
+                $field.focus();
             }
+        });
+        
+        // WUS field validation on blur (when user finishes entering)
+        $('#field3').on('blur', function() {
+            const $field = $(this);
+            const fieldValue = $field.val();
+            const numValue = parseInt(fieldValue);
             
-            // Check if WUS is below minimum (1000000)
-            if (fieldValue && !isNaN(numValue) && numValue < 1000000) {
-                alert('WUS-Nummer muss mindestens 1000000 sein.');
-                $field.val('');
+            // Only validate range if user has entered a number
+            if (fieldValue) {
+                if (fieldValue.length === 7) {
+                    // Check if WUS is in valid range (1000000-9999999)
+                    if (isNaN(numValue) || numValue < 1000000 || numValue > 9999999) {
+                        alert('WUS-Nummer muss zwischen 1000000 und 9999999 liegen.');
+                        $field.focus();
+                    }
+                } else if (fieldValue.length > 0 && fieldValue.length < 7) {
+                    // If user entered something but not 7 digits, show helpful message
+                    alert('WUS-Nummer muss genau 7 Stellen haben (1000000-9999999).');
+                    $field.focus();
+                }
             }
         });
     });

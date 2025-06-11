@@ -156,7 +156,10 @@ class AHGMH_Database_Handler {
     public function get_submissions($limit = 10, $offset = 0) {
         global $wpdb;
         
-        $query = "SELECT * FROM $this->table_name ORDER BY created_at DESC";
+        $query = "SELECT s.*, j.meldegruppe 
+                  FROM $this->table_name s 
+                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk 
+                  ORDER BY s.created_at DESC";
         
         if ($limit > 0) {
             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
@@ -267,13 +270,15 @@ class AHGMH_Database_Handler {
     public function get_submissions_by_species($limit = 10, $offset = 0, $species = '') {
         global $wpdb;
         
-        $query = "SELECT * FROM $this->table_name";
+        $query = "SELECT s.*, j.meldegruppe 
+                  FROM $this->table_name s 
+                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
         
         if (!empty($species)) {
-            $query .= $wpdb->prepare(" WHERE game_species = %s", $species);
+            $query .= $wpdb->prepare(" WHERE s.game_species = %s", $species);
         }
         
-        $query .= " ORDER BY created_at DESC";
+        $query .= " ORDER BY s.created_at DESC";
         
         if ($limit > 0) {
             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);

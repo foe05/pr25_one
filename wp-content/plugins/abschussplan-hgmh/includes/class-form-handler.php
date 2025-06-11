@@ -1124,9 +1124,12 @@ class AHGMH_Form_Handler {
             global $wpdb;
             $table_name = $database->get_table_name();
             
-            $query = "SELECT id, game_species, field1, field2, field3, field4, field5, user_id, created_at 
-                      FROM {$table_name} {$where_clause} 
-                      ORDER BY created_at DESC";
+            $query = "SELECT s.id, s.game_species, s.field1, s.field2, s.field3, s.field4, s.field5, s.user_id, s.created_at, 
+                             j.meldegruppe
+                      FROM {$table_name} s 
+                      LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk 
+                      {$where_clause} 
+                      ORDER BY s.created_at DESC";
             
             if (!empty($params)) {
                 $query = $wpdb->prepare($query, $params);
@@ -1173,6 +1176,7 @@ class AHGMH_Form_Handler {
                 'Abschuss',
                 'WUS',
                 'Jagdbezirk',
+                'Meldegruppe',
                 'Bemerkung',
                 'Erstellt von',
                 'Erstellt am'
@@ -1191,6 +1195,7 @@ class AHGMH_Form_Handler {
                     $submission['field2'],      // Abschuss
                     $submission['field3'],      // WUS
                     $submission['field5'],      // Jagdbezirk
+                    $submission['meldegruppe'] ?? '', // Meldegruppe
                     $submission['field4'],      // Bemerkung
                     $created_by,
                     $submission['created_at']
