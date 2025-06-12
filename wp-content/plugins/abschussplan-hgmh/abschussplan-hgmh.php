@@ -1,11 +1,20 @@
 <?php
 /**
  * Plugin Name: Abschussplan HGMH
- * Plugin URI: #
+ * Plugin URI: https://github.com/foe05/pr25_one
  * Description: Collect and view game shoots for registration with local hunting authorities in Germany.
  * Version: 1.5.0
  * Author: foe05
+ * Author URI: https://github.com/foe05
+ * License: GPL v3 or later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: abschussplan-hgmh
+ * Domain Path: /languages
+ * Requires at least: 5.0
+ * Tested up to: 6.4
+ * Requires PHP: 7.4
+ * Network: false
+ * Update URI: https://github.com/foe05/pr25_one
  */
 
 // Exit if accessed directly
@@ -22,10 +31,7 @@ define('AHGMH_PLUGIN_VERSION', '1.5.0');
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
-require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page.php';
-
-// Include debug file (remove in production)
-require_once AHGMH_PLUGIN_DIR . 'debug.php';
+require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page-modern.php';
 
 /**
  * Main plugin class
@@ -96,8 +102,8 @@ class Abschussplan_HGMH {
         // Initialize table display
         $this->table = new AHGMH_Table_Display();
 
-        // Initialize admin page
-        $this->admin = new AHGMH_Admin_Page();
+        // Initialize modern admin page
+        $this->admin = new AHGMH_Admin_Page_Modern();
     }
 
     /**

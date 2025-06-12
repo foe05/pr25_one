@@ -1,28 +1,28 @@
 /**
- * Custom Form Display plugin styles
+ * Abschussplan HGMH plugin styles
  */
 
 /* Form styles */
-.custom-form-container {
+.abschussplan-hgmh-form-container {
     margin: 2rem 0;
     padding: 1.5rem;
     border-radius: 0.375rem;
     background-color: var(--bs-dark-bg-subtle);
 }
 
-.custom-form .form-label {
+.abschussplan-hgmh-form .form-label {
     font-weight: 500;
     margin-bottom: 0.5rem;
 }
 
-.custom-form .form-error {
+.abschussplan-hgmh-form .form-error {
     color: var(--bs-danger);
     font-size: 0.875rem;
     margin-top: 0.25rem;
     display: none;
 }
 
-.custom-form .submit-btn {
+.abschussplan-hgmh-form .submit-btn {
     margin-top: 1rem;
 }
 
@@ -76,7 +76,7 @@
 
 /* Responsive adjustments */
 @media (max-width: 767.98px) {
-    .custom-form-container,
+    .abschussplan-hgmh-form-container,
     .submissions-table-container {
         padding: 1rem;
     }
@@ -115,7 +115,7 @@
 }
 
 /* Dark theme compatibility */
-[data-bs-theme=dark] .custom-form-container,
+[data-bs-theme=dark] .abschussplan-hgmh-form-container,
 [data-bs-theme=dark] .submissions-table th,
 [data-bs-theme=dark] .submissions-empty {
     background-color: var(--bs-dark);

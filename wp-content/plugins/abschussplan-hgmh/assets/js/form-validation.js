@@ -8,7 +8,7 @@
     $(document).ready(function() {
         
         // Form validation
-        $('.custom-form').on('submit', function(e) {
+        $('.abschussplan-hgmh-form').on('submit', function(e) {
             e.preventDefault();
             
             // Reset previous error messages
@@ -88,7 +88,7 @@
         });
         
         // Real-time validation for inputs and selects
-        $('.custom-form input, .custom-form select').on('blur change', function() {
+        $('.abschussplan-hgmh-form input, .abschussplan-hgmh-form select').on('blur change', function() {
             const $field = $(this);
             const fieldName = $field.attr('name');
             const fieldValue = $field.val();

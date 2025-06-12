@@ -9,8 +9,8 @@ if (!defined('ABSPATH')) {
 }
 ?>
 
-<div class="abschuss-form-container">
-    <h2 class="mb-4"><?php echo esc_html__('Abschussmeldung', 'custom-form-display'); ?></h2>
+<div class="abschussplan-hgmh-form-container">
+    <h2 class="mb-4"><?php echo esc_html__('Abschussmeldung', 'abschussplan-hgmh'); ?></h2>
     
     <div id="abschuss-form-response" class="alert" role="alert" style="display: none;"></div>
     
@@ -32,22 +32,22 @@ if (!defined('ABSPATH')) {
         </small>
     </div>
 
-    <form class="abschuss-form" id="abschuss-form" method="post">
+    <form class="abschussplan-hgmh-form" id="abschuss-form" method="post">
         <?php wp_nonce_field('ahgmh_form_nonce', 'ahgmh_nonce'); ?>
         
         <!-- Hidden field for game species (set via shortcode) -->
         <input type="hidden" id="game_species" name="game_species" value="<?php echo esc_attr($selected_species); ?>" />
         
         <div class="mb-3">
-            <label for="field1" class="form-label"><?php echo esc_html__('Abschussdatum', 'custom-form-display'); ?></label>
+            <label for="field1" class="form-label"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></label>
             <input type="date" class="form-control" id="field1" name="field1" required value="<?php echo esc_attr($yesterday); ?>">
             <div class="form-error"></div>
         </div>
         
         <div class="mb-3">
-            <label for="field2" class="form-label"><?php echo esc_html__('Abschuss', 'custom-form-display'); ?></label>
+            <label for="field2" class="form-label"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></label>
             <select class="form-select" id="field2" name="field2" required>
-                <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'custom-form-display'); ?></option>
+                <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'abschussplan-hgmh'); ?></option>
                 
                 <?php 
                 // Get allow exceeding settings for the selected species
@@ -72,9 +72,9 @@ if (!defined('ABSPATH')) {
                     
                     if ($max_count > 0 && $current_count >= $max_count) {
                         if ($exceeding_allowed) {
-                            $limit_text = ' (' . esc_html__('Limit erreicht - Überschreitung erlaubt', 'custom-form-display') . ')';
+                            $limit_text = ' (' . esc_html__('Limit erreicht - Überschreitung erlaubt', 'abschussplan-hgmh') . ')';
                         } else {
-                            $limit_text = ' (' . esc_html__('Limit erreicht', 'custom-form-display') . ')';
+                            $limit_text = ' (' . esc_html__('Limit erreicht', 'abschussplan-hgmh') . ')';
                         }
                     }
                 ?>
@@ -88,15 +88,15 @@ if (!defined('ABSPATH')) {
         </div>
         
         <div class="mb-3">
-            <label for="field3" class="form-label"><?php echo esc_html__('WUS', 'custom-form-display'); ?></label>
+            <label for="field3" class="form-label"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></label>
             <input type="number" class="form-control" id="field3" name="field3" min="1000000" maxlength="7" max="9999999">
             <div class="form-error"></div>
         </div>
         
         <div class="mb-3">
-            <label for="field5" class="form-label"><?php echo esc_html__('Jagdbezirk', 'custom-form-display'); ?></label>
+            <label for="field5" class="form-label"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></label>
             <select class="form-select" id="field5" name="field5" required>
-                <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'custom-form-display'); ?></option>
+                <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'abschussplan-hgmh'); ?></option>
                 
                 <?php 
                 // Get active Jagdbezirke from database (ungueltig = 0)
@@ -119,12 +119,12 @@ if (!defined('ABSPATH')) {
         </div>
         
         <div class="mb-3">
-            <label for="field4" class="form-label"><?php echo esc_html__('Bemerkung', 'custom-form-display'); ?></label>
+            <label for="field4" class="form-label"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></label>
             <textarea class="form-control" id="field4" name="field4" rows="4"></textarea>
             <div class="form-error"></div>
         </div>
         
-        <button type="submit" class="btn btn-primary submit-btn"><?php echo esc_html__('Speichern', 'custom-form-display'); ?></button>
+        <button type="submit" class="btn btn-primary submit-btn"><?php echo esc_html__('Speichern', 'abschussplan-hgmh'); ?></button>
     </form>
 </div>
 
@@ -159,19 +159,19 @@ jQuery(document).ready(function($) {
         
         if (dateValue >= tomorrow) {
             $('#field1').addClass('is-invalid');
-            $('#field1').siblings('.form-error').text('<?php echo esc_js(__('Das Datum darf nicht in der Zukunft liegen.', 'custom-form-display')); ?>').show();
+            $('#field1').siblings('.form-error').text('<?php echo esc_js(__('Das Datum darf nicht in der Zukunft liegen.', 'abschussplan-hgmh')); ?>').show();
             return;
         }
         
         // Validate Jagdbezirk selection
         if (!$('#field5').val()) {
             $('#field5').addClass('is-invalid');
-            $('#field5').siblings('.form-error').text('<?php echo esc_js(__('Bitte wählen Sie einen Jagdbezirk aus.', 'custom-form-display')); ?>').show();
+            $('#field5').siblings('.form-error').text('<?php echo esc_js(__('Bitte wählen Sie einen Jagdbezirk aus.', 'abschussplan-hgmh')); ?>').show();
             return;
         }
         
         // Disable the submit button to prevent multiple submissions
-        $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <?php echo esc_js(__('Wird gespeichert...', 'custom-form-display')); ?>');
+        $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <?php echo esc_js(__('Wird gespeichert...', 'abschussplan-hgmh')); ?>');
         
         // Get form data
         const formData = new FormData();
@@ -222,11 +222,11 @@ jQuery(document).ready(function($) {
             error: function() {
                 // Show general error message
                 $responseContainer.removeClass('alert-success').addClass('alert-danger')
-                    .text('<?php echo esc_js(__('Es gab einen Fehler beim Speichern. Bitte versuchen Sie es erneut.', 'custom-form-display')); ?>').show();
+                    .text('<?php echo esc_js(__('Es gab einen Fehler beim Speichern. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh')); ?>').show();
             },
             complete: function() {
                 // Re-enable the submit button
-                $submitBtn.prop('disabled', false).text('<?php echo esc_js(__('Speichern', 'custom-form-display')); ?>');
+                $submitBtn.prop('disabled', false).text('<?php echo esc_js(__('Speichern', 'abschussplan-hgmh')); ?>');
                 
                 // Scroll to the response message
                 $('html, body').animate({
@@ -237,14 +237,14 @@ jQuery(document).ready(function($) {
     });
     
     // Real-time validation
-    $('.abschuss-form input, .abschuss-form select, .abschuss-form textarea').on('blur', function() {
+    $('.abschussplan-hgmh-form input, .abschussplan-hgmh-form select, .abschussplan-hgmh-form textarea').on('blur', function() {
         const $field = $(this);
         const fieldValue = $field.val();
         
         // Validate required fields
         if ($field.prop('required') && !fieldValue) {
             $field.addClass('is-invalid');
-            $field.siblings('.form-error').text('<?php echo esc_js(__('Dieses Feld ist erforderlich', 'custom-form-display')); ?>').show();
+            $field.siblings('.form-error').text('<?php echo esc_js(__('Dieses Feld ist erforderlich', 'abschussplan-hgmh')); ?>').show();
         } else {
             $field.removeClass('is-invalid');
             $field.siblings('.form-error').text('').hide();
@@ -260,14 +260,14 @@ jQuery(document).ready(function($) {
             
             if (dateValue >= tomorrow) {
                 $field.addClass('is-invalid');
-                $field.siblings('.form-error').text('<?php echo esc_js(__('Das Datum darf nicht in der Zukunft liegen.', 'custom-form-display')); ?>').show();
+                $field.siblings('.form-error').text('<?php echo esc_js(__('Das Datum darf nicht in der Zukunft liegen.', 'abschussplan-hgmh')); ?>').show();
             }
         }
         
         // Special validation for WUS field
         if ($field.attr('id') === 'field3' && fieldValue && !$.isNumeric(fieldValue)) {
             $field.addClass('is-invalid');
-            $field.siblings('.form-error').text('<?php echo esc_js(__('WUS muss eine ganze Zahl sein.', 'custom-form-display')); ?>').show();
+            $field.siblings('.form-error').text('<?php echo esc_js(__('WUS muss eine ganze Zahl sein.', 'abschussplan-hgmh')); ?>').show();
         }
     });
 });

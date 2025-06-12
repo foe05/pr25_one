@@ -147,7 +147,7 @@ class AHGMH_Form_Handler {
     public function render_admin() {
         // Check if user has admin capabilities
         if (!current_user_can('manage_options')) {
-            return '<p>' . __('You do not have permission to access this page.', 'custom-form-display') . '</p>';
+            return '<p>' . __('You do not have permission to access this page.', 'abschussplan-hgmh') . '</p>';
         }
         
         // Get categories from options
@@ -221,7 +221,7 @@ class AHGMH_Form_Handler {
         
         // Required fields
         if (empty($field1)) {
-            $errors['field1'] = __('Dieses Feld ist erforderlich.', 'custom-form-display');
+            $errors['field1'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
             // Validate date format and ensure it's not in the future
             try {
@@ -230,27 +230,27 @@ class AHGMH_Form_Handler {
                 $tomorrow->setTime(0, 0, 0);
                 
                 if ($selected_date >= $tomorrow) {
-                    $errors['field1'] = __('Das Datum darf nicht in der Zukunft liegen.', 'custom-form-display');
+                    $errors['field1'] = __('Das Datum darf nicht in der Zukunft liegen.', 'abschussplan-hgmh');
                 }
             } catch (Exception $e) {
-                $errors['field1'] = __('Ungültiges Datumsformat.', 'custom-form-display');
+                $errors['field1'] = __('Ungültiges Datumsformat.', 'abschussplan-hgmh');
             }
         }
         
         if (empty($field2)) {
-            $errors['field2'] = __('Dieses Feld ist erforderlich.', 'custom-form-display');
+            $errors['field2'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
             // Validate dropdown value is in the allowed list (use dynamic categories)
             $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
             
             if (!in_array($field2, $categories)) {
-                $errors['field2'] = __('Bitte wählen Sie einen gültigen Wert aus.', 'custom-form-display');
+                $errors['field2'] = __('Bitte wählen Sie einen gültigen Wert aus.', 'abschussplan-hgmh');
             }
         }
         
         // Validate field5 (Jagdbezirk) - required field
         if (empty($field5)) {
-            $errors['field5'] = __('Dieses Feld ist erforderlich.', 'custom-form-display');
+            $errors['field5'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
             // Validate that the selected Jagdbezirk exists and is active
             $database = abschussplan_hgmh()->database;
@@ -260,16 +260,16 @@ class AHGMH_Form_Handler {
 
             
             if (!in_array($field5, $valid_jagdbezirke)) {
-                $errors['field5'] = __('Bitte wählen Sie einen gültigen Jagdbezirk aus.', 'custom-form-display');
+                $errors['field5'] = __('Bitte wählen Sie einen gültigen Jagdbezirk aus.', 'abschussplan-hgmh');
             }
         }
         
         // Validate WUS to ensure it's an integer if provided and within range
         if (!empty($field3)) {
             if (!is_numeric($field3)) {
-                $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'custom-form-display');
+                $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'abschussplan-hgmh');
             } elseif ($field3 < 1000000 || $field3 > 9999999) {
-                $errors['field3'] = __('WUS muss zwischen 1000000 und 9999999 liegen.', 'custom-form-display');
+                $errors['field3'] = __('WUS muss zwischen 1000000 und 9999999 liegen.', 'abschussplan-hgmh');
             }
         }
         
@@ -278,7 +278,7 @@ class AHGMH_Form_Handler {
             $database = abschussplan_hgmh()->database;
             $existing_wus = $database->check_wus_exists($field3);
             if ($existing_wus) {
-                $errors['field3'] = __('Diese WUS-Nummer ist bereits vergeben. Bitte geben Sie eine andere WUS-Nummer an.', 'custom-form-display');
+                $errors['field3'] = __('Diese WUS-Nummer ist bereits vergeben. Bitte geben Sie eine andere WUS-Nummer an.', 'abschussplan-hgmh');
             }
         }
         
@@ -288,7 +288,7 @@ class AHGMH_Form_Handler {
         // If there are errors, return them
         if (!empty($errors)) {
             wp_send_json_error(array(
-                'message' => __('Bitte beheben Sie die Fehler im Formular.', 'custom-form-display'),
+                'message' => __('Bitte beheben Sie die Fehler im Formular.', 'abschussplan-hgmh'),
                 'errors' => $errors
             ));
         }
@@ -309,12 +309,12 @@ class AHGMH_Form_Handler {
 
         if ($submission_id) {
             wp_send_json_success(array(
-                'message' => __('Abschussmeldung erfolgreich gespeichert!', 'custom-form-display'),
+                'message' => __('Abschussmeldung erfolgreich gespeichert!', 'abschussplan-hgmh'),
                 'submission_id' => $submission_id
             ));
         } else {
             wp_send_json_error(array(
-                'message' => __('Es gab einen Fehler beim Speichern der Meldung. Bitte versuchen Sie es erneut.', 'custom-form-display')
+                'message' => __('Es gab einen Fehler beim Speichern der Meldung. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh')
             ));
         }
     }
@@ -328,14 +328,14 @@ class AHGMH_Form_Handler {
         // Check if user has admin capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array(
-                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'custom-form-display')
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
             ));
         }
         
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'db_config_nonce')) {
             wp_send_json_error(array(
-                'message' => __('Sicherheitscheck fehlgeschlagen.', 'custom-form-display')
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
             ));
         }
         
@@ -371,7 +371,7 @@ class AHGMH_Form_Handler {
         }
         
         wp_send_json_success(array(
-            'message' => __('Datenbank-Konfiguration erfolgreich gespeichert.', 'custom-form-display')
+            'message' => __('Datenbank-Konfiguration erfolgreich gespeichert.', 'abschussplan-hgmh')
         ));
     }
     
@@ -382,14 +382,14 @@ class AHGMH_Form_Handler {
         // Check if user has admin capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array(
-                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'custom-form-display')
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
             ));
         }
         
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'db_config_nonce')) {
             wp_send_json_error(array(
-                'message' => __('Sicherheitscheck fehlgeschlagen.', 'custom-form-display')
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
             ));
         }
         
@@ -411,14 +411,14 @@ class AHGMH_Form_Handler {
                 if (is_writable($test_file)) {
                     wp_send_json_success(array(
                         'message' => sprintf(
-                            __('Verbindung zur SQLite-Datenbank (%s) erfolgreich hergestellt.', 'custom-form-display'),
+                            __('Verbindung zur SQLite-Datenbank (%s) erfolgreich hergestellt.', 'abschussplan-hgmh'),
                             $sqlite_file
                         )
                     ));
                 } else {
                     wp_send_json_error(array(
                         'message' => sprintf(
-                            __('Die Datei %s existiert, ist aber nicht beschreibbar.', 'custom-form-display'),
+                            __('Die Datei %s existiert, ist aber nicht beschreibbar.', 'abschussplan-hgmh'),
                             $sqlite_file
                         )
                     ));
@@ -426,7 +426,7 @@ class AHGMH_Form_Handler {
             } catch (Exception $e) {
                 wp_send_json_error(array(
                     'message' => sprintf(
-                        __('Fehler beim Verbindungstest: %s', 'custom-form-display'),
+                        __('Fehler beim Verbindungstest: %s', 'abschussplan-hgmh'),
                         $e->getMessage()
                     )
                 ));
@@ -435,18 +435,18 @@ class AHGMH_Form_Handler {
             // For PostgreSQL, we would use pg_connect in production
             // Here, we'll just simulate a successful connection
             wp_send_json_success(array(
-                'message' => __('Verbindung zur PostgreSQL-Datenbank erfolgreich hergestellt.', 'custom-form-display')
+                'message' => __('Verbindung zur PostgreSQL-Datenbank erfolgreich hergestellt.', 'abschussplan-hgmh')
             ));
         } else if ($db_type === 'mysql') {
             // For MySQL, we would use mysqli_connect in production
             // Here, we'll just simulate a successful connection
             wp_send_json_success(array(
-                'message' => __('Verbindung zur MySQL-Datenbank erfolgreich hergestellt.', 'custom-form-display')
+                'message' => __('Verbindung zur MySQL-Datenbank erfolgreich hergestellt.', 'abschussplan-hgmh')
             ));
         } else {
             wp_send_json_error(array(
                 'message' => sprintf(
-                    __('Unbekannter Datenbanktyp: %s', 'custom-form-display'),
+                    __('Unbekannter Datenbanktyp: %s', 'abschussplan-hgmh'),
                     $db_type
                 )
             ));
@@ -460,14 +460,14 @@ class AHGMH_Form_Handler {
         // Check if user has admin capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array(
-                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'custom-form-display')
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
             ));
         }
         
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'limits_nonce')) {
             wp_send_json_error(array(
-                'message' => __('Sicherheitscheck fehlgeschlagen.', 'custom-form-display')
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
             ));
         }
         
@@ -489,7 +489,7 @@ class AHGMH_Form_Handler {
         update_option('abschuss_category_limits', $limits);
         
         wp_send_json_success(array(
-            'message' => __('Höchstgrenzen erfolgreich gespeichert.', 'custom-form-display'),
+            'message' => __('Höchstgrenzen erfolgreich gespeichert.', 'abschussplan-hgmh'),
             'redirect' => true
         ));
     }
