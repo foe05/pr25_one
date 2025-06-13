@@ -192,11 +192,17 @@ class AHGMH_Database_Handler {
     public function count_submissions_this_month() {
         global $wpdb;
         
+        // Get the current month and year in a more reliable way
+        $current_month = date('m');
+        $current_year = date('Y');
+        
         $query = $wpdb->prepare(
             "SELECT COUNT(*) FROM $this->table_name 
-             WHERE MONTH(created_at) = MONTH(CURDATE()) 
-             AND YEAR(created_at) = YEAR(CURDATE())"
+             WHERE MONTH(created_at) = %s 
+             AND YEAR(created_at) = %s",
+            $current_month, $current_year
         );
+        
         $count = $wpdb->get_var($query);
         
         return (int) $count;
@@ -236,49 +242,7 @@ class AHGMH_Database_Handler {
         return (int) $count;
     }
 
-    /**
-     * Get submissions by species with limit
-     *
-     * @param int $limit Number of results to get
-     * @param int $offset Offset for pagination
-     * @param string $species Species to filter by
-     * @return array Array of submissions
-     */
-    public function get_submissions_by_species($limit = 10, $offset = 0, $species = '') {
-        global $wpdb;
-        
-        $query = $wpdb->prepare(
-            "SELECT s.*, j.meldegruppe 
-             FROM $this->table_name s 
-             LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk 
-             WHERE s.game_species = %s
-             ORDER BY s.created_at DESC
-             LIMIT %d OFFSET %d",
-            $species, $limit, $offset
-        );
-        
-        $results = $wpdb->get_results($query, ARRAY_A);
-        
-        return $results;
-    }
 
-    /**
-     * Count submissions by species
-     *
-     * @param string $species Species to count
-     * @return int Count of submissions for species
-     */
-    public function count_submissions_by_species($species) {
-        global $wpdb;
-        
-        $query = $wpdb->prepare(
-            "SELECT COUNT(*) FROM $this->table_name WHERE game_species = %s",
-            $species
-        );
-        $count = $wpdb->get_var($query);
-        
-        return (int) $count;
-    }
 
     /**
      * Delete a submission
