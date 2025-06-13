@@ -32,7 +32,10 @@ function ahgmh_uninstall_cleanup() {
     $plugin_options = array(
         'ahgmh_species',
         'ahgmh_categories',
-        'abschuss_db_config'
+        'abschuss_db_config',
+        'abschussplan_hgmh_settings',
+        'abschussplan_hgmh_version',
+        'ahgmh_export_filename'
     );
     
     // Remove standard plugin options
@@ -44,7 +47,9 @@ function ahgmh_uninstall_cleanup() {
     $species_options = $wpdb->get_results(
         "SELECT option_name FROM {$wpdb->options} 
          WHERE option_name LIKE 'abschuss_category_limits_%' 
-            OR option_name LIKE 'abschuss_category_allow_exceeding_%'"
+            OR option_name LIKE 'abschuss_category_allow_exceeding_%'
+            OR option_name LIKE 'ahgmh_%'
+            OR option_name LIKE 'abschussplan_hgmh_%'"
     );
     
     $deleted_options_count = 0;

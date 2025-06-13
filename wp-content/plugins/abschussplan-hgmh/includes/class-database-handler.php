@@ -185,6 +185,66 @@ class AHGMH_Database_Handler {
     }
 
     /**
+     * Count submissions this month
+     *
+     * @return int Count of submissions this month
+     */
+    public function count_submissions_this_month() {
+        global $wpdb;
+        
+        // Get the current month and year in a more reliable way
+        $current_month = date('m');
+        $current_year = date('Y');
+        
+        $query = $wpdb->prepare(
+            "SELECT COUNT(*) FROM $this->table_name 
+             WHERE MONTH(created_at) = %s 
+             AND YEAR(created_at) = %s",
+            $current_month, $current_year
+        );
+        
+        $count = $wpdb->get_var($query);
+        
+        return (int) $count;
+    }
+
+    /**
+     * Count active users (users who have submitted)
+     *
+     * @return int Count of active users
+     */
+    public function count_active_users() {
+        global $wpdb;
+        
+        $query = "SELECT COUNT(DISTINCT user_id) FROM $this->table_name WHERE user_id > 0";
+        $count = $wpdb->get_var($query);
+        
+        return (int) $count;
+    }
+
+    /**
+     * Count submissions by species and category
+     *
+     * @param string $species Species name
+     * @param string $category Category name
+     * @return int Count of submissions
+     */
+    public function count_submissions_by_species_category($species, $category) {
+        global $wpdb;
+        
+        $query = $wpdb->prepare(
+            "SELECT COUNT(*) FROM $this->table_name 
+             WHERE game_species = %s AND field2 = %s",
+            $species, $category
+        );
+        $count = $wpdb->get_var($query);
+        
+        return (int) $count;
+    }
+
+
+
+    /**
      * Delete a submission
      *
      * @param int $id Submission ID

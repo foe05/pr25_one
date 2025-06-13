@@ -10,19 +10,19 @@ if (!defined('ABSPATH')) {
 ?>
 
 <div class="abschuss-admin-container">
-    <h2><?php echo esc_html__('Abschussmeldungen - Admin Panel', 'custom-form-display'); ?></h2>
-    <p class="lead"><?php echo esc_html__('Konfiguration und Verwaltung', 'custom-form-display'); ?></p>
+    <h2><?php echo esc_html__('Abschussmeldungen - Admin Panel', 'abschussplan-hgmh'); ?></h2>
+    <p class="lead"><?php echo esc_html__('Konfiguration und Verwaltung', 'abschussplan-hgmh'); ?></p>
     
     <div class="nav-wrapper">
         <ul class="nav nav-tabs" id="abschussAdminTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="db-tab" data-bs-toggle="tab" data-bs-target="#db-content" type="button" role="tab" aria-controls="db-content" aria-selected="true">
-                    <?php echo esc_html__('Datenbank Konfiguration', 'custom-form-display'); ?>
+                    <?php echo esc_html__('Datenbank Konfiguration', 'abschussplan-hgmh'); ?>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="limits-tab" data-bs-toggle="tab" data-bs-target="#limits-content" type="button" role="tab" aria-controls="limits-content" aria-selected="false">
-                    <?php echo esc_html__('Höchstgrenzen', 'custom-form-display'); ?>
+                    <?php echo esc_html__('Höchstgrenzen', 'abschussplan-hgmh'); ?>
                 </button>
             </li>
         </ul>
@@ -33,7 +33,7 @@ if (!defined('ABSPATH')) {
         <div class="tab-pane fade show active" id="db-content" role="tabpanel" aria-labelledby="db-tab">
             <div class="card mt-3">
                 <div class="card-header">
-                    <h3 class="mb-0"><?php echo esc_html__('Datenbank Konfiguration', 'custom-form-display'); ?></h3>
+                    <h3 class="mb-0"><?php echo esc_html__('Datenbank Konfiguration', 'abschussplan-hgmh'); ?></h3>
                 </div>
                 <div class="card-body">
                     <div id="db-response" class="alert" role="alert" style="display: none;"></div>
@@ -42,16 +42,16 @@ if (!defined('ABSPATH')) {
                         <?php wp_nonce_field('db_config_nonce', 'db_nonce'); ?>
                         
                         <div class="mb-3">
-                            <label for="db_type" class="form-label"><?php echo esc_html__('Datenbanktyp', 'custom-form-display'); ?></label>
+                            <label for="db_type" class="form-label"><?php echo esc_html__('Datenbanktyp', 'abschussplan-hgmh'); ?></label>
                             <select class="form-select" id="db_type" name="db_type">
                                 <option value="sqlite" <?php selected($db_config['type'], 'sqlite'); ?>>
-                                    <?php echo esc_html__('SQLite (Standard)', 'custom-form-display'); ?>
+                                    <?php echo esc_html__('SQLite (Standard)', 'abschussplan-hgmh'); ?>
                                 </option>
                                 <option value="postgresql" <?php selected($db_config['type'], 'postgresql'); ?>>
-                                    <?php echo esc_html__('PostgreSQL', 'custom-form-display'); ?>
+                                    <?php echo esc_html__('PostgreSQL', 'abschussplan-hgmh'); ?>
                                 </option>
                                 <option value="mysql" <?php selected($db_config['type'], 'mysql'); ?>>
-                                    <?php echo esc_html__('MySQL', 'custom-form-display'); ?>
+                                    <?php echo esc_html__('MySQL', 'abschussplan-hgmh'); ?>
                                 </option>
                             </select>
                         </div>
@@ -59,41 +59,41 @@ if (!defined('ABSPATH')) {
                         <div class="sqlite-settings" style="<?php echo $db_config['type'] !== 'sqlite' ? 'display: none;' : ''; ?>">
                             <div class="mb-3">
                                 <label for="sqlite_file" class="form-label">
-                                    <?php echo esc_html__('SQLite Datei-Pfad', 'custom-form-display'); ?>
+                                    <?php echo esc_html__('SQLite Datei-Pfad', 'abschussplan-hgmh'); ?>
                                 </label>
                                 <input type="text" class="form-control" id="sqlite_file" name="sqlite_file" 
                                        value="<?php echo esc_attr($db_config['type'] === 'sqlite' && isset($db_config['sqlite_file']) ? $db_config['sqlite_file'] : 'abschuss_db.sqlite'); ?>">
                                 <small class="text-muted">
-                                    <?php echo esc_html__('Relativer oder absoluter Pfad zur Datenbank-Datei', 'custom-form-display'); ?>
+                                    <?php echo esc_html__('Relativer oder absoluter Pfad zur Datenbank-Datei', 'abschussplan-hgmh'); ?>
                                 </small>
                             </div>
                         </div>
                         
                         <div class="postgresql-settings" style="<?php echo $db_config['type'] !== 'postgresql' ? 'display: none;' : ''; ?>">
                             <div class="mb-3">
-                                <label for="pg_host" class="form-label"><?php echo esc_html__('Host', 'custom-form-display'); ?></label>
+                                <label for="pg_host" class="form-label"><?php echo esc_html__('Host', 'abschussplan-hgmh'); ?></label>
                                 <input type="text" class="form-control" id="pg_host" name="pg_host" 
                                        value="<?php echo esc_attr($db_config['type'] === 'postgresql' && isset($db_config['host']) ? $db_config['host'] : 'localhost'); ?>" 
                                        placeholder="localhost">
                             </div>
                             <div class="mb-3">
-                                <label for="pg_port" class="form-label"><?php echo esc_html__('Port', 'custom-form-display'); ?></label>
+                                <label for="pg_port" class="form-label"><?php echo esc_html__('Port', 'abschussplan-hgmh'); ?></label>
                                 <input type="text" class="form-control" id="pg_port" name="pg_port" 
                                        value="<?php echo esc_attr($db_config['type'] === 'postgresql' && isset($db_config['port']) ? $db_config['port'] : '5432'); ?>" 
                                        placeholder="5432">
                             </div>
                             <div class="mb-3">
-                                <label for="pg_dbname" class="form-label"><?php echo esc_html__('Datenbankname', 'custom-form-display'); ?></label>
+                                <label for="pg_dbname" class="form-label"><?php echo esc_html__('Datenbankname', 'abschussplan-hgmh'); ?></label>
                                 <input type="text" class="form-control" id="pg_dbname" name="pg_dbname" 
                                        value="<?php echo esc_attr($db_config['type'] === 'postgresql' && isset($db_config['dbname']) ? $db_config['dbname'] : ''); ?>">
                             </div>
                             <div class="mb-3">
-                                <label for="pg_user" class="form-label"><?php echo esc_html__('Benutzername', 'custom-form-display'); ?></label>
+                                <label for="pg_user" class="form-label"><?php echo esc_html__('Benutzername', 'abschussplan-hgmh'); ?></label>
                                 <input type="text" class="form-control" id="pg_user" name="pg_user" 
                                        value="<?php echo esc_attr($db_config['type'] === 'postgresql' && isset($db_config['user']) ? $db_config['user'] : ''); ?>">
                             </div>
                             <div class="mb-3">
-                                <label for="pg_password" class="form-label"><?php echo esc_html__('Passwort', 'custom-form-display'); ?></label>
+                                <label for="pg_password" class="form-label"><?php echo esc_html__('Passwort', 'abschussplan-hgmh'); ?></label>
                                 <input type="password" class="form-control" id="pg_password" name="pg_password" 
                                        value="<?php echo esc_attr($db_config['type'] === 'postgresql' && isset($db_config['password']) ? $db_config['password'] : ''); ?>">
                             </div>
@@ -101,39 +101,39 @@ if (!defined('ABSPATH')) {
                         
                         <div class="mysql-settings" style="<?php echo $db_config['type'] !== 'mysql' ? 'display: none;' : ''; ?>">
                             <div class="mb-3">
-                                <label for="mysql_host" class="form-label"><?php echo esc_html__('Host', 'custom-form-display'); ?></label>
+                                <label for="mysql_host" class="form-label"><?php echo esc_html__('Host', 'abschussplan-hgmh'); ?></label>
                                 <input type="text" class="form-control" id="mysql_host" name="mysql_host" 
                                        value="<?php echo esc_attr($db_config['type'] === 'mysql' && isset($db_config['host']) ? $db_config['host'] : 'localhost'); ?>" 
                                        placeholder="localhost">
                             </div>
                             <div class="mb-3">
-                                <label for="mysql_port" class="form-label"><?php echo esc_html__('Port', 'custom-form-display'); ?></label>
+                                <label for="mysql_port" class="form-label"><?php echo esc_html__('Port', 'abschussplan-hgmh'); ?></label>
                                 <input type="text" class="form-control" id="mysql_port" name="mysql_port" 
                                        value="<?php echo esc_attr($db_config['type'] === 'mysql' && isset($db_config['port']) ? $db_config['port'] : '3306'); ?>" 
                                        placeholder="3306">
                             </div>
                             <div class="mb-3">
-                                <label for="mysql_dbname" class="form-label"><?php echo esc_html__('Datenbankname', 'custom-form-display'); ?></label>
+                                <label for="mysql_dbname" class="form-label"><?php echo esc_html__('Datenbankname', 'abschussplan-hgmh'); ?></label>
                                 <input type="text" class="form-control" id="mysql_dbname" name="mysql_dbname" 
                                        value="<?php echo esc_attr($db_config['type'] === 'mysql' && isset($db_config['dbname']) ? $db_config['dbname'] : ''); ?>">
                             </div>
                             <div class="mb-3">
-                                <label for="mysql_user" class="form-label"><?php echo esc_html__('Benutzername', 'custom-form-display'); ?></label>
+                                <label for="mysql_user" class="form-label"><?php echo esc_html__('Benutzername', 'abschussplan-hgmh'); ?></label>
                                 <input type="text" class="form-control" id="mysql_user" name="mysql_user" 
                                        value="<?php echo esc_attr($db_config['type'] === 'mysql' && isset($db_config['user']) ? $db_config['user'] : ''); ?>">
                             </div>
                             <div class="mb-3">
-                                <label for="mysql_password" class="form-label"><?php echo esc_html__('Passwort', 'custom-form-display'); ?></label>
+                                <label for="mysql_password" class="form-label"><?php echo esc_html__('Passwort', 'abschussplan-hgmh'); ?></label>
                                 <input type="password" class="form-control" id="mysql_password" name="mysql_password" 
                                        value="<?php echo esc_attr($db_config['type'] === 'mysql' && isset($db_config['password']) ? $db_config['password'] : ''); ?>">
                             </div>
                         </div>
                         
                         <button type="submit" class="btn btn-primary">
-                            <?php echo esc_html__('Konfiguration speichern', 'custom-form-display'); ?>
+                            <?php echo esc_html__('Konfiguration speichern', 'abschussplan-hgmh'); ?>
                         </button>
                         <button type="button" id="test-connection" class="btn btn-secondary">
-                            <?php echo esc_html__('Verbindung testen', 'custom-form-display'); ?>
+                            <?php echo esc_html__('Verbindung testen', 'abschussplan-hgmh'); ?>
                         </button>
                     </form>
                 </div>
@@ -144,7 +144,7 @@ if (!defined('ABSPATH')) {
         <div class="tab-pane fade" id="limits-content" role="tabpanel" aria-labelledby="limits-tab">
             <div class="card mt-3">
                 <div class="card-header">
-                    <h3 class="mb-0"><?php echo esc_html__('Höchstgrenzen für Abschüsse', 'custom-form-display'); ?></h3>
+                    <h3 class="mb-0"><?php echo esc_html__('Höchstgrenzen für Abschüsse', 'abschussplan-hgmh'); ?></h3>
                 </div>
                 <div class="card-body">
                     <div id="limits-response" class="alert" role="alert" style="display: none;"></div>
@@ -208,7 +208,7 @@ if (!defined('ABSPATH')) {
                         </div>
                         
                         <button type="submit" class="btn btn-primary">
-                            <?php echo esc_html__('Höchstgrenzen speichern', 'custom-form-display'); ?>
+                            <?php echo esc_html__('Höchstgrenzen speichern', 'abschussplan-hgmh'); ?>
                         </button>
                     </form>
                 </div>
@@ -217,17 +217,17 @@ if (!defined('ABSPATH')) {
             <!-- Summary Table within Admin Panel -->
             <div class="card mt-3">
                 <div class="card-header">
-                    <h3 class="mb-0"><?php echo esc_html__('Aktuelle Abschusszahlen', 'custom-form-display'); ?></h3>
+                    <h3 class="mb-0"><?php echo esc_html__('Aktuelle Abschusszahlen', 'abschussplan-hgmh'); ?></h3>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th><?php echo esc_html__('Kategorie', 'custom-form-display'); ?></th>
-                                    <th><?php echo esc_html__('Abschüsse', 'custom-form-display'); ?></th>
-                                    <th><?php echo esc_html__('Höchstgrenze', 'custom-form-display'); ?></th>
-                                    <th><?php echo esc_html__('Verbleibend', 'custom-form-display'); ?></th>
+                                    <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Abschüsse', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Höchstgrenze', 'abschussplan-hgmh'); ?></th>
+                                    <th><?php echo esc_html__('Verbleibend', 'abschussplan-hgmh'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -243,7 +243,7 @@ if (!defined('ABSPATH')) {
                                                 echo esc_html($remaining);
                                                 ?>
                                             <?php else : ?>
-                                                <span class="text-muted"><?php echo esc_html__('Keine Grenze', 'custom-form-display'); ?></span>
+                                                <span class="text-muted"><?php echo esc_html__('Keine Grenze', 'abschussplan-hgmh'); ?></span>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -307,7 +307,7 @@ jQuery(document).ready(function($) {
             },
             error: function() {
                 $responseContainer.removeClass('alert-success').addClass('alert-danger')
-                                  .text('<?php echo esc_js(__('Es gab einen Fehler beim Speichern der Konfiguration.', 'custom-form-display')); ?>')
+                                  .text('<?php echo esc_js(__('Es gab einen Fehler beim Speichern der Konfiguration.', 'abschussplan-hgmh')); ?>')
                                   .show();
             },
             complete: function() {
@@ -325,7 +325,7 @@ jQuery(document).ready(function($) {
         const $responseContainer = $('#db-response');
         
         // Disable the button during testing
-        $btn.prop('disabled', true).text('<?php echo esc_js(__('Wird getestet...', 'custom-form-display')); ?>');
+        $btn.prop('disabled', true).text('<?php echo esc_js(__('Wird getestet...', 'abschussplan-hgmh')); ?>');
         
         // Get form data
         var formData = new FormData($form[0]);
@@ -350,12 +350,12 @@ jQuery(document).ready(function($) {
             },
             error: function() {
                 $responseContainer.removeClass('alert-success').addClass('alert-danger')
-                                  .text('<?php echo esc_js(__('Es gab einen Fehler beim Testen der Verbindung.', 'custom-form-display')); ?>')
+                                  .text('<?php echo esc_js(__('Es gab einen Fehler beim Testen der Verbindung.', 'abschussplan-hgmh')); ?>')
                                   .show();
             },
             complete: function() {
                 $btn.prop('disabled', false)
-                    .text('<?php echo esc_js(__('Verbindung testen', 'custom-form-display')); ?>');
+                    .text('<?php echo esc_js(__('Verbindung testen', 'abschussplan-hgmh')); ?>');
             }
         });
     });
@@ -401,7 +401,7 @@ jQuery(document).ready(function($) {
             },
             error: function() {
                 $responseContainer.removeClass('alert-success').addClass('alert-danger')
-                                  .text('<?php echo esc_js(__('Es gab einen Fehler beim Speichern der Höchstgrenzen.', 'custom-form-display')); ?>')
+                                  .text('<?php echo esc_js(__('Es gab einen Fehler beim Speichern der Höchstgrenzen.', 'abschussplan-hgmh')); ?>')
                                   .show();
             },
             complete: function() {

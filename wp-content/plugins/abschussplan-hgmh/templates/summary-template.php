@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 <div class="abschuss-summary-container">
     <div class="card">
         <div class="card-header">
-            <h3 class="mb-0"><?php echo esc_html__('Aktuelle Abschusszahlen', 'custom-form-display'); ?></h3>
+            <h3 class="mb-0"><?php echo esc_html__('Aktuelle Abschusszahlen', 'abschussplan-hgmh'); ?></h3>
         </div>
         <div class="card-body">
             <div class="table-responsive">

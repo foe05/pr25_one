@@ -130,7 +130,7 @@ class AHGMH_Admin_Page {
      * Render section description
      */
     public function render_section_description() {
-        echo '<p>' . esc_html__('Configure the form fields and display settings.', 'custom-form-display') . '</p>';
+        echo '<p>' . esc_html__('Configure the form fields and display settings.', 'abschussplan-hgmh') . '</p>';
     }
 
     /**
@@ -263,20 +263,20 @@ class AHGMH_Admin_Page {
             
             <?php if (empty($submissions)) : ?>
                 <div class="notice notice-info">
-                    <p><?php echo esc_html__('No submissions found.', 'custom-form-display'); ?></p>
+                    <p><?php echo esc_html__('No submissions found.', 'abschussplan-hgmh'); ?></p>
                 </div>
             <?php else : ?>
                 <div class="tablenav top">
                     <div class="tablenav-pages">
                         <span class="displaying-num">
-                            <?php echo sprintf(_n('%s item', '%s items', $total_submissions, 'custom-form-display'), number_format_i18n($total_submissions)); ?>
+                            <?php echo sprintf(_n('%s item', '%s items', $total_submissions, 'abschussplan-hgmh'), number_format_i18n($total_submissions)); ?>
                         </span>
                         <?php
                         echo paginate_links(array(
                             'base' => add_query_arg('paged', '%#%'),
                             'format' => '',
-                            'prev_text' => __('&laquo;', 'custom-form-display'),
-                            'next_text' => __('&raquo;', 'custom-form-display'),
+                            'prev_text' => __('&laquo;', 'abschussplan-hgmh'),
+                            'next_text' => __('&raquo;', 'abschussplan-hgmh'),
                             'total' => $total_pages,
                             'current' => $page
                         ));
@@ -352,14 +352,14 @@ class AHGMH_Admin_Page {
                 <div class="tablenav bottom">
                     <div class="tablenav-pages">
                         <span class="displaying-num">
-                            <?php echo sprintf(_n('%s item', '%s items', $total_submissions, 'custom-form-display'), number_format_i18n($total_submissions)); ?>
+                            <?php echo sprintf(_n('%s item', '%s items', $total_submissions, 'abschussplan-hgmh'), number_format_i18n($total_submissions)); ?>
                         </span>
                         <?php
                         echo paginate_links(array(
                             'base' => add_query_arg('paged', '%#%'),
                             'format' => '',
-                            'prev_text' => __('&laquo;', 'custom-form-display'),
-                            'next_text' => __('&raquo;', 'custom-form-display'),
+                            'prev_text' => __('&laquo;', 'abschussplan-hgmh'),
+                            'next_text' => __('&raquo;', 'abschussplan-hgmh'),
                             'total' => $total_pages,
                             'current' => $page
                         ));
@@ -398,7 +398,7 @@ class AHGMH_Admin_Page {
                     <table class="form-table" role="presentation">
                         <tr>
                             <th scope="row"><?php echo esc_html__('Version', 'abschussplan-hgmh'); ?></th>
-                            <td><?php echo esc_html(defined('AHGMH_PLUGIN_VERSION') ? AHGMH_PLUGIN_VERSION : '1.5.0'); ?></td>
+                            <td><?php echo esc_html(defined('AHGMH_PLUGIN_VERSION') ? AHGMH_PLUGIN_VERSION : '2.0.0'); ?></td>
                         </tr>
                         <tr>
                             <th scope="row"><?php echo esc_html__('Plugin-Verzeichnis', 'abschussplan-hgmh'); ?></th>
@@ -640,7 +640,7 @@ class AHGMH_Admin_Page {
             
             // Verify nonce
             if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'delete_submission_' . $id)) {
-                wp_die(__('Security check failed. Please try again.', 'custom-form-display'));
+                wp_die(__('Security check failed. Please try again.', 'abschussplan-hgmh'));
             }
             
             // Delete the submission
@@ -666,14 +666,14 @@ class AHGMH_Admin_Page {
                 add_settings_error(
                     'custom_form_display_messages',
                     'submission_deleted',
-                    __('Submission deleted successfully.', 'custom-form-display'),
+                    __('Submission deleted successfully.', 'abschussplan-hgmh'),
                     'updated'
                 );
             } elseif ($_GET['message'] === 'error') {
                 add_settings_error(
                     'custom_form_display_messages',
                     'submission_error',
-                    __('Error deleting submission.', 'custom-form-display'),
+                    __('Error deleting submission.', 'abschussplan-hgmh'),
                     'error'
                 );
             }

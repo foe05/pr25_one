@@ -1,397 +1,370 @@
-# Abschussplan HGMH - Hunting Management System
+# Abschussplan HGMH - WordPress Plugin
 
-**Version:** 1.5.0  
-**Status:** Vollständig implementiert mit CSV Export  
-**Typ:** Flask Web Application & WordPress Plugin
+**Version:** 2.0.0  
+**Status:** Production Ready  
+**Type:** WordPress Plugin for German Hunting Management
 
-## 🎯 Überblick
+## 🎯 Overview
 
-Das **Abschussplan HGMH** System ist eine spezialisierte Lösung für die digitale Verwaltung von Jagdabschussmeldungen in deutschen Jagdrevieren. Verfügbar als Flask-Webanwendung und WordPress-Plugin.
+The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digital management of hunting reports in German hunting districts. It provides a complete system for hunters to submit game harvest data and administrators to manage hunting limits, categories, and export data with advanced features.
 
-### ✨ Kernfunktionen
-- ✅ **Digitale Abschussmeldungen** - Webformular für Jäger
-- ✅ **Limitverwaltung** - Konfigurierbare Soll-Werte pro Kategorie  
-- ✅ **CSV Export** - Vollständige Datenexporte mit Filteroptionen
-- ✅ **Responsive Design** - Mobile-optimierte Bedienung
-- ✅ **Multi-Database** - SQLite, MySQL, PostgreSQL Unterstützung
-
-### 🎮 Demo & Screenshots
-Live-Demo der Flask-Version verfügbar. Screenshots aller Funktionen im [Screenshots-Verzeichnis](screenshots/).
-
----
-
-## 🚀 Quick Start
-
-### Flask Version (Empfohlen für lokale Tests)
-```bash
-# Repository klonen
-git clone https://github.com/foe05/pr25_one.git
-cd pr25_one
-
-# Dependencies installieren
-uv sync
-
-# Entwicklungsserver starten
-python main.py
-```
-➡️ **Öffne:** http://localhost:5000
-
-### WordPress Plugin
-1. Upload `wp-content/plugins/abschussplan-hgmh/` nach WordPress
-2. Plugin in Admin-Panel aktivieren
-3. Shortcodes verwenden (siehe [Shortcode-Referenz](#-shortcode-referenz))
+### ✨ Core Features
+- ✅ **Digital Harvest Reports** - Advanced web forms with validation
+- ✅ **Comprehensive Admin Panel** - Modern tabbed interface with full CRUD operations
+- ✅ **Advanced Export System** - Configurable CSV exports with custom filename patterns  
+- ✅ **Category Management** - Full CRUD for species and categories with limit controls
+- ✅ **Date Range Operations** - Delete submissions by custom date ranges
+- ✅ **Responsive Design** - Mobile-optimized Bootstrap 5.3 interface
+- ✅ **Multi-Database** - WordPress MySQL, SQLite, PostgreSQL support
+- ✅ **Shortcode Integration** - 5 powerful shortcodes for complete functionality
+- ✅ **Real-time Table Updates** - AJAX-powered data refreshing
 
 ---
 
-## 📊 CSV Export Funktionen
+## 🚀 Installation
 
-### 🔗 Export URLs
-| Funktion | URL Format | Beispiel |
+### WordPress Plugin Installation
+1. Upload `wp-content/plugins/abschussplan-hgmh/` to your WordPress installation
+2. Activate plugin in WordPress Admin Panel
+3. Configure database settings (if needed)
+4. Use shortcodes in pages/posts (see [Shortcode Reference](#-shortcode-reference))
+
+### Requirements
+- **WordPress**: 5.0+
+- **PHP**: 7.4+
+- **Database**: MySQL 5.6+ (default), SQLite, or PostgreSQL 9.0+
+
+---
+
+## 📊 Advanced Export System
+
+### 🔗 Export URLs & Parameters
+Access CSV exports via WordPress AJAX endpoints with extensive configuration:
+
+| Function | URL Format | Example |
 |----------|------------|----------|
-| **Alle Einträge** | `/export_csv` | `yourdomain.com/export_csv` |
-| **Nach Wildart** | `/export_csv?category=Rotwild` | Filter nach spezifischer Wildart |
-| **Datumsbereich** | `/export_csv?from=2024-01-01&to=2024-12-31` | Zeitraum-Filter |
-| **Kombiniert** | `/export_csv?category=Damwild&from=2024-01-01` | Wildart + Datum |
+| **All Entries** | `wp-admin/admin-ajax.php?action=export_abschuss_csv` | Export all harvest data |
+| **By Species** | `?action=export_abschuss_csv&species=Rotwild` | Filter by specific game species |
+| **Date Range** | `?action=export_abschuss_csv&from=2024-01-01&to=2024-12-31` | Time period filter |
+| **Custom Filename** | `?action=export_abschuss_csv&filename=custom_export` | Set custom filename |
+| **Combined** | `?action=export_abschuss_csv&species=Damwild&from=2024-01-01&filename=damwild_2024` | Multiple parameters |
 
-### 📋 Exportierte Spalten
-1. **ID** - Eindeutige Datensatz-ID
-2. **Wildart** - Game Species (Rotwild, Damwild, etc.)
-3. **Abschussdatum** - Hunting Date
-4. **Abschuss** - Category (Wildkalb, Schmaltier, etc.)
-5. **WUS** - Wildlife Identification Number (1000000-9999999)
-6. **Bemerkung** - Remarks/Comments
-7. **Erstellt von** - Created by User
-8. **Erstellt am** - Creation Timestamp
+### 🎛️ Export Configuration (Admin Panel)
+- **Filename Patterns**: `{species}`, `{date}`, `{datetime}` placeholders
+- **Time Integration**: Optional timestamp inclusion in filenames
+- **Parameter Documentation**: Complete API reference in admin interface
+- **Real-time Preview**: See export URLs with current settings
 
-### ⚙️ Export-Konfiguration
-- **Dateiname**: Konfigurierbar im Admin-Backend
-- **Format**: Standard CSV (kommagetrennt, UTF-8)
-- **Zugriff**: Öffentlich (keine Authentifizierung erforderlich)
-- **Automatisierung**: Geeignet für Scripts und externe Systeme
+### 📋 Export Columns
+1. **ID** - Unique record ID
+2. **Wildart** - Game species (Rotwild, Damwild, etc.)
+3. **Abschussdatum** - Harvest date and time
+4. **Abschuss** - Harvest details/category
+5. **WUS** - Wildursprungsschein number
+6. **Jagdbezirk** - Hunting district
+7. **Meldegruppe** - Reporting group
+8. **Bemerkung** - Additional remarks
+9. **Erstellt von** - Created by (WordPress user)
+10. **Erstellt am** - Creation timestamp
 
----
-
-## 🎨 Frontend Funktionen
-
-### 📝 Abschussformular
-```html
-[abschuss_form species="Rotwild"]
-```
-- **WUS Validierung**: 7-stellige Nummer (1000000-9999999)
-- **Limitprüfung**: Automatische Validierung gegen Soll-Werte
-- **AJAX Submission**: Echtzeitvalidierung ohne Seitenneuladung
-
-### 📊 Datenübersicht
-```html
-[abschuss_table species="Rotwild" limit="10"]
-```
-- **Export Button**: Direkter CSV-Download mit aktuellen Filtern
-- **Paginierung**: Effiziente Darstellung großer Datenmengen
-- **Responsive**: Mobile-optimierte Tabellendarstellung
-
-### 📈 Zusammenfassung
-```html
-[abschuss_summary species="Rotwild"]
-```
-- **Status-Badges**: Farbkodierte Limit-Auslastung (🟢 🟡 🔴)
-- **Prozentanzeige**: Live-Kalkulation der Zielerreichung
+### ⚙️ Export Security & Access
+- **WordPress AJAX**: Secure endpoint integration
+- **Nonce Verification**: CSRF protection
+- **Role-based Access**: WordPress capability checks
+- **Format**: UTF-8 CSV with proper escaping
 
 ---
 
-## ⚙️ Administration
-
-### 🎛️ Konfigurationsbereiche
-
-#### **Datenbank & Export**
-- **Multi-DB Support**: SQLite, MySQL, PostgreSQL
-- **Export-Dateiname**: Anpassbarer CSV-Dateiname
-- **Verbindungstest**: Validierung der DB-Einstellungen
-
-#### **Wildarten & Kategorien**
-- **Dynamische Verwaltung**: CRUD-Operationen für alle Wildarten
-- **Globale Kategorien**: Verfügbar für alle Wildarten
-- **Live-Updates**: Sofortige Übernahme in Frontend
-
-#### **Limit-Management**
-- **Spezies-spezifisch**: Separate Limits pro Wildart
-- **Überschreitungslogik**: "Überschießen möglich?" Option
-- **Live-Vorschau**: Aktuelle Auslastung in Echtzeit
-
-### 🔗 Export URL Generator
-Automatisch generierte URLs mit Copy-to-Clipboard Funktionalität:
-```
-Basis-Export:     /export_csv
-Rotwild-Export:   /export_csv?category=Rotwild  
-Jahres-Export:    /export_csv?from=2024-01-01&to=2024-12-31
-Kombiniert:       /export_csv?category=Damwild&from=2024-01-01&to=2024-12-31
-```
-
----
-
-## 🛠️ Technische Details
-
-### 📦 Systemanforderungen
-- **Flask Version**: Python 3.11+, Flask 2.0+
-- **WordPress Version**: 5.0+, PHP 7.4+
-- **Databases**: SQLite (default), MySQL 5.6+, PostgreSQL 9.0+
-
-### 🏗️ Architektur
-```
-├── 🌐 Frontend Layer
-│   ├── Flask Templates (Jinja2)
-│   ├── WordPress Shortcodes
-│   └── Responsive Bootstrap UI
-│
-├── 🔧 Application Layer  
-│   ├── Form Validation & Processing
-│   ├── CSV Export Engine
-│   ├── AJAX API Endpoints
-│   └── Authentication & Authorization
-│
-└── 💾 Data Layer
-    ├── Multi-Database Abstraction
-    ├── Settings Management
-    └── Migration Support
-```
-
-### 🔐 Sicherheitsfeatures
-- **Input Validation**: Server & Client-side validation
-- **SQL Injection Protection**: Prepared statements
-- **XSS Prevention**: Output escaping
-- **CSRF Protection**: Nonce verification (WordPress)
-
-### 📊 Datenmodell
-```sql
--- Haupttabelle: Abschussmeldungen
-custom_form_submissions:
-  - id (PRIMARY KEY)
-  - field1 (Abschussdatum)
-  - field2 (Kategorie) 
-  - field3 (WUS, 1000000-9999999)
-  - field4 (Bemerkung)
-  - created_at (Timestamp)
-
--- Konfiguration (Key-Value Store)
-settings:
-  - key (export_filename, db_config, etc.)
-  - value (JSON/Text)
-
--- Kategorielimits
-category_limits:
-  - category (PRIMARY KEY)
-  - max_count (INTEGER)
-```
-
----
-
-## 📖 API Referenz
-
-### 🎯 Export Endpoints
-
-#### `GET /export_csv`
-Exportiert Abschussmeldungen als CSV-Datei.
-
-**Parameter:**
-- `category` (optional): Filtert nach Wildart (z.B. "Rotwild")
-- `from` (optional): Start-Datum (YYYY-MM-DD)
-- `to` (optional): End-Datum (YYYY-MM-DD)
-
-**Response:**
-- **Content-Type**: `text/csv`
-- **Headers**: `Content-Disposition: attachment; filename=export.csv`
-
-**Beispiele:**
-```bash
-# Alle Daten exportieren
-curl "http://localhost:5000/export_csv" -o export.csv
-
-# Rotwild des Jahres 2024
-curl "http://localhost:5000/export_csv?category=Rotwild&from=2024-01-01&to=2024-12-31" -o rotwild_2024.csv
-
-# Automatisiertes Backup-Script
-#!/bin/bash
-DATE=$(date +%Y-%m-%d)
-curl "http://localhost:5000/export_csv" -o "backup_${DATE}.csv"
-```
-
-### 🔧 Admin Endpoints (Flask)
-- `POST /admin/save_db_config` - Datenbank-Konfiguration speichern
-- `POST /admin/save_limits` - Kategorie-Limits aktualisieren
-- `GET /admin` - Admin-Panel anzeigen
-
----
-
-## 🎮 Shortcode-Referenz (WordPress)
+## 🎨 Shortcode Reference
 
 ### `[abschuss_form]`
+Display the harvest submission form.
 ```html
 [abschuss_form species="Rotwild"]
 ```
-**Parameter:**
-- `species` (required): Wildart-Name
+**Parameters:**
+- `species` (optional): Pre-select game species
 
 **Features:**
-- ✅ Benutzer-Authentifizierung erforderlich
-- ✅ WUS-Validierung (1000000-9999999)
-- ✅ Limit-basierte Kategorie-Deaktivierung
-- ✅ AJAX-Submission mit Echtzeit-Feedback
+- ✅ WordPress user authentication required
+- ✅ AJAX form submission
+- ✅ Real-time validation
+- ✅ Limit-based category management
 
-### `[abschuss_table]` 
+### `[abschuss_table]`
+Display harvest data table with real-time updates and advanced features.
 ```html
 [abschuss_table species="Rotwild" limit="20" page="1"]
 ```
-**Parameter:**
-- `species` (optional): Wildart-Filter
-- `limit` (optional): Einträge pro Seite (default: 10)
-- `page` (optional): Aktuelle Seite (default: 1)
+**Parameters:**
+- `species` (optional): Filter by game species
+- `limit` (optional): Entries per page (default: 10)
+- `page` (optional): Current page (default: 1)
 
 **Features:**
-- ✅ **CSV Export Button** mit aktuellen Filtern
-- ✅ Paginierte Anzeige mit Navigation
-- ✅ Responsive Tabellenlayout
+- ✅ **AJAX Auto-Refresh** - Updates after form submissions
+- ✅ **Advanced CSV Export** with current filters and custom filenames
+- ✅ Paginated display with navigation
+- ✅ Responsive Bootstrap table layout
+- ✅ WordPress user permissions integration
+- ✅ Real-time data synchronization
 
 ### `[abschuss_summary]`
+Show harvest summary and statistics.
 ```html
 [abschuss_summary species="Rotwild"]
 ```
-**Parameter:**
-- `species` (required): Wildart-Name
+**Parameters:**
+- `species` (required): Game species name
 
 **Features:**
-- ✅ Ist/Soll-Vergleich mit Prozentanzeige
-- ✅ Status-Badges: 🟢 (<90%) 🟡 (90-99%) 🔴 (≥100%)
-- ✅ Live-Kalkulation der Zielerreichung
+- ✅ Current vs. target comparison with percentages
+- ✅ Status badges: 🟢 (<90%) 🟡 (90-99%) 🔴 (≥100%)
+- ✅ Live calculation of target achievement
+
+### `[abschuss_admin]`
+Comprehensive admin configuration panel with modern tabbed interface (requires `manage_options` capability).
+```html
+[abschuss_admin]
+```
+
+**Features:**
+- ✅ **Modern Tabbed Interface** - Dashboard, Data Management, Categories, Database, CSV Export
+- ✅ **Full CRUD Operations** - Create, Read, Update, Delete for all entities
+- ✅ **Real-time Statistics** - Live dashboard with current usage metrics
+- ✅ **Advanced Database Management** - Multi-database support with connection testing
+- ✅ **Category & Species Management** - Complete administrative control
+- ✅ **Date Range Operations** - Delete submissions by custom date ranges
+- ✅ **Export Configuration** - Filename patterns and parameter documentation
 
 ### `[abschuss_limits]`
+Advanced limit configuration interface with integrated category management.
 ```html
 [abschuss_limits species="Rotwild"]
 ```
-**Parameter:**
-- `species` (required): Wildart-Name
+**Parameters:**
+- `species` (required): Game species name
 
 **Features:**
-- ✅ Nur für `manage_options` Benutzer
-- ✅ AJAX-basierte Konfiguration
-- ✅ "Überschießen möglich?" Checkboxen
+- ✅ **Integrated Category Management** - Edit categories and limits in one interface
+- ✅ **Target Value Configuration** - Set Abschuss Soll (harvest targets) per category
+- ✅ **Overshoot Controls** - "Overshoot allowed" configuration per category
+- ✅ Admin-only access (`manage_options`)
+- ✅ AJAX-based real-time updates
+- ✅ Synchronized with admin panel settings
 
 ---
 
-## 🔧 Entwicklung & Deployment
+## ⚙️ Advanced Administration
 
-### 🛠️ Lokale Entwicklung
-```bash
-# Repository Setup
-git clone https://github.com/foe05/pr25_one.git
-cd pr25_one
+### 🏛️ Modern Admin Interface
+The plugin provides a comprehensive, tabbed admin interface with the following sections:
 
-# Python Dependencies (uv empfohlen)
-uv sync
-# oder mit pip:
-pip install -r requirements.txt
+#### **📊 Dashboard Tab**
+- **Real-time Statistics**: Current submissions, monthly activity, species breakdown
+- **Quick Actions**: Fast access to common operations
+- **System Status**: Database connection, plugin version, WordPress compatibility
 
-# Development Server
-python main.py
+#### **📋 Data Management Tab**
+- **Submission Overview**: Paginated table with all harvest submissions
+- **CRUD Operations**: Edit, delete individual submissions
+- **Batch Operations**: Mass operations with filters
+- **Search & Filter**: Advanced filtering by date, species, user
 
-# Production Server (Gunicorn)
-gunicorn --bind 0.0.0.0:5000 main:app
-```
+#### **🏷️ Categories Tab**
+- **Species Management**: Add, edit, delete game species
+- **Category Management**: Full CRUD for harvest categories per species
+- **Limit Configuration**: Set target values (Abschuss Soll) directly in table
+- **Overshoot Settings**: Configure overshoot permissions per category
 
-### 🐳 Docker Deployment
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 5000
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
-```
+#### **🗄️ Database Tab**
+- **Multi-DB Support**: WordPress MySQL (default), SQLite, PostgreSQL
+- **Connection Testing**: Real-time database validation
+- **Migration Tools**: Switch between database types safely
+- **Date Range Deletion**: Remove submissions by custom date ranges
+- **Backup/Restore**: Data management utilities
 
-### ☁️ Replit Deployment
-1. **Import Repository**: `https://github.com/foe05/pr25_one`
-2. **Auto-Configuration**: `.replit` wird automatisch erkannt
-3. **Run**: Click "Run" - Gunicorn startet automatisch
-
-### 🌐 WordPress Installation
-1. **Upload**: `wp-content/plugins/abschussplan-hgmh/`
-2. **Aktivierung**: WordPress Admin → Plugins → Aktivieren
-3. **Konfiguration**: Abschussplan → Datenbankeinstellungen
-4. **Shortcodes**: In Seiten/Posts verwenden
+#### **📤 CSV Export Tab**
+- **Export Configuration**: Filename patterns with placeholders
+- **Parameter Documentation**: Complete API reference
+- **Real-time Preview**: See generated URLs and examples
+- **Security Settings**: Access control and authentication options
 
 ---
 
-## 📂 Projektstruktur
+## 🛠️ Technical Details
 
+### 🏗️ Plugin Architecture
 ```
-pr25_one/
-├── 📄 main.py                 # Flask Hauptanwendung
-├── 📁 templates/              # Jinja2 Templates
-│   ├── index.html            # Hauptformular
-│   ├── admin.html            # Admin-Panel mit Export-URLs
-│   └── submissions.html      # Datentabelle mit Export-Button
-├── 📁 wp-content/plugins/     # WordPress Plugin
-│   └── abschussplan-hgmh/    # Plugin-Verzeichnis
-├── 📁 screenshots/           # UI Screenshots
-├── 📊 form_submissions.db     # SQLite Datenbank
-├── ⚙️ pyproject.toml          # Python Dependencies (uv)
-├── 🐳 .replit                 # Replit Konfiguration
-├── 📖 README.md               # Diese Dokumentation
-├── 🤖 AGENT.md                # KI-Assistent Notizen
-└── 📋 ANFORDERUNGEN.md        # Deutsche Spezifikation
+wp-content/plugins/abschussplan-hgmh/
+├── 📄 abschussplan-hgmh.php        # Main plugin file (v2.0.0)
+├── 📁 includes/                    # Core classes
+│   ├── class-database-handler.php  # Multi-database operations
+│   ├── class-form-handler.php      # Form processing, AJAX & Export
+│   └── class-table-display.php     # Data presentation
+├── 📁 admin/                      # Advanced admin functionality  
+│   ├── class-admin-page-modern.php # Modern tabbed admin interface
+│   ├── class-admin-page-legacy.php # Legacy admin interface
+│   └── assets/                     # Admin-specific assets
+│       ├── admin-modern.js         # AJAX handlers & UI logic
+│       └── admin-modern.css        # Modern admin styling
+├── 📁 templates/                   # Frontend templates
+│   ├── form-template.php          # Submission form with validation
+│   ├── table-template.php         # Auto-refreshing data table
+│   ├── summary-template.php       # Statistics display
+│   ├── admin-template.php         # Admin form template
+│   └── limits-template.php        # Limits configuration
+├── 📁 assets/                     # Frontend assets
+│   ├── css/style.css              # Bootstrap 5.3 integration
+│   └── js/form-validation.js      # Enhanced form validation & AJAX
+└── 📄 uninstall.php               # Complete cleanup on uninstall
+```
+
+### 🔐 Security Features
+- **WordPress Integration**: Uses WordPress security standards
+- **Nonce Verification**: CSRF protection for all AJAX requests
+- **User Capabilities**: Role-based access control
+- **Input Sanitization**: WordPress sanitization functions
+- **SQL Injection Protection**: WordPress $wpdb prepared statements
+
+### 📊 Database Schema
+```sql
+-- Main table: Harvest submissions (wp_ahgmh_submissions)
+CREATE TABLE wp_ahgmh_submissions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,                    -- WordPress user ID
+    game_species VARCHAR(50) DEFAULT 'Rotwild', -- Species (Rotwild, Damwild, etc.)
+    field1 VARCHAR(255),                        -- Abschussdatum (harvest date)
+    field2 VARCHAR(255),                        -- Abschuss (harvest category)
+    field3 VARCHAR(255),                        -- WUS (Wildursprungsschein number)
+    field4 TEXT,                                -- Bemerkung (remarks)
+    field5 VARCHAR(255),                        -- Jagdbezirk (hunting district)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Hunting districts table (wp_ahgmh_jagdbezirke)  
+CREATE TABLE wp_ahgmh_jagdbezirke (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    jagdbezirk VARCHAR(255) NOT NULL,           -- Hunting district name
+    meldegruppe VARCHAR(255),                   -- Reporting group
+    ungueltig BOOLEAN DEFAULT FALSE,            -- Active/inactive status
+    bemerkung TEXT,                             -- Remarks
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- WordPress Options for Configuration:
+-- ahgmh_species: Array of game species
+-- ahgmh_categories_{species}: Categories per species  
+-- abschuss_category_limits_{species}: Target values per category
+-- abschuss_category_allow_exceeding_{species}: Overshoot permissions
+-- ahgmh_export_filename_pattern: Export filename template
+-- ahgmh_export_include_time: Include timestamp in exports
 ```
 
 ---
 
-## 🆕 Changelog
+## 🔧 Development
 
-### Version 1.5.0 (Aktuell) - CSV Export Update
-- ✅ **CSV Export Engine** - Vollständige Datenexporte
-- ✅ **Export-Button** - Direkter Download aus Datentabelle
-- ✅ **URL-basierter Export** - Automatisierung & externe Zugriffe
-- ✅ **Datumsfilter** - from/to Parameter für Zeitraum-Exporte
-- ✅ **Admin Export-URLs** - Copy-to-Clipboard Generator
-- ✅ **WUS Validierung** - Aktualisierte Constraints (1000000-9999999)
-- ✅ **Bootstrap Icons** - Verbesserte UI mit Icons
+### 🛠️ Local Development Setup
+1. **WordPress Installation**: Set up local WordPress environment
+2. **Plugin Installation**: Copy plugin to `wp-content/plugins/`
+3. **Database Setup**: Configure database connection in plugin settings
+4. **Testing**: Use WordPress shortcodes in test pages
 
-### Version 1.0 - Basis Implementation
-- ✅ **Multi-Database Support** (SQLite/MySQL/PostgreSQL)
-- ✅ **WordPress Shortcodes** (4 Shortcodes)
-- ✅ **Admin Backend** (5 Konfigurationsbereiche)
-- ✅ **Responsive Design** & Mobile Support
-- ✅ **AJAX Forms** & Real-time Validation
-- ✅ **Limit Management** mit Überschreitungslogik
+### 🔍 Debugging
+- **Debug Mode**: Enable `WP_DEBUG` in wp-config.php
+- **Debug Files**: `debug.php` and `debug-db.php` included
+- **Error Logging**: WordPress error logging integration
+
+### 🚀 Deployment
+1. **Upload Plugin**: FTP/SFTP to WordPress installation
+2. **Database Migration**: Plugin handles table creation automatically
+3. **Configuration**: Set up database and limits via admin interface
+4. **Go Live**: Add shortcodes to WordPress pages/posts
 
 ---
 
-## 🤝 Support & Kontakt
+## 📂 Plugin Structure
 
-### 📋 Bug Reports & Feature Requests
+```
+abschussplan-hgmh/
+├── 📄 Main Plugin
+│   ├── abschussplan-hgmh.php      # Plugin bootstrap
+│   ├── uninstall.php              # Cleanup procedures
+│   ├── debug.php                  # Development debugging
+│   └── debug-db.php               # Database debugging
+├── 📁 Core Classes
+│   ├── includes/class-database-handler.php    # DB operations
+│   ├── includes/class-form-handler.php        # Forms & AJAX
+│   └── includes/class-table-display.php       # Data display
+├── 📁 Admin Interface
+│   └── admin/class-admin-page.php             # Admin functionality
+├── 📁 Frontend Templates
+│   ├── templates/form-template.php            # Submission form
+│   ├── templates/table-template.php           # Data table
+│   ├── templates/summary-template.php         # Statistics
+│   ├── templates/admin-template-modern.php    # Modern admin UI
+│   └── templates/admin-template-old.php       # Legacy admin UI
+└── 📁 Assets
+    ├── assets/css/style.css                   # Custom styles
+    └── assets/js/form-validation.js           # Frontend validation
+```
+
+---
+
+## 🆕 Version History
+
+### Version 2.0.0 (Current)
+- ✅ **Modern Admin Interface** - Complete redesign with tabbed navigation
+- ✅ **Advanced Export System** - Configurable filename patterns and parameters
+- ✅ **Comprehensive CRUD Operations** - Full Create, Read, Update, Delete functionality
+- ✅ **Real-time Table Updates** - AJAX-powered auto-refresh after submissions
+- ✅ **Enhanced Category Management** - Integrated limits and overshoot controls
+- ✅ **Date Range Operations** - Custom date range deletion functionality
+- ✅ **Improved Database Management** - Multi-database with enhanced connection handling
+- ✅ **Bootstrap 5.3 Integration** - Modern responsive UI framework
+- ✅ **Advanced Security** - Enhanced WordPress security integration
+- ✅ **API Documentation** - Complete parameter reference in admin interface
+
+### Version 1.5.0
+- ✅ **WordPress Plugin Architecture** - Complete WordPress integration
+- ✅ **Shortcode System** - 5 configurable shortcodes
+- ✅ **AJAX Integration** - Real-time form processing
+- ✅ **CSV Export System** - WordPress AJAX-based exports
+- ✅ **Multi-Database Support** - MySQL, SQLite, PostgreSQL
+- ✅ **Bootstrap UI** - Modern responsive interface
+- ✅ **Security Integration** - WordPress security standards
+- ✅ **User Management** - WordPress user roles and capabilities
+
+---
+
+## 🤝 Support
+
+### 📋 Issues & Feature Requests
 - **GitHub Issues**: https://github.com/foe05/pr25_one/issues
-- **Dokumentation**: Siehe diese README.md
-- **Screenshots**: [screenshots/](screenshots/) Verzeichnis
+- **Documentation**: This README.md
+- **WordPress Codex**: Follow WordPress development standards
 
-### 🏷️ Labels & Kategorien
-- `enhancement` - Neue Features
-- `bug` - Fehlerbehebungen  
-- `documentation` - Dokumentation
-- `csv-export` - CSV Export Features
-- `wordpress` - WordPress-spezifische Issues
-
-### 📞 Support-Kanäle
-1. **GitHub Issues** (bevorzugt)
-2. **Code Review** via Pull Requests
-3. **Dokumentation** in README.md
+### 🏷️ Issue Labels
+- `wordpress` - WordPress-specific issues
+- `enhancement` - New features
+- `bug` - Bug fixes
+- `documentation` - Documentation improvements
+- `csv-export` - Export functionality
 
 ---
 
-## 📜 Lizenz
+## 📜 License
 
-**MIT License** - Siehe [LICENSE](LICENSE) Datei.
+**GPLv3 License** - See [LICENSE](LICENSE) file.
 
-**Entwickelt für:** Deutsche Jagdreviere & Wildtiermanagement  
-**Sprache:** Deutsch (UI) + Englisch (Code/Docs)  
-**Status:** Production Ready ✅
+**Developed for:** German hunting districts & wildlife management  
+**Language:** German UI + English code/documentation  
+**Status:** Production Ready ✅  
+**WordPress Compatible:** 5.0+ with PHP 7.4+
 
 ---
 
-*⭐ Star dieses Repository wenn es hilfreich war!*
+*⭐ Star this repository if it helped you manage your hunting district data!*

@@ -26,6 +26,8 @@ class AHGMH_Form_Handler {
         // Handle form submissions via AJAX
         add_action('wp_ajax_submit_abschuss_form', array($this, 'process_form_submission'));
         add_action('wp_ajax_nopriv_submit_abschuss_form', array($this, 'process_form_submission'));
+        add_action('wp_ajax_ahgmh_refresh_table', array($this, 'ajax_refresh_table'));
+        add_action('wp_ajax_nopriv_ahgmh_refresh_table', array($this, 'ajax_refresh_table'));
         
         // Handle admin settings via AJAX
         add_action('wp_ajax_save_db_config', array($this, 'save_db_config'));
@@ -89,8 +91,9 @@ class AHGMH_Form_Handler {
         $limits = $this->get_category_limits($selected_species);
         $counts = $this->get_category_counts($selected_species);
         
-        // Get dynamic categories from options
-        $saved_categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        // Get dynamic categories from options for the selected species
+        $categories_key = 'ahgmh_categories_' . sanitize_key($selected_species);
+        $saved_categories = get_option($categories_key, array());
         
         // Generate list of available categories (those not at their limit)
         $categories = !empty($saved_categories) ? $saved_categories : array();
@@ -147,11 +150,18 @@ class AHGMH_Form_Handler {
     public function render_admin() {
         // Check if user has admin capabilities
         if (!current_user_can('manage_options')) {
-            return '<p>' . __('You do not have permission to access this page.', 'custom-form-display') . '</p>';
+            return '<p>' . __('You do not have permission to access this page.', 'abschussplan-hgmh') . '</p>';
         }
         
-        // Get categories from options
-        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        // Get all categories from all species
+        $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+        $categories = array();
+        foreach ($species_list as $species) {
+            $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+            $species_categories = get_option($categories_key, array());
+            $categories = array_merge($categories, $species_categories);
+        }
+        $categories = array_unique($categories); // Remove duplicates
         
         $limits = $this->get_category_limits();
         $counts = $this->get_category_counts();
@@ -175,8 +185,9 @@ class AHGMH_Form_Handler {
         
         $selected_species = sanitize_text_field($atts['species']);
         
-        // Get dynamic categories
-        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        // Get dynamic categories for the selected species
+        $categories_key = 'ahgmh_categories_' . sanitize_key($selected_species);
+        $categories = get_option($categories_key, array());
         
         $limits = $this->get_category_limits($selected_species);
         $counts = $this->get_category_counts($selected_species);
@@ -221,7 +232,7 @@ class AHGMH_Form_Handler {
         
         // Required fields
         if (empty($field1)) {
-            $errors['field1'] = __('Dieses Feld ist erforderlich.', 'custom-form-display');
+            $errors['field1'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
             // Validate date format and ensure it's not in the future
             try {
@@ -230,27 +241,28 @@ class AHGMH_Form_Handler {
                 $tomorrow->setTime(0, 0, 0);
                 
                 if ($selected_date >= $tomorrow) {
-                    $errors['field1'] = __('Das Datum darf nicht in der Zukunft liegen.', 'custom-form-display');
+                    $errors['field1'] = __('Das Datum darf nicht in der Zukunft liegen.', 'abschussplan-hgmh');
                 }
             } catch (Exception $e) {
-                $errors['field1'] = __('Ungültiges Datumsformat.', 'custom-form-display');
+                $errors['field1'] = __('Ungültiges Datumsformat.', 'abschussplan-hgmh');
             }
         }
         
         if (empty($field2)) {
-            $errors['field2'] = __('Dieses Feld ist erforderlich.', 'custom-form-display');
+            $errors['field2'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
-            // Validate dropdown value is in the allowed list (use dynamic categories)
-            $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+            // Validate dropdown value is in the allowed list (use dynamic categories for the species)
+            $categories_key = 'ahgmh_categories_' . sanitize_key($game_species);
+            $categories = get_option($categories_key, array());
             
             if (!in_array($field2, $categories)) {
-                $errors['field2'] = __('Bitte wählen Sie einen gültigen Wert aus.', 'custom-form-display');
+                $errors['field2'] = __('Bitte wählen Sie einen gültigen Wert aus.', 'abschussplan-hgmh');
             }
         }
         
         // Validate field5 (Jagdbezirk) - required field
         if (empty($field5)) {
-            $errors['field5'] = __('Dieses Feld ist erforderlich.', 'custom-form-display');
+            $errors['field5'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
             // Validate that the selected Jagdbezirk exists and is active
             $database = abschussplan_hgmh()->database;
@@ -260,16 +272,16 @@ class AHGMH_Form_Handler {
 
             
             if (!in_array($field5, $valid_jagdbezirke)) {
-                $errors['field5'] = __('Bitte wählen Sie einen gültigen Jagdbezirk aus.', 'custom-form-display');
+                $errors['field5'] = __('Bitte wählen Sie einen gültigen Jagdbezirk aus.', 'abschussplan-hgmh');
             }
         }
         
         // Validate WUS to ensure it's an integer if provided and within range
         if (!empty($field3)) {
             if (!is_numeric($field3)) {
-                $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'custom-form-display');
+                $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'abschussplan-hgmh');
             } elseif ($field3 < 1000000 || $field3 > 9999999) {
-                $errors['field3'] = __('WUS muss zwischen 1000000 und 9999999 liegen.', 'custom-form-display');
+                $errors['field3'] = __('WUS muss zwischen 1000000 und 9999999 liegen.', 'abschussplan-hgmh');
             }
         }
         
@@ -278,7 +290,7 @@ class AHGMH_Form_Handler {
             $database = abschussplan_hgmh()->database;
             $existing_wus = $database->check_wus_exists($field3);
             if ($existing_wus) {
-                $errors['field3'] = __('Diese WUS-Nummer ist bereits vergeben. Bitte geben Sie eine andere WUS-Nummer an.', 'custom-form-display');
+                $errors['field3'] = __('Diese WUS-Nummer ist bereits vergeben. Bitte geben Sie eine andere WUS-Nummer an.', 'abschussplan-hgmh');
             }
         }
         
@@ -288,7 +300,7 @@ class AHGMH_Form_Handler {
         // If there are errors, return them
         if (!empty($errors)) {
             wp_send_json_error(array(
-                'message' => __('Bitte beheben Sie die Fehler im Formular.', 'custom-form-display'),
+                'message' => __('Bitte beheben Sie die Fehler im Formular.', 'abschussplan-hgmh'),
                 'errors' => $errors
             ));
         }
@@ -309,12 +321,12 @@ class AHGMH_Form_Handler {
 
         if ($submission_id) {
             wp_send_json_success(array(
-                'message' => __('Abschussmeldung erfolgreich gespeichert!', 'custom-form-display'),
+                'message' => __('Abschussmeldung erfolgreich gespeichert!', 'abschussplan-hgmh'),
                 'submission_id' => $submission_id
             ));
         } else {
             wp_send_json_error(array(
-                'message' => __('Es gab einen Fehler beim Speichern der Meldung. Bitte versuchen Sie es erneut.', 'custom-form-display')
+                'message' => __('Es gab einen Fehler beim Speichern der Meldung. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh')
             ));
         }
     }
@@ -328,14 +340,14 @@ class AHGMH_Form_Handler {
         // Check if user has admin capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array(
-                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'custom-form-display')
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
             ));
         }
         
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'db_config_nonce')) {
             wp_send_json_error(array(
-                'message' => __('Sicherheitscheck fehlgeschlagen.', 'custom-form-display')
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
             ));
         }
         
@@ -371,7 +383,7 @@ class AHGMH_Form_Handler {
         }
         
         wp_send_json_success(array(
-            'message' => __('Datenbank-Konfiguration erfolgreich gespeichert.', 'custom-form-display')
+            'message' => __('Datenbank-Konfiguration erfolgreich gespeichert.', 'abschussplan-hgmh')
         ));
     }
     
@@ -382,14 +394,14 @@ class AHGMH_Form_Handler {
         // Check if user has admin capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array(
-                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'custom-form-display')
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
             ));
         }
         
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'db_config_nonce')) {
             wp_send_json_error(array(
-                'message' => __('Sicherheitscheck fehlgeschlagen.', 'custom-form-display')
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
             ));
         }
         
@@ -411,14 +423,14 @@ class AHGMH_Form_Handler {
                 if (is_writable($test_file)) {
                     wp_send_json_success(array(
                         'message' => sprintf(
-                            __('Verbindung zur SQLite-Datenbank (%s) erfolgreich hergestellt.', 'custom-form-display'),
+                            __('Verbindung zur SQLite-Datenbank (%s) erfolgreich hergestellt.', 'abschussplan-hgmh'),
                             $sqlite_file
                         )
                     ));
                 } else {
                     wp_send_json_error(array(
                         'message' => sprintf(
-                            __('Die Datei %s existiert, ist aber nicht beschreibbar.', 'custom-form-display'),
+                            __('Die Datei %s existiert, ist aber nicht beschreibbar.', 'abschussplan-hgmh'),
                             $sqlite_file
                         )
                     ));
@@ -426,7 +438,7 @@ class AHGMH_Form_Handler {
             } catch (Exception $e) {
                 wp_send_json_error(array(
                     'message' => sprintf(
-                        __('Fehler beim Verbindungstest: %s', 'custom-form-display'),
+                        __('Fehler beim Verbindungstest: %s', 'abschussplan-hgmh'),
                         $e->getMessage()
                     )
                 ));
@@ -435,18 +447,18 @@ class AHGMH_Form_Handler {
             // For PostgreSQL, we would use pg_connect in production
             // Here, we'll just simulate a successful connection
             wp_send_json_success(array(
-                'message' => __('Verbindung zur PostgreSQL-Datenbank erfolgreich hergestellt.', 'custom-form-display')
+                'message' => __('Verbindung zur PostgreSQL-Datenbank erfolgreich hergestellt.', 'abschussplan-hgmh')
             ));
         } else if ($db_type === 'mysql') {
             // For MySQL, we would use mysqli_connect in production
             // Here, we'll just simulate a successful connection
             wp_send_json_success(array(
-                'message' => __('Verbindung zur MySQL-Datenbank erfolgreich hergestellt.', 'custom-form-display')
+                'message' => __('Verbindung zur MySQL-Datenbank erfolgreich hergestellt.', 'abschussplan-hgmh')
             ));
         } else {
             wp_send_json_error(array(
                 'message' => sprintf(
-                    __('Unbekannter Datenbanktyp: %s', 'custom-form-display'),
+                    __('Unbekannter Datenbanktyp: %s', 'abschussplan-hgmh'),
                     $db_type
                 )
             ));
@@ -460,18 +472,26 @@ class AHGMH_Form_Handler {
         // Check if user has admin capabilities
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array(
-                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'custom-form-display')
+                'message' => __('Sie haben keine Berechtigung für diese Aktion.', 'abschussplan-hgmh')
             ));
         }
         
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'limits_nonce')) {
             wp_send_json_error(array(
-                'message' => __('Sicherheitscheck fehlgeschlagen.', 'custom-form-display')
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
             ));
         }
         
-        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        // Get all categories from all species  
+        $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+        $categories = array();
+        foreach ($species_list as $species) {
+            $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+            $species_categories = get_option($categories_key, array());
+            $categories = array_merge($categories, $species_categories);
+        }
+        $categories = array_unique($categories); // Remove duplicates
         
         $limits = array();
         
@@ -489,7 +509,7 @@ class AHGMH_Form_Handler {
         update_option('abschuss_category_limits', $limits);
         
         wp_send_json_success(array(
-            'message' => __('Höchstgrenzen erfolgreich gespeichert.', 'custom-form-display'),
+            'message' => __('Höchstgrenzen erfolgreich gespeichert.', 'abschussplan-hgmh'),
             'redirect' => true
         ));
     }
@@ -514,8 +534,9 @@ class AHGMH_Form_Handler {
      * @param string $species Game species
      */
     private function get_category_limits($species = 'Rotwild') {
-        // Get dynamic categories
-        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        // Get dynamic categories for the specified species
+        $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+        $categories = get_option($categories_key, array());
         
         $default = array();
         foreach ($categories as $category) {
@@ -545,8 +566,9 @@ class AHGMH_Form_Handler {
      * @param string $species Game species
      */
     private function get_category_allow_exceeding($species = 'Rotwild') {
-        // Get dynamic categories
-        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        // Get dynamic categories for the specified species
+        $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+        $categories = get_option($categories_key, array());
         
         $default = array();
         foreach ($categories as $category) {
@@ -582,8 +604,9 @@ class AHGMH_Form_Handler {
         
         $selected_species = sanitize_text_field($atts['species']);
         
-        // Get dynamic categories
-        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        // Get dynamic categories for the selected species
+        $categories_key = 'ahgmh_categories_' . sanitize_key($selected_species);
+        $categories = get_option($categories_key, array());
         
         $limits = $this->get_category_limits($selected_species);
         $counts = $this->get_category_counts($selected_species);
@@ -872,7 +895,8 @@ class AHGMH_Form_Handler {
         
         // Sanitize allow exceeding settings
         $sanitized_allow_exceeding = array();
-        $categories = get_option('ahgmh_categories', array('Rotwild', 'Damwild'));
+        $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+        $categories = get_option($categories_key, array());
         foreach ($categories as $category) {
             $sanitized_category = sanitize_text_field($category);
             $exceeding_allowed = isset($allow_exceeding[$category]) && $allow_exceeding[$category] == '1';
@@ -1129,22 +1153,45 @@ class AHGMH_Form_Handler {
             
             $submissions = $wpdb->get_results($query, ARRAY_A);
             
-            // Build filename with filters
-            $filename_parts = array($export_filename);
-            if (!empty($species)) {
-                $filename_parts[] = sanitize_file_name(strtolower($species));
-            }
-            if (!empty($from_date) || !empty($to_date)) {
-                if (!empty($from_date) && !empty($to_date)) {
-                    $filename_parts[] = $from_date . '_to_' . $to_date;
-                } elseif (!empty($from_date)) {
-                    $filename_parts[] = 'from_' . $from_date;
-                } elseif (!empty($to_date)) {
-                    $filename_parts[] = 'until_' . $to_date;
-                }
-            }
+            // Generate filename
+            $custom_filename = sanitize_text_field($_GET['filename'] ?? '');
             
-            $filename = implode('_', $filename_parts) . '.csv';
+            if (!empty($custom_filename)) {
+                $filename = sanitize_file_name($custom_filename) . '.csv';
+            } else {
+                // Use configured pattern or default
+                $filename_pattern = get_option('ahgmh_export_filename_pattern', 'abschussplan_{species}_{date}');
+                $include_time = get_option('ahgmh_export_include_time', false);
+                
+                // Replace placeholders
+                $replacements = array(
+                    '{species}' => !empty($species) ? sanitize_file_name(strtolower($species)) : 'alle',
+                    '{date}' => date('Y-m-d'),
+                    '{datetime}' => date('Y-m-d_H-i')
+                );
+                
+                // Add date filter info if present
+                if (!empty($from_date) || !empty($to_date)) {
+                    $date_filter = '';
+                    if (!empty($from_date) && !empty($to_date)) {
+                        $date_filter = '_' . $from_date . '_to_' . $to_date;
+                    } elseif (!empty($from_date)) {
+                        $date_filter = '_from_' . $from_date;
+                    } elseif (!empty($to_date)) {
+                        $date_filter = '_until_' . $to_date;
+                    }
+                    $replacements['{date}'] .= $date_filter;
+                    $replacements['{datetime}'] .= $date_filter;
+                }
+                
+                // Use {datetime} if time is included, otherwise use {date}
+                if ($include_time && strpos($filename_pattern, '{datetime}') === false) {
+                    $filename_pattern = str_replace('{date}', '{datetime}', $filename_pattern);
+                }
+                
+                $filename = str_replace(array_keys($replacements), array_values($replacements), $filename_pattern) . '.csv';
+                $filename = sanitize_file_name($filename);
+            }
             
             // Clean any previous output
             if (ob_get_level()) {
@@ -1204,5 +1251,35 @@ class AHGMH_Form_Handler {
                 'message' => 'Export failed: ' . $e->getMessage()
             ));
         }
+    }
+
+    /**
+     * AJAX handler for refreshing the submissions table
+     */
+    public function ajax_refresh_table() {
+        // Check nonce if provided
+        if (isset($_POST['nonce']) && !wp_verify_nonce($_POST['nonce'], 'ahgmh_form_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+
+        // Get current page and species filter
+        $current_page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
+        $species_filter = isset($_POST['species']) ? sanitize_text_field($_POST['species']) : '';
+
+        // Prepare attributes for the table shortcode
+        $atts = array();
+        if (!empty($species_filter)) {
+            $atts['species'] = $species_filter;
+        }
+
+        // Generate fresh table HTML using the render_table method
+        $table_html = $this->render_table($atts);
+
+        wp_send_json_success(array(
+            'html' => $table_html,
+            'page' => $current_page
+        ));
     }
 }

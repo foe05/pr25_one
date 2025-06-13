@@ -1,11 +1,20 @@
 <?php
 /**
  * Plugin Name: Abschussplan HGMH
- * Plugin URI: #
+ * Plugin URI: https://github.com/foe05/pr25_one
  * Description: Collect and view game shoots for registration with local hunting authorities in Germany.
- * Version: 1.5.0
+ * Version: 2.0.0
  * Author: foe05
+ * Author URI: https://github.com/foe05
+ * License: GPL v3 or later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: abschussplan-hgmh
+ * Domain Path: /languages
+ * Requires at least: 5.0
+ * Tested up to: 6.4
+ * Requires PHP: 7.4
+ * Network: false
+ * Update URI: https://github.com/foe05/pr25_one
  */
 
 // Exit if accessed directly
@@ -16,16 +25,13 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('AHGMH_PLUGIN_VERSION', '1.5.0');
+define('AHGMH_PLUGIN_VERSION', '2.0.0');
 
 // Include required files
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
-require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page.php';
-
-// Include debug file (remove in production)
-require_once AHGMH_PLUGIN_DIR . 'debug.php';
+require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page-modern.php';
 
 /**
  * Main plugin class
@@ -96,8 +102,8 @@ class Abschussplan_HGMH {
         // Initialize table display
         $this->table = new AHGMH_Table_Display();
 
-        // Initialize admin page
-        $this->admin = new AHGMH_Admin_Page();
+        // Initialize modern admin page
+        $this->admin = new AHGMH_Admin_Page_Modern();
     }
 
     /**
@@ -192,6 +198,46 @@ function ahgmh_activate_plugin() {
     // Ensure database tables are created
     $plugin = abschussplan_hgmh();
     $plugin->database->create_table();
+    
+    // Initialize default species and categories
+    $default_species = array('Rotwild', 'Damwild');
+    
+    // Only set default species if none exist yet
+    if (!get_option('ahgmh_species')) {
+        update_option('ahgmh_species', $default_species);
+    }
+    
+    // Set default categories for Rotwild
+    $rotwild_categories_key = 'ahgmh_categories_rotwild';
+    if (!get_option($rotwild_categories_key)) {
+        $rotwild_categories = array(
+            'Wildkalb (AK0)',
+            'Schmaltier (AK 1)', 
+            'Alttier (AK 2)',
+            'Hirschkalb (AK 0)',
+            'Schmalspießer (AK1)',
+            'Junger Hirsch (AK 2)',
+            'Mittelalter Hirsch (AK 3)',
+            'Alter Hirsch (AK 4)'
+        );
+        update_option($rotwild_categories_key, $rotwild_categories);
+    }
+    
+    // Set default categories for Damwild  
+    $damwild_categories_key = 'ahgmh_categories_damwild';
+    if (!get_option($damwild_categories_key)) {
+        $damwild_categories = array(
+            'Wildkalb (AK0)',
+            'Schmaltier (AK 1)', 
+            'Alttier (AK 2)',
+            'Hirschkalb (AK 0)',
+            'Schmalspießer (AK1)',
+            'Junger Hirsch (AK 2)',
+            'Mittelalter Hirsch (AK 3)',
+            'Alter Hirsch (AK 4)'
+        );
+        update_option($damwild_categories_key, $damwild_categories);
+    }
 }
 
 // Start the plugin
