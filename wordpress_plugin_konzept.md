@@ -112,158 +112,283 @@ Der bestehende Prototyp unter `https://github.com/foe05/pr25_one` zeigt:
 
 ### 4.1 Plugin-Architektur
 
-#### 4.1.1 Struktur-Overview
+#### 4.1.1 Struktur-Overview (Aktueller Stand Version 2.0.0)
 ```
 abschussplan-hgmh/
-├── abschussplan-hgmh.php          # Haupt-Plugin-Datei
+├── abschussplan-hgmh.php          # Haupt-Plugin-Datei (Singleton-Pattern)
 ├── includes/
-│   ├── class-abschussplan.php     # Hauptklasse
-│   ├── class-database.php         # Datenbankoperationen
-│   ├── class-shortcodes.php       # WordPress Shortcodes
-│   ├── class-admin.php            # Admin-Interface
-│   └── class-export.php           # CSV-Export-Engine
+│   ├── class-database-handler.php # Erweiterte Datenbankoperationen
+│   ├── class-form-handler.php     # Form-/Shortcode-Handler mit AJAX
+│   └── class-table-display.php    # Tabellendarstellung
 ├── admin/
-│   ├── admin-settings.php         # Konfigurationsseiten
-│   ├── admin-limits.php           # Limitverwaltung
-│   └── admin-overview.php         # Datenübersicht
-├── public/
-│   ├── css/                       # Stylesheets
-│   ├── js/                        # JavaScript-Dateien
-│   └── templates/                 # Frontend-Templates
-├── languages/                     # Internationalisierung
-└── README.txt                     # WordPress Repository Standard
+│   ├── class-admin-page-modern.php # Modernes Tabbed Admin Interface
+│   ├── class-admin-page-legacy.php # Legacy Admin Interface
+│   └── assets/                    # Admin-spezifische CSS/JS
+├── assets/
+│   ├── css/                       # Bootstrap 5.3 + Custom Styles
+│   └── js/                        # Form-Validation + AJAX-Handler
+├── templates/                     # PHP-Templates für Frontend
+│   ├── form-template.php          # Meldungsformular
+│   ├── table-template.php         # Übersichtstabelle
+│   ├── summary-template.php       # Zusammenfassung
+│   └── admin-template-modern.php  # Admin Dashboard
+└── uninstall.php                  # Cleanup bei Deinstallation
 ```
 
-#### 4.1.2 Datenbankdesign
-Das Plugin erweitert die WordPress-Datenbank um folgende Tabellen:
+#### 4.1.2 Datenbankdesign (Aktuelle Implementierung)
+Das Plugin erweitert die WordPress-Datenbank um zwei Haupttabellen:
 
-**Abschussmeldungen (`wp_abschuss_meldungen`)**
+**Abschussmeldungen (`wp_ahgmh_submissions`)**
 ```sql
-CREATE TABLE wp_abschuss_meldungen (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    wildart VARCHAR(50) NOT NULL,
-    kategorie VARCHAR(50) NOT NULL,
-    abschussdatum DATE NOT NULL,
-    wus VARCHAR(7) NOT NULL,
-    bemerkung TEXT,
-    jagdbezirk VARCHAR(100),
-    meldegruppe VARCHAR(100),
-    erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_wildart (wildart),
-    INDEX idx_datum (abschussdatum)
+CREATE TABLE wp_ahgmh_submissions (
+    id mediumint(9) NOT NULL AUTO_INCREMENT,
+    user_id bigint(20) NOT NULL DEFAULT 0,
+    game_species varchar(100) NOT NULL DEFAULT 'Rotwild',
+    field1 text NOT NULL,                 # Abschussdatum
+    field2 text NOT NULL,                 # Kategorie
+    field3 text NOT NULL,                 # WUS-Nummer
+    field4 text NOT NULL,                 # Bemerkung
+    field5 text NOT NULL,                 # Jagdbezirk
+    created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id)
 );
 ```
 
-**Konfiguration (`wp_abschuss_config`)**
+**Jagdbezirke (`wp_ahgmh_jagdbezirke`)**
 ```sql
-CREATE TABLE wp_abschuss_config (
-    config_key VARCHAR(100) PRIMARY KEY,
-    config_value LONGTEXT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+CREATE TABLE wp_ahgmh_jagdbezirke (
+    id mediumint(9) NOT NULL AUTO_INCREMENT,
+    jagdbezirk varchar(255) NOT NULL,
+    meldegruppe varchar(255) NOT NULL,
+    ungueltig tinyint(1) NOT NULL DEFAULT 0,
+    bemerkung text,
+    created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id)
 );
 ```
 
-**Limits (`wp_abschuss_limits`)**
-```sql
-CREATE TABLE wp_abschuss_limits (
-    wildart VARCHAR(50),
-    kategorie VARCHAR(50),
-    soll_wert INT NOT NULL DEFAULT 0,
-    ueberschreitung_erlaubt BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (wildart, kategorie)
-);
-```
+**Konfiguration über WordPress Options API:**
+- `ahgmh_species` - Verfügbare Wildarten
+- `ahgmh_categories_{species}` - Kategorien pro Wildart
+- `ahgmh_limits_{species}` - Limits pro Wildart/Kategorie
 
 ### 4.2 WordPress-Integration
 
-#### 4.2.1 Shortcode-System
-Das Plugin stellt vier zentrale Shortcodes bereit:
+#### 4.2.1 Shortcode-System (5 Shortcodes)
+Das Plugin stellt fünf zentrale Shortcodes bereit:
 
-1. **`[abschuss_form]`** - Meldungsformular für Obleute
-2. **`[abschuss_table]`** - Übersichtstabelle für Jäger
-3. **`[abschuss_summary]`** - Zusammenfassung mit Soll/Ist-Vergleich
-4. **`[abschuss_limits]`** - Limitkonfiguration für Konfiguratoren
+1. **`[abschuss_form]`** - Meldungsformular mit AJAX-Validation
+2. **`[abschuss_table]`** - Live-Übersichtstabelle mit Auto-Refresh
+3. **`[abschuss_admin]`** - Admin-Panel für Frontendnutzung
+4. **`[abschuss_summary]`** - Dashboard mit Statistiken
+5. **`[abschuss_limits]`** - Limitkonfiguration und -anzeige
 
-#### 4.2.2 Admin-Integration
-- **Menüpunkt:** "Abschussplan" in der WordPress-Seitenleiste
-- **Unterseiten:**
-  - Dashboard (Übersicht)
-  - Meldungen verwalten
-  - Limits konfigurieren
-  - CSV-Export
-  - Einstellungen
+#### 4.2.2 Admin-Integration (Modernes Tabbed Interface)
+- **Hauptmenü:** "Abschussplan" mit Dashboard-Icon
+- **Drei Hauptbereiche:**
+  - **📊 Dashboard:** Live-Statistiken, Quick-Actions, Recent Activity
+  - **📋 Meldungen:** CRUD-Operations, Bulk-Actions, Filter/Search
+  - **⚙️ Einstellungen:** 5 Tabs (Kategorien, Jagdbezirke, Database, CSV Export, Danger Zone)
 
-### 4.3 Sicherheitskonzept
+#### 4.2.3 AJAX-Integration
+- **Real-time Updates:** Tabellen-Refresh ohne Seitenreload
+- **Form Validation:** WUS-Duplikatsprüfung, Limitüberwachung
+- **Bulk Operations:** Massenaktionen über JavaScript
+- **WordPress AJAX:** Standardkonformes wp_ajax_* System
 
-#### 4.3.1 Datenschutz-Compliance
-- **Keine Personendaten:** Ausschließlich jagdliche Fachdaten
-- **Anonyme Nutzung:** Jäger-Rolle ohne Registrierung
-- **Datenminimierung:** Nur erforderliche Felder gespeichert
+### 4.3 Export-Funktionalität
 
-#### 4.3.2 WordPress-Security-Standards
-- **Capability Checks:** Rollenbasierte Zugriffskontrolle
-- **Nonce Verification:** Schutz vor CSRF-Angriffen
-- **Data Sanitization:** Eingabevalidierung und -bereinigung
-- **Prepared Statements:** SQL-Injection-Prävention
+#### 4.3.1 CSV-Export-Engine
+- **WordPress AJAX-basiert:** Vollständig in WordPress-Standards integriert
+- **Flexible Filter:** Nach Wildart, Kategorie, Datumsbereich
+- **Konfigurierbare Dateinamen:** Template-basiert mit Platzhaltern
+- **Encoding-Unterstützung:** UTF-8 mit BOM für Excel-Kompatibilität
+- **Real-time Generation:** Direkte Download-Links ohne Zwischenspeicherung
+
+#### 4.3.2 Export-Konfiguration
+- **Admin-Interface:** Grafische Konfiguration der Export-Parameter
+- **Template-System:** `{jahr}`, `{monat}`, `{wildart}` Platzhalter
+- **Filter-Optionen:** Species-Filter, Date-Range, Category-Filter
+- **Format-Optionen:** CSV-Delimiter, Encoding-Einstellungen
+
+### 4.4 Sicherheitskonzept
+
+#### 4.4.1 WordPress-Security-Standards
+- **Nonce Verification:** Alle AJAX-Requests mit wp_create_nonce()
+- **Capability Checks:** `manage_options` für Admin-Funktionen
+- **Data Sanitization:** `sanitize_text_field()`, `sanitize_textarea_field()`
+- **Prepared Statements:** `$wpdb->prepare()` für alle Datenbankabfragen
+- **Input Validation:** WUS-Format, Datumsvalidierung, Required-Fields
+
+#### 4.4.2 Datenschutz-Features
+- **User-Integration:** WordPress-User-System (keine separaten Accounts)
+- **Minimale Datenerfassung:** Nur jagdrelevante Informationen
+- **Cleanup-Funktion:** Vollständige Datenentfernung bei Deinstallation
+- **Audit-Trail:** Timestamps für alle Einträge
 
 ---
 
 ## 5. Plugin-Architektur
 
-### 5.1 Objektorientiierte Struktur
+### 5.1 Objektorientiierte Struktur (Aktuelle Implementierung)
 
 #### 5.1.1 Hauptklassen-Design
 ```php
-class AbschussplanHGMH {
-    // Plugin-Initialisierung und Hook-Management
-    public function __construct()
-    public function init()
-    public function activate()
-    public function deactivate()
+class Abschussplan_HGMH {
+    // Singleton-Pattern Plugin-Hauptklasse
+    private static $instance = null;
+    public $database;     // AHGMH_Database_Handler
+    public $form;         // AHGMH_Form_Handler  
+    public $table;        // AHGMH_Table_Display
+    public $admin;        // AHGMH_Admin_Page_Modern
+    
+    public static function get_instance()
+    private function __construct()
+    private function init()
+    public function activate_plugin()
+    public function deactivate_plugin()
+    public function enqueue_scripts()
 }
 
-class AbschussplanDatabase {
-    // Datenbankoperationen und -verwaltung
-    public function create_tables()
-    public function insert_meldung($data)
-    public function get_meldungen($filters = [])
-    public function update_limits($wildart, $limits)
+class AHGMH_Database_Handler {
+    // Erweiterte Datenbankoperationen
+    public function create_table()
+    public function create_jagdbezirk_table()
+    public function insert_submission($data)
+    public function get_submissions($limit, $offset)
+    public function count_submissions_by_species_category($species, $category)
+    public function check_wus_exists($wus_number)
+    public function get_jagdbezirke()
+    public function insert_jagdbezirk($data)
+    public function update_jagdbezirk($id, $data)
+    public function delete_jagdbezirk($id)
+    public static function cleanup_database()
 }
 
-class AbschussplanShortcodes {
-    // WordPress Shortcode-Implementierung
-    public function register_shortcodes()
-    public function form_shortcode($atts)
-    public function table_shortcode($atts)
-    public function summary_shortcode($atts)
+class AHGMH_Form_Handler {
+    // Shortcodes und AJAX-Handler
+    public function render_form($atts)
+    public function render_table($atts)
+    public function render_admin($atts)
+    public function render_summary($atts)
+    public function render_limits_config($atts)
+    public function process_form_submission()
+    public function ajax_refresh_table()
+    public function export_csv()
+    public function save_species_limits()
+    // + 20+ weitere AJAX-Handler
+}
+
+class AHGMH_Admin_Page_Modern {
+    // Modernes Dashboard-Interface
+    public function add_admin_menu()
+    public function render_dashboard()
+    public function render_data_management()
+    public function render_settings()
+    public function ajax_dashboard_stats()
+    public function ajax_export_data()
+    public function ajax_danger_action()
+    // + Dashboard-Widget-Integration
+}
+
+class AHGMH_Table_Display {
+    // Tabellendarstellung und Formatierung
+    public function display_submissions_table($species)
+    public function get_submissions_data($species, $limit, $offset)
+    // + Pagination und Filtering
 }
 ```
 
-#### 5.1.2 Hook- und Filter-System
-Das Plugin nutzt WordPress-Standards für saubere Integration:
-- **Activation Hooks:** Datenbankinitialisierung
-- **Action Hooks:** Frontend/Backend-Funktionalitäten
-- **Filter Hooks:** Anpassbare Datenverarbeitung
-- **AJAX Hooks:** Asynchrone Formularverarbeitung
+#### 5.1.2 Hook- und Filter-System (Erweitert)
+Das Plugin nutzt ein umfassendes WordPress-Hook-System:
 
-### 5.2 Frontend-Architektur
+**Activation/Deactivation Hooks:**
+- `register_activation_hook()` - Datenbankinitialisierung + Default-Setup
+- `register_deactivation_hook()` - Cleanup + Flush Rewrite Rules
 
-#### 5.2.1 Responsive Design-Prinzipien
-- **Mobile-First-Ansatz:** Optimierung für Smartphone-Nutzung im Feld
-- **Bootstrap-Framework:** Bewährte UI-Komponenten
-- **Progressive Enhancement:** Grundfunktionalität ohne JavaScript
+**AJAX Action Hooks (25+ Handler):**
+- `wp_ajax_submit_abschuss_form` - Form-Submission
+- `wp_ajax_ahgmh_refresh_table` - Table-Refresh
+- `wp_ajax_save_db_config` - Admin-Konfiguration
+- `wp_ajax_export_abschuss_csv` - CSV-Export
+- `wp_ajax_ahgmh_dashboard_stats` - Dashboard-Statistiken
+- `wp_ajax_ahgmh_danger_action` - Bulk-Delete-Operations
+- `wp_ajax_save_jagdbezirk` - Jagdbezirk-Management
+- + weitere spezifische AJAX-Endpoints
 
-#### 5.2.2 JavaScript-Integration
+**Frontend Action Hooks:**
+- `wp_enqueue_scripts` - Bootstrap 5.3 + Custom Assets
+- `wp_dashboard_setup` - WordPress Dashboard Widget
+
+**Security Hooks:**
+- Nonce-Verification in allen AJAX-Handlers
+- Capability-Checks (`manage_options`) für Admin-Funktionen
+
+### 5.2 Frontend-Architektur (Bootstrap 5.3 + AJAX)
+
+#### 5.2.1 Responsive Design-Framework
+- **Bootstrap 5.3 CDN:** Vollständige Integration über CDN
+- **Bootstrap Icons:** Icon-Font für moderne UI-Elemente
+- **Custom CSS:** Ergänzende Styles für jagd-spezifische Layouts
+- **Mobile-First:** Optimiert für Smartphone-Nutzung im Feld
+- **Cross-Browser:** Kompatibilität mit allen modernen Browsern
+
+#### 5.2.2 JavaScript-Integration (AJAX-Heavy)
 ```javascript
-// AJAX-Formularverarbeitung
+// Erweiterte AJAX-Form-Validation mit Real-time Feedback
 jQuery(document).ready(function($) {
+    // Form-Submission mit WUS-Duplikatsprüfung
     $('#abschuss-form').on('submit', function(e) {
         e.preventDefault();
-        // WUS-Validierung, Limitprüfung, Echtzeitfeedback
-        validateAndSubmit($(this));
+        var formData = $(this).serialize();
+        
+        $.ajax({
+            url: ahgmh_ajax.ajax_url,
+            type: 'POST',
+            data: formData + '&action=submit_abschuss_form&nonce=' + ahgmh_ajax.nonce,
+            success: function(response) {
+                // Real-time table refresh
+                refreshTable();
+                showSuccessMessage(response.message);
+            },
+            error: function() {
+                showErrorMessage('Fehler beim Speichern');
+            }
+        });
+    });
+    
+    // Auto-Refresh für Live-Tabellen
+    function refreshTable() {
+        $.ajax({
+            url: ahgmh_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_refresh_table',
+                nonce: ahgmh_ajax.nonce
+            },
+            success: function(html) {
+                $('.submission-table-container').html(html);
+            }
+        });
+    }
+    
+    // WUS-Duplikatsprüfung in Real-time
+    $('#wus-field').on('blur', function() {
+        var wusValue = $(this).val();
+        if (wusValue.length === 7) {
+            checkWusDuplicate(wusValue);
+        }
     });
 });
 ```
+
+#### 5.2.3 Template-System (PHP-basiert)
+- **form-template.php:** Meldungsformular mit HTML5-Validation
+- **table-template.php:** Bootstrap-Tabelle mit Responsive-Design
+- **summary-template.php:** Dashboard-Widgets mit Statistiken
+- **admin-template-modern.php:** Tabbed Admin-Interface
+- **Escape-Functions:** Alle Ausgaben mit WordPress-Escape-Funktionen
 
 ---
 
@@ -313,54 +438,196 @@ jQuery(document).ready(function($) {
 
 ---
 
-## 7. Testkonzept
+## 7. Qualitätskontrolle und Testkonzept
 
-### 7.1 Test-Pyramide
+### 7.1 Installations- und Aktivierungstests
 
-#### 7.1.1 Unit Tests
-- **Datenbankoperationen:** CRUD-Funktionalitäten isoliert testen
-- **Validierungsfunktionen:** WUS-Format, Datumsbereich, Limit-Prüfung
-- **Export-Engine:** CSV-Generierung mit verschiedenen Filtersets
+#### 7.1.1 Plugin-Installation
+**Test 1: Grundinstallation**
+- Plugin-Upload über WordPress Admin (/wp-admin/plugin-install.php)
+- Aktivierung ohne PHP-Fehler
+- Datenbankstabellen `wp_ahgmh_submissions` und `wp_ahgmh_jagdbezirke` erstellt
+- Default-Optionen (`ahgmh_species`, `ahgmh_categories_*`) angelegt
+- Admin-Menü "Abschussplan" erscheint mit allen Untermenüs
 
-#### 7.1.2 Integrationstests
-- **WordPress-Integration:** Shortcodes in verschiedenen Themes
-- **Datenbank-Interaktion:** Multi-User-Szenarien und Concurrent Access
-- **Admin-Funktionen:** Konfigurationsänderungen und deren Auswirkungen
+**Test 2: Deaktivierung/Reaktivierung**
+- Plugin deaktivieren → Menüs verschwinden, Shortcodes funktionslos
+- Plugin reaktivieren → Alle Funktionen wiederhergestellt
+- Datenbankdaten bleiben erhalten
 
-#### 7.1.3 End-to-End Tests
-- **Benutzer-Workflows:** Komplette Meldungserfassung bis Export
-- **Rollenbasierte Tests:** Verschiedene Benutzerrollen und Berechtigungen
-- **Cross-Browser-Tests:** Funktionalität in allen Ziel-Browsern
+**Test 3: WordPress-Kompatibilität**
+- WordPress 5.0+ bis aktuelle Version
+- PHP 7.4+ bis PHP 8.2
+- Verschiedene Themes (Standard-Themes testen)
+- Plugin-Konflikte mit gängigen Plugins (Contact Form 7, Yoast SEO, etc.)
 
-### 7.2 Testszenarien
+### 7.2 Funktionale Tests
 
-#### **Szenario 1: Normale Abschussmeldung**
+#### 7.2.1 Shortcode-Funktionalität
+**Test 4: Alle 5 Shortcodes**
 ```
-GEGEBEN: Ein Obmann ist angemeldet
-WENN: Er eine gültige Abschussmeldung einträgt
-DANN: Die Meldung wird gespeichert und das Limit aktualisiert
-```
-
-#### **Szenario 2: Limit-Überschreitung**
-```
-GEGEBEN: Ein Limit ist erreicht und "Überschreitung erlaubt" ist deaktiviert
-WENN: Eine weitere Meldung eingegeben wird
-DANN: Das System zeigt eine Warnung aber akzeptiert die Eingabe
-```
-
-#### **Szenario 3: CSV-Export mit Filtern**
-```
-GEGEBEN: Mehrere Abschussmeldungen verschiedener Wildarten
-WENN: Ein gefilterter CSV-Export ausgeführt wird
-DANN: Nur die gefilterten Daten werden exportiert
+[abschuss_form]     → Meldungsformular erscheint, angemeldete User können eingeben
+[abschuss_table]    → Tabelle zeigt aktuelle Meldungen
+[abschuss_admin]    → Admin-Panel (nur für Admins sichtbar)
+[abschuss_summary]  → Dashboard mit Statistiken
+[abschuss_limits]   → Limitkonfiguration funktional
 ```
 
-#### **Szenario 4: Mobile Nutzung**
+**Test 5: Shortcode-Parameter**
+- `[abschuss_form species="Damwild"]` → Formular für Damwild
+- `[abschuss_table species="Rotwild"]` → Gefilterte Tabelle
+- Ungültige Parameter werden ignoriert/Default verwendet
+
+#### 7.2.2 Formular-Validierung
+**Test 6: WUS-Validation**
+- Gültige WUS-Nummern (7-stellig): "1234567" → ✓ akzeptiert
+- Ungültige Formate: "123", "12345678", "ABC1234" → ✗ Fehlermeldung
+- Duplikat-Check: Bestehende WUS erneut eingeben → Warnung anzeigen
+
+**Test 7: Pflichtfeld-Validation**
+- Leere Pflichtfelder → Fehlermeldung, Submission blockiert
+- Datum in Zukunft → Warnung aber Akzeptanz
+- Kategorie nicht ausgewählt → Fehlermeldung
+
+**Test 8: AJAX-Functionality**
+- Form-Submission ohne Seitenreload
+- Real-time WUS-Duplikatsprüfung
+- Table-Refresh nach Submission
+- Loading-States und Error-Handling
+
+### 7.3 Admin-Interface Tests
+
+#### 7.3.1 Dashboard-Funktionalität
+**Test 9: Dashboard-Statistics**
+- Korrekte Anzeige: Gesamt-Submissions, Monatliche Submissions, Aktive User
+- Live-Updates der Statistiken
+- Dashboard-Widget im WordPress-Dashboard
+
+**Test 10: Data-Management**
+- CRUD-Operations: Create, Read, Update, Delete von Submissions
+- Bulk-Delete-Funktionen
+- Filter und Suche funktional
+- Pagination bei vielen Einträgen
+
+#### 7.3.2 Einstellungen-Management
+**Test 11: Kategorien-Management**
+- Wildarten hinzufügen/löschen
+- Kategorien pro Wildart verwalten
+- Limits setzen und validieren
+- Änderungen werden in Frontend-Formularen übernommen
+
+**Test 12: Jagdbezirke-Management**
+- Jagdbezirke CRUD-Operations
+- Meldegruppen-Zuordnung
+- Aktiv/Inaktiv-Status
+- Integration in Formulare und Tabellen
+
+### 7.4 Export- und Security-Tests
+
+#### 7.4.1 CSV-Export-Funktionalität
+**Test 13: Export-Filterung**
+- Export nach Wildart: Nur ausgewählte Species exportiert
+- Datumsbereich-Filter: Nur Meldungen im Zeitraum
+- Encoding-Test: Umlaute korrekt in Excel dargestellt
+- Template-Dateinamen: Platzhalter `{jahr}`, `{monat}` korrekt ersetzt
+
+**Test 14: Export-Performance**
+- Große Datenmengen (1000+ Meldungen) exportieren
+- Download-Link funktional
+- Keine Timeouts bei großen Exporten
+
+#### 7.4.2 Security-Validierung
+**Test 15: Nonce-Protection**
+- AJAX-Requests ohne gültigen Nonce → 403 Fehler
+- Cross-Site Request Forgery Tests
+- Session-Hijacking-Schutz
+
+**Test 16: SQL-Injection-Tests**
+- Bösartige Eingaben in alle Formularfelder
+- SQL-Injection-Attempts in WUS-Feld, Bemerkungen, etc.
+- Prepared Statements schützen vor Attacken
+
+**Test 17: XSS-Protection**
+- JavaScript in Eingabefeldern → Wird escaped angezeigt
+- HTML-Tags in Bemerkungen → Werden escaped
+- Output-Escaping in allen Templates
+
+### 7.5 Performance- und Compatibility-Tests
+
+#### 7.5.1 Performance-Validierung
+**Test 18: Ladezeiten**
+- Frontend-Shortcodes < 2 Sekunden
+- Admin-Seiten < 3 Sekunden
+- AJAX-Requests < 1 Sekunde
+- Google PageSpeed Insights Score > 85
+
+**Test 19: Database-Performance**
+- Optimierte Queries bei 1000+ Submissions
+- Keine N+1 Query-Probleme
+- Korrekte Indexierung der Tabellen
+
+#### 7.5.2 Cross-Browser-Compatibility
+**Test 20: Browser-Tests**
+- Chrome (Desktop/Mobile) ✓
+- Firefox (Desktop/Mobile) ✓
+- Safari (Desktop/Mobile) ✓
+- Edge ✓
+- Internet Explorer 11 (Fallback)
+
+#### 7.5.3 Responsive-Design-Tests
+**Test 21: Mobile-Optimierung**
+- Smartphone (320px-480px): Formulare und Tabellen responsiv
+- Tablet (768px-1024px): Optimale Darstellung
+- Desktop (1200px+): Vollständige Funktionalität
+- Touch-Navigation funktional
+
+### 7.6 Stress- und Edge-Case-Tests
+
+#### 7.6.1 Data-Volume-Tests
+**Test 22: High-Volume-Scenarios**
+- 10.000+ Submissions in Datenbank
+- Pagination funktioniert korrekt
+- Export-Performance bei großen Datenmengen
+- Admin-Interface bleibt responsiv
+
+**Test 23: Edge-Cases**
+- Leere Datenbank → Graceful Handling
+- Fehlerhafte Datenbankverbindung → Error-Messages
+- Unvollständige Plugin-Installation → Fallback-Mechanismen
+- Concurrent-Access: Mehrere User gleichzeitig
+
+### 7.7 User-Acceptance-Tests
+
+#### 7.7.1 Workflow-Tests
+**Test 24: Complete User Journey**
 ```
-GEGEBEN: Ein Jäger nutzt das System auf dem Smartphone
-WENN: Er die Übersichtstabelle aufruft
-DANN: Die Darstellung ist optimiert und alle Funktionen verfügbar
+1. Jäger öffnet Website → Tabelle sichtbar ohne Anmeldung
+2. Obmann meldet sich an → Formular verfügbar
+3. Meldung eingeben → Validation, Speicherung, Bestätigung
+4. Tabelle aktualisiert → Neue Meldung erscheint sofort
+5. Admin exportiert Daten → CSV korrekt generiert
+6. Admin verwaltet Limits → Frontend-Formulare reagieren
 ```
+
+**Test 25: Error-Recovery-Tests**
+- Network-Fehler während AJAX → Retry-Mechanismen
+- Session-Timeout → User-friendly Redirects
+- JavaScript-Fehler → Graceful Degradation
+- Database-Errors → Aussagekräftige Fehlermeldungen
+
+### 7.8 Regressions- und Update-Tests
+
+#### 7.8.1 Update-Compatibility
+**Test 26: Plugin-Updates**
+- Update von Version 1.x → 2.0.0
+- Datenmigration funktional
+- Keine Datenverluste
+- Neue Features verfügbar
+
+**Test 27: WordPress Core-Updates**
+- WordPress-Update mit aktivem Plugin
+- Deprecated-Function-Warnings
+- API-Compatibility-Checks
 
 ---
 
