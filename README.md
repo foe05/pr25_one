@@ -6,10 +6,10 @@
 
 ## 🎯 Overview
 
-The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digital management of hunting reports in German hunting districts. It provides a complete system for hunters to submit game harvest data and administrators to manage hunting limits, categories, and export data with advanced features.
+The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digital management of hunting reports in German hunting districts. It provides a complete system for hunters to submit game hunting data and administrators to manage hunting limits, categories, and export data with advanced features.
 
 ### ✨ Core Features
-- ✅ **Digital Harvest Reports** - Advanced web forms with validation
+- ✅ **Digital Hunting Reports** - Advanced web forms with validation
 - ✅ **Comprehensive Admin Panel** - Modern tabbed interface with full CRUD operations
 - ✅ **Advanced Export System** - Configurable CSV exports with custom filename patterns  
 - ✅ **Category Management** - Full CRUD for species and categories with limit controls
