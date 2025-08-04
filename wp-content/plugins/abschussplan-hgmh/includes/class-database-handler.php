@@ -297,18 +297,31 @@ class AHGMH_Database_Handler {
      * Get submission counts per category
      *
      * @param string $species Filter by game species (optional)
+     * @param string $meldegruppe Filter by meldegruppe (optional)
      * @return array Array with category counts
      */
-    public function get_category_counts($species = '') {
+    public function get_category_counts($species = '', $meldegruppe = '') {
         global $wpdb;
         
-        $query = "SELECT field2 as category, COUNT(*) as count FROM $this->table_name WHERE field2 != ''";
+        $query = "SELECT s.field2 as category, COUNT(*) as count 
+                  FROM $this->table_name s";
         
-        if (!empty($species)) {
-            $query .= $wpdb->prepare(" AND game_species = %s", $species);
+        // Add JOIN if meldegruppe filter is needed
+        if (!empty($meldegruppe)) {
+            $query .= " LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
         }
         
-        $query .= " GROUP BY field2";
+        $query .= " WHERE s.field2 != ''";
+        
+        if (!empty($species)) {
+            $query .= $wpdb->prepare(" AND s.game_species = %s", $species);
+        }
+        
+        if (!empty($meldegruppe)) {
+            $query .= $wpdb->prepare(" AND j.meldegruppe = %s", $meldegruppe);
+        }
+        
+        $query .= " GROUP BY s.field2";
         $results = $wpdb->get_results($query, ARRAY_A);
         
         $counts = array();

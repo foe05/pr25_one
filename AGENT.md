@@ -1,10 +1,13 @@
 # AGENT.md - WordPress Plugin Project
 
-## Project Type
-- **Type**: WordPress Plugin for hunting submission tracking (German: Abschussplan HGMH)
+## Project Overview
+- **Project Name**: Abschussplan HGMH (Hunting Harvest Tracking for German Hunting Districts)
+- **Repository**: https://github.com/foe05/pr25_one
+- **Type**: WordPress Plugin for hunting submission tracking
 - **Version**: 2.0.0
-- **Status**: Production Ready
+- **Status**: Production Ready - Fully Implemented
 - **License**: GPLv3
+- **Target Audience**: German hunting associations (Hegegemeinschaften)
 
 ## WordPress Plugin Structure
 - **Main Plugin File**: `wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php`
@@ -47,13 +50,24 @@
 wp-content/plugins/abschussplan-hgmh/
 ├── abschussplan-hgmh.php (main plugin file)
 ├── includes/ (core classes)
-├── templates/ (frontend templates)  
+│   ├── class-database-handler.php
+│   ├── class-form-handler.php
+│   └── class-table-display.php
+├── templates/ (frontend templates)
+│   ├── form-template.php
+│   ├── table-template.php
+│   ├── summary-template.php
+│   ├── admin-template-modern.php
+│   └── admin-template-old.php
 ├── admin/ (admin functionality)
 │   ├── class-admin-page-modern.php (tabbed admin interface)
 │   ├── class-admin-page-legacy.php (legacy interface)
 │   └── assets/ (admin CSS/JS)
+│       ├── admin-modern.css
+│       └── admin-modern.js
 ├── assets/ (frontend CSS/JS files)
-├── debug.php (development debugging)
+│   ├── css/style.css
+│   └── js/form-validation.js
 └── uninstall.php (cleanup)
 ```
 
@@ -91,3 +105,15 @@ wp-content/plugins/abschussplan-hgmh/
 - **AJAX Integration**: Real-time updates without page reloads
 - **Enhanced Security**: WordPress security best practices implemented
 - **Comprehensive CRUD**: Full Create, Read, Update, Delete operations for all entities
+
+## Documentation Files
+- **README.md**: Comprehensive user and developer documentation
+- **ANFORDERUNGEN.md**: Detailed requirements documentation (German)
+- **wordpress_plugin_konzept.md**: Technical concept and architecture documentation (German)
+- **AGENT.md**: This file - development guidelines and project overview
+
+## Current Workspace Structure
+- **Repository Root**: `/home/foe/9_sideprojects/GITHUB/pr25_one`
+- **WordPress Plugin**: `wp-content/plugins/abschussplan-hgmh/`
+- **Plugin Archive**: Multiple ZIP versions available for distribution
+- **Git Repository**: Active Git repository with version control

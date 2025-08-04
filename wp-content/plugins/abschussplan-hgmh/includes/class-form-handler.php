@@ -180,18 +180,28 @@ class AHGMH_Form_Handler {
     public function render_summary($atts = array()) {
         // Parse shortcode attributes
         $atts = shortcode_atts(array(
-            'species' => 'Rotwild'
+            'species' => 'Rotwild',
+            'meldegruppe' => ''
         ), $atts, 'abschuss_summary');
         
         $selected_species = sanitize_text_field($atts['species']);
+        $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
+        
+        // Override with URL parameter if available
+        if (empty($selected_meldegruppe) && isset($_GET['meldegruppe'])) {
+            $selected_meldegruppe = sanitize_text_field($_GET['meldegruppe']);
+        }
         
         // Get dynamic categories for the selected species
         $categories_key = 'ahgmh_categories_' . sanitize_key($selected_species);
         $categories = get_option($categories_key, array());
         
         $limits = $this->get_category_limits($selected_species);
-        $counts = $this->get_category_counts($selected_species);
+        $counts = $this->get_category_counts($selected_species, $selected_meldegruppe);
         $allow_exceeding = $this->get_category_allow_exceeding($selected_species);
+        
+        // Get available meldegruppen for filter dropdown
+        $available_meldegruppen = $this->get_available_meldegruppen();
         
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/summary-template.php';
@@ -554,10 +564,31 @@ class AHGMH_Form_Handler {
      * Get submission counts per category for a specific species
      * 
      * @param string $species Game species
+     * @param string $meldegruppe Meldegruppe filter
      */
-    private function get_category_counts($species = '') {
+    private function get_category_counts($species = '', $meldegruppe = '') {
         $database = abschussplan_hgmh()->database;
-        return $database->get_category_counts($species);
+        return $database->get_category_counts($species, $meldegruppe);
+    }
+
+    /**
+     * Get all available meldegruppen from jagdbezirke table
+     * 
+     * @return array Available meldegruppen
+     */
+    private function get_available_meldegruppen() {
+        global $wpdb;
+        
+        $jagdbezirke_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        $query = "SELECT DISTINCT meldegruppe 
+                  FROM $jagdbezirke_table 
+                  WHERE ungueltig = 0 
+                  ORDER BY meldegruppe";
+        
+        $results = $wpdb->get_col($query);
+        
+        return $results;
     }
 
     /**
