@@ -324,18 +324,7 @@ class AHGMH_Database_Handler {
         return $result !== false;
     }
 
-    /**
-     * Delete all submissions
-     *
-     * @return bool True on success, false on failure
-     */
-    public function delete_all_submissions() {
-        global $wpdb;
-        
-        $result = $wpdb->query("TRUNCATE TABLE $this->table_name");
-        
-        return $result !== false;
-    }
+
 
     /**
      * Delete all submissions for a specific species
