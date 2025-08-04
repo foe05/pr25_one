@@ -14,6 +14,7 @@
         initProgressAnimations();
         initAutoRefresh();
         initMeldegruppenConfig();
+        initJagdbezirkeInterface();
     }
 
     /**
@@ -1770,10 +1771,408 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
                 }
             },
             error: function() {
-                showNotification('Fehler beim Speichern der Meldegruppen-Limits.', 'error');
+            showNotification('Fehler beim Speichern der Meldegruppen-Limits.', 'error');
             },
             complete: function() {
-                $submitBtn.prop('disabled', false).text(originalText);
+            $submitBtn.prop('disabled', false).text(originalText);
+            }
+            });
+            }
+
+    /**
+     * Initialize Jagdbezirke Interface
+     */
+    function initJagdbezirkeInterface() {
+        // Initialize wildart dropdown state on page load
+        initWildartDropdownState();
+        
+        // Manage limits button click handler
+        $(document).on('click', '.ahgmh-manage-limits', function(e) {
+            e.preventDefault();
+            const meldegruppe = $(this).data('meldegruppe');
+            const jagdbezirk = $(this).data('jagdbezirk');
+            
+            // Check if modal exists
+            if ($('#limits-config-modal').length === 0) {
+                alert('Fehler: Modal nicht gefunden. Bitte Seite neu laden.');
+                return;
+            }
+            
+            // Check if required data is available
+            if (!meldegruppe || !jagdbezirk) {
+                alert('Fehler: Unvollständige Daten. Bitte Seite neu laden.');
+                return;
+            }
+            
+            openLimitsModal(meldegruppe, jagdbezirk);
+        });
+
+        // Modal close handlers
+        $(document).on('click', '.ahgmh-modal-close', function() {
+            $('#limits-config-modal').hide();
+        });
+
+        // Save limits config button
+        $(document).on('click', '#save-limits-config', function() {
+            saveLimitsFromModal();
+        });
+
+        // Close modal when clicking outside
+        $(document).on('click', '#limits-config-modal', function(e) {
+            if (e.target === this) {
+                $(this).hide();
+            }
+        });
+
+        // Wildart-specific checkbox change handler
+        $(document).on('change', '#use_wildart_specific_meldegruppen', function() {
+            const isChecked = $(this).is(':checked');
+            const $checkbox = $(this);
+            const $dropdown = $('#wildart_selector');
+            const $dropdownContainer = $dropdown.closest('div');
+            
+            // Update dropdown state immediately for better UX
+            if (isChecked) {
+                $dropdown.prop('disabled', false);
+                $dropdownContainer.css('opacity', '1');
+            } else {
+                $dropdown.prop('disabled', true);
+                $dropdownContainer.css('opacity', '0.5');
+            }
+            
+            // Disable checkbox during request
+            $checkbox.prop('disabled', true);
+            
+            const currentWildart = $dropdown.val();
+            
+            $.ajax({
+                url: ahgmh_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ahgmh_toggle_wildart_specific',
+                    enabled: isChecked ? 1 : 0,
+                    current_wildart: currentWildart,
+                    nonce: ahgmh_admin.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showNotification(response.data.message, 'success');
+                        // Reload page to update interface
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showNotification(response.data, 'error');
+                        // Revert checkbox and dropdown state on error
+                        $checkbox.prop('checked', !isChecked);
+                        if (!isChecked) {
+                            $dropdown.prop('disabled', false);
+                            $dropdownContainer.css('opacity', '1');
+                        } else {
+                            $dropdown.prop('disabled', true);
+                            $dropdownContainer.css('opacity', '0.5');
+                        }
+                    }
+                },
+                error: function() {
+                    showNotification('Fehler beim Ändern des Meldegruppen-Modus.', 'error');
+                    // Revert checkbox and dropdown state on error
+                    $checkbox.prop('checked', !isChecked);
+                    if (!isChecked) {
+                        $dropdown.prop('disabled', false);
+                        $dropdownContainer.css('opacity', '1');
+                    } else {
+                        $dropdown.prop('disabled', true);
+                        $dropdownContainer.css('opacity', '0.5');
+                    }
+                },
+                complete: function() {
+                    $checkbox.prop('disabled', false);
+                }
+            });
+        });
+
+        // Wildart dropdown change handler
+        $(document).on('change', '#wildart_selector', function() {
+            const selectedWildart = $(this).val();
+            const $dropdown = $(this);
+            
+            // Disable dropdown during request
+            $dropdown.prop('disabled', true);
+            
+            // Save current wildart selection and reload jagdbezirke
+            $.ajax({
+                url: ahgmh_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ahgmh_change_wildart',
+                    wildart: selectedWildart,
+                    nonce: ahgmh_admin.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Reload jagdbezirke table
+                        loadJagdbezirkeForWildart(selectedWildart);
+                    } else {
+                        showNotification(response.data, 'error');
+                    }
+                },
+                error: function() {
+                    showNotification('Fehler beim Wechseln der Wildart.', 'error');
+                },
+                complete: function() {
+                    $dropdown.prop('disabled', false);
+                }
+            });
+        });
+    }
+
+    /**
+     * Initialize wildart dropdown state based on checkbox
+     */
+    function initWildartDropdownState() {
+        const $checkbox = $('#use_wildart_specific_meldegruppen');
+        const $dropdown = $('#wildart_selector');
+        const $dropdownContainer = $dropdown.closest('div');
+        
+        if ($checkbox.length && $dropdown.length) {
+            const isChecked = $checkbox.is(':checked');
+            
+            if (isChecked) {
+                $dropdown.prop('disabled', false);
+                $dropdownContainer.css('opacity', '1');
+            } else {
+                $dropdown.prop('disabled', true);
+                $dropdownContainer.css('opacity', '0.5');
+            }
+        }
+    }
+
+    /**
+     * Load jagdbezirke for selected wildart
+     */
+    function loadJagdbezirkeForWildart(wildart) {
+        const $jagdbezirkeSection = $('.ahgmh-settings-section').has('table.wp-list-table');
+        const $tableContainer = $jagdbezirkeSection.find('table').parent();
+        
+        // Show loading state
+        $tableContainer.html('<div style="text-align: center; padding: 40px;"><div class="spinner is-active"></div><p>Lade Jagdbezirke für ' + wildart + '...</p></div>');
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_load_wildart_jagdbezirke',
+                wildart: wildart,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    $tableContainer.html(response.data.html);
+                } else {
+                    $tableContainer.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
+                }
+            },
+            error: function() {
+                $tableContainer.html('<div class="notice notice-error"><p>Fehler beim Laden der Jagdbezirke.</p></div>');
             }
         });
     }
+
+    /**
+     * Open limits configuration modal
+     */
+    function openLimitsModal(meldegruppe, jagdbezirk) {
+        const $modal = $('#limits-config-modal');
+        const $content = $('#limits-config-content');
+        
+        if ($modal.length === 0) {
+            alert('Fehler: Modal-Element nicht gefunden');
+            return;
+        }
+        
+        // Store current meldegruppe and jagdbezirk for saving
+        $modal.data('meldegruppe', meldegruppe);
+        $modal.data('jagdbezirk', jagdbezirk);
+        
+        // Set modal title
+        $modal.find('.ahgmh-modal-header h3').text('Limits für Meldegruppe "' + meldegruppe + '" (Jagdbezirk: ' + jagdbezirk + ') konfigurieren');
+        
+        // Show loading state
+        $content.html('<div style="text-align: center; padding: 20px;"><div class="spinner is-active"></div><p>Lade Konfiguration...</p></div>');
+        $modal.show();
+
+        // Load current configuration
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_load_jagdbezirk_limits',
+                meldegruppe: meldegruppe,
+                jagdbezirk: jagdbezirk,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    renderLimitsModal(response.data, meldegruppe);
+                } else {
+                    $content.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
+                }
+            },
+            error: function(xhr, status, error) {
+                $content.html('<div class="notice notice-error"><p>Fehler beim Laden der Konfiguration. Bitte erneut versuchen.</p></div>');
+            }
+        });
+    }
+
+    /**
+     * Render limits configuration in modal
+     */
+    function renderLimitsModal(data, meldegruppe) {
+        const $content = $('#limits-config-content');
+        let html = '<div class="limits-config-wrapper">';
+        
+        // Species tabs
+        html += '<div class="nav-tab-wrapper">';
+        Object.keys(data.species).forEach(function(species, index) {
+            const activeClass = index === 0 ? 'nav-tab-active' : '';
+            html += '<a href="#" class="nav-tab ' + activeClass + '" data-species="' + species + '">' + species + '</a>';
+        });
+        html += '</div>';
+
+        // Species content
+        Object.keys(data.species).forEach(function(species, index) {
+            const categories = data.species[species];
+            const limits = data.limits[species] || {};
+            const allowExceeding = data.allow_exceeding[species] || {};
+            const hasCustomLimits = data.has_custom_limits[species] || false;
+            const displayStyle = index === 0 ? 'block' : 'none';
+
+            html += '<div class="species-limits-tab" data-species="' + species + '" style="display: ' + displayStyle + ';">';
+            html += '<div style="margin: 20px 0;">';
+            html += '<label><input type="checkbox" class="custom-limits-toggle" data-species="' + species + '" ' + (hasCustomLimits ? 'checked' : '') + '> Eigene Limits für ' + species + ' verwenden</label>';
+            html += '</div>';
+
+            html += '<div class="limits-config-table" style="' + (hasCustomLimits ? '' : 'opacity: 0.5; pointer-events: none;') + '">';
+            html += '<table class="wp-list-table widefat fixed striped">';
+            html += '<thead><tr><th>Kategorie</th><th>Limit</th><th>Überschreitung erlauben</th></tr></thead>';
+            html += '<tbody>';
+
+            categories.forEach(function(category) {
+                const currentLimit = limits[category] || 0;
+                const allowExceed = allowExceeding[category] || false;
+                html += '<tr>';
+                html += '<td>' + category + '</td>';
+                html += '<td><input type="number" class="small-text" name="limit_' + species + '_' + category + '" value="' + currentLimit + '" min="0"></td>';
+                html += '<td><input type="checkbox" name="allow_' + species + '_' + category + '" ' + (allowExceed ? 'checked' : '') + '></td>';
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            html += '</div>';
+            html += '</div>';
+        });
+
+        html += '</div>';
+        $content.html(html);
+
+        // Initialize tab switching
+        $('.nav-tab').on('click', function(e) {
+            e.preventDefault();
+            $('.nav-tab').removeClass('nav-tab-active');
+            $(this).addClass('nav-tab-active');
+            $('.species-limits-tab').hide();
+            $('.species-limits-tab[data-species="' + $(this).data('species') + '"]').show();
+        });
+
+        // Initialize custom limits toggle
+        $('.custom-limits-toggle').on('change', function() {
+            const $table = $(this).closest('.species-limits-tab').find('.limits-config-table');
+            if ($(this).is(':checked')) {
+                $table.css({'opacity': '1', 'pointer-events': 'auto'});
+            } else {
+                $table.css({'opacity': '0.5', 'pointer-events': 'none'});
+            }
+        });
+    }
+
+    /**
+     * Save limits configuration from modal
+     */
+    function saveLimitsFromModal() {
+        const $button = $('#save-limits-config');
+        const originalText = $button.text();
+        $button.prop('disabled', true).text('Speichere...');
+
+        // Get stored meldegruppe and jagdbezirk
+        const $modal = $('#limits-config-modal');
+        const meldegruppe = $modal.data('meldegruppe');
+        const jagdbezirk = $modal.data('jagdbezirk');
+
+        // Collect all data
+        const configData = {};
+        
+        $('.species-limits-tab').each(function() {
+            const species = $(this).data('species');
+            const hasCustomLimits = $(this).find('.custom-limits-toggle').is(':checked');
+            
+            configData[species] = {
+                has_custom_limits: hasCustomLimits,
+                limits: {},
+                allow_exceeding: {}
+            };
+
+            if (hasCustomLimits) {
+                $(this).find('input[name^="limit_' + species + '_"]').each(function() {
+                    const category = $(this).attr('name').replace('limit_' + species + '_', '');
+                    configData[species].limits[category] = parseInt($(this).val()) || 0;
+                });
+
+                $(this).find('input[name^="allow_' + species + '_"]').each(function() {
+                    const category = $(this).attr('name').replace('allow_' + species + '_', '');
+                    configData[species].allow_exceeding[category] = $(this).is(':checked');
+                });
+            }
+        });
+
+        // Send data to server
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_save_jagdbezirk_limits',
+                meldegruppe: meldegruppe,
+                jagdbezirk: jagdbezirk,
+                config_data: configData,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                    $('#limits-config-modal').hide();
+                    // Refresh the page to update the limits status
+                    location.reload();
+                } else {
+                    showNotification(response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Speichern der Limits.', 'error');
+            },
+            complete: function() {
+                $button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+
+    // Initialize when document is ready
+    $(document).ready(function() {
+        // Check if ahgmh_admin object is available
+        if (typeof ahgmh_admin === 'undefined') {
+            return;
+        }
+        
+        initAdmin();
+    });
+
+})(jQuery);

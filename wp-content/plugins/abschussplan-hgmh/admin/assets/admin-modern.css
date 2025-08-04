@@ -708,3 +708,132 @@
         width: 100%;
     }
 }
+
+/* === Modal Styles === */
+.ahgmh-modal {
+    display: none;
+    position: fixed;
+    z-index: 999999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+}
+
+.ahgmh-modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.ahgmh-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ahgmh-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.ahgmh-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.ahgmh-modal-close:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.ahgmh-modal-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.ahgmh-modal-footer {
+    padding: 20px;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.limits-config-wrapper .nav-tab-wrapper {
+    margin-bottom: 20px;
+}
+
+.limits-config-wrapper .species-limits-tab {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 20px;
+    background: #fff;
+}
+
+.limits-config-table {
+    margin-top: 15px;
+}
+
+.limits-config-table .wp-list-table th,
+.limits-config-table .wp-list-table td {
+    padding: 12px;
+    vertical-align: middle;
+}
+
+.limits-config-table input[type="number"] {
+    width: 80px;
+}
+
+.limits-config-table input[type="checkbox"] {
+    transform: scale(1.2);
+}
+
+/* Mobile responsive modal */
+@media (max-width: 782px) {
+    .ahgmh-modal-content {
+        width: 95%;
+        margin: 2% auto;
+        max-height: 95vh;
+    }
+    
+    .ahgmh-modal-header,
+    .ahgmh-modal-body,
+    .ahgmh-modal-footer {
+        padding: 15px;
+    }
+    
+    .ahgmh-modal-footer {
+        flex-direction: column-reverse;
+    }
+    
+    .limits-config-table {
+        overflow-x: auto;
+    }
+}

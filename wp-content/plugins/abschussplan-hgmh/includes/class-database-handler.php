@@ -71,13 +71,16 @@ class AHGMH_Database_Handler {
         
         $sql = "CREATE TABLE $table_name (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
+            wildart varchar(255) DEFAULT NULL,
             jagdbezirk varchar(255) NOT NULL,
             meldegruppe varchar(255) NOT NULL,
             ungueltig tinyint(1) NOT NULL DEFAULT 0,
+            active tinyint(1) NOT NULL DEFAULT 1,
             bemerkung text,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id)
+            PRIMARY KEY  (id),
+            KEY wildart_active (wildart, active)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -808,7 +811,7 @@ class AHGMH_Database_Handler {
             $this->create_jagdbezirk_table();
         }
         
-        $query = "SELECT * FROM $table_name WHERE ungueltig = 0 ORDER BY jagdbezirk ASC";
+        $query = "SELECT * FROM $table_name WHERE ungueltig = 0 AND wildart IS NULL ORDER BY jagdbezirk ASC";
         
         return $wpdb->get_results($query, ARRAY_A);
     }
@@ -885,5 +888,94 @@ class AHGMH_Database_Handler {
         $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
         
         return $wpdb->query("DELETE FROM $table_name");
+    }
+
+    /**
+     * Get jagdbezirke for specific wildart
+     */
+    public function get_wildart_jagdbezirke($wildart) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        if ($this->is_wildart_specific_enabled()) {
+            // Return wildart-specific jagdbezirke
+            $results = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM $table_name WHERE wildart = %s AND active = 1 ORDER BY jagdbezirk ASC",
+                $wildart
+            ), ARRAY_A);
+        } else {
+            // Return global jagdbezirke
+            $results = $wpdb->get_results(
+                "SELECT * FROM $table_name WHERE wildart IS NULL AND active = 1 ORDER BY jagdbezirk ASC",
+                ARRAY_A
+            );
+        }
+        
+        return $results ?: array();
+    }
+
+    /**
+     * Save wildart-specific jagdbezirk
+     */
+    public function save_wildart_jagdbezirk($wildart, $jagdbezirk_data) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        return $wpdb->insert(
+            $table_name,
+            array(
+                'wildart' => $wildart,
+                'jagdbezirk' => $jagdbezirk_data['jagdbezirk'],
+                'meldegruppe' => $jagdbezirk_data['meldegruppe'],
+                'bemerkung' => $jagdbezirk_data['bemerkung'],
+                'active' => 1
+            ),
+            array('%s', '%s', '%s', '%s', '%d')
+        );
+    }
+
+    /**
+     * Save global jagdbezirk
+     */
+    public function save_global_jagdbezirk($jagdbezirk_data) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        return $wpdb->insert(
+            $table_name,
+            array(
+                'wildart' => null,
+                'jagdbezirk' => $jagdbezirk_data['jagdbezirk'],
+                'meldegruppe' => $jagdbezirk_data['meldegruppe'],
+                'bemerkung' => $jagdbezirk_data['bemerkung'],
+                'active' => 1
+            ),
+            array('%s', '%s', '%s', '%s', '%d')
+        );
+    }
+
+    /**
+     * Clear global jagdbezirke
+     */
+    public function clear_global_jagdbezirke() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        return $wpdb->query("DELETE FROM $table_name WHERE wildart IS NULL");
+    }
+
+    /**
+     * Clear wildart-specific jagdbezirke
+     */
+    public function clear_wildart_jagdbezirke() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        return $wpdb->query("DELETE FROM $table_name WHERE wildart IS NOT NULL");
     }
 }
