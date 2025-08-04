@@ -200,8 +200,8 @@ class AHGMH_Form_Handler {
         $counts = $this->get_category_counts($selected_species, $selected_meldegruppe);
         $allow_exceeding = $this->get_category_allow_exceeding($selected_species);
         
-        // Get available meldegruppen for filter dropdown
-        $available_meldegruppen = $this->get_available_meldegruppen();
+        // Get available meldegruppen for filter dropdown (wildart-specific if enabled)
+        $available_meldegruppen = $this->get_available_meldegruppen($selected_species);
         
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/summary-template.php';
@@ -572,23 +572,26 @@ class AHGMH_Form_Handler {
     }
 
     /**
-     * Get all available meldegruppen from jagdbezirke table
+     * Get all available meldegruppen (wildart-specific or global)
      * 
+     * @param string $species Optional species filter for wildart-specific mode
      * @return array Available meldegruppen
      */
-    private function get_available_meldegruppen() {
-        global $wpdb;
+    private function get_available_meldegruppen($species = '') {
+        $database = abschussplan_hgmh()->database;
         
-        $jagdbezirke_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        $query = "SELECT DISTINCT meldegruppe 
-                  FROM $jagdbezirke_table 
-                  WHERE ungueltig = 0 
-                  ORDER BY meldegruppe";
-        
-        $results = $wpdb->get_col($query);
-        
-        return $results;
+        if ($database->is_wildart_specific_enabled()) {
+            // Return wildart-specific meldegruppen
+            if (!empty($species)) {
+                return $database->get_meldegruppen_for_wildart($species);
+            } else {
+                // If no species provided, return all wildart-specific meldegruppen
+                return $database->get_meldegruppen_for_wildart();
+            }
+        } else {
+            // Return global meldegruppen from jagdbezirke table
+            return $database->get_global_meldegruppen();
+        }
     }
 
     /**
@@ -614,6 +617,52 @@ class AHGMH_Form_Handler {
     }
 
     /**
+     * Get meldegruppen-specific category limits with fallback to species defaults
+     * 
+     * @param string $species Game species
+     * @param string $meldegruppe Meldegruppe name
+     * @return array Array of category => limit
+     */
+    private function get_meldegruppen_category_limits($species, $meldegruppe) {
+        $database = abschussplan_hgmh()->database;
+        
+        // Get dynamic categories for the specified species
+        $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+        $categories = get_option($categories_key, array());
+        
+        $limits = array();
+        foreach ($categories as $category) {
+            $applicable_limits = $database->get_applicable_limits($species, $meldegruppe, $category);
+            $limits[$category] = $applicable_limits['limit'];
+        }
+        
+        return $limits;
+    }
+
+    /**
+     * Get meldegruppen-specific allow exceeding settings with fallback to species defaults
+     * 
+     * @param string $species Game species
+     * @param string $meldegruppe Meldegruppe name
+     * @return array Array of category => allow_exceeding
+     */
+    private function get_meldegruppen_category_allow_exceeding($species, $meldegruppe) {
+        $database = abschussplan_hgmh()->database;
+        
+        // Get dynamic categories for the specified species
+        $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+        $categories = get_option($categories_key, array());
+        
+        $allow_exceeding = array();
+        foreach ($categories as $category) {
+            $applicable_limits = $database->get_applicable_limits($species, $meldegruppe, $category);
+            $allow_exceeding[$category] = $applicable_limits['allow_exceeding'];
+        }
+        
+        return $allow_exceeding;
+    }
+
+    /**
      * Render limits configuration for specific species
      * 
      * @param array $atts Shortcode attributes
@@ -622,7 +671,8 @@ class AHGMH_Form_Handler {
     public function render_limits_config($atts = array()) {
         // Parse shortcode attributes
         $atts = shortcode_atts(array(
-            'species' => 'Rotwild'
+            'species' => 'Rotwild',
+            'meldegruppe' => ''
         ), $atts, 'abschuss_limits');
         
         // Check if user has admin capabilities
@@ -634,14 +684,22 @@ class AHGMH_Form_Handler {
         wp_enqueue_script('jquery');
         
         $selected_species = sanitize_text_field($atts['species']);
+        $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
         
         // Get dynamic categories for the selected species
         $categories_key = 'ahgmh_categories_' . sanitize_key($selected_species);
         $categories = get_option($categories_key, array());
         
-        $limits = $this->get_category_limits($selected_species);
-        $counts = $this->get_category_counts($selected_species);
-        $allow_exceeding = $this->get_category_allow_exceeding($selected_species);
+        // Use meldegruppen-specific limits if available and meldegruppe is specified
+        if (!empty($selected_meldegruppe)) {
+            $limits = $this->get_meldegruppen_category_limits($selected_species, $selected_meldegruppe);
+            $allow_exceeding = $this->get_meldegruppen_category_allow_exceeding($selected_species, $selected_meldegruppe);
+        } else {
+            $limits = $this->get_category_limits($selected_species);
+            $allow_exceeding = $this->get_category_allow_exceeding($selected_species);
+        }
+        
+        $counts = $this->get_category_counts($selected_species, $selected_meldegruppe);
         
         ob_start();
         ?>

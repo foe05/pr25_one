@@ -38,6 +38,13 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_save_category_settings', array($this, 'ajax_save_category_settings'));
         add_action('wp_ajax_ahgmh_dashboard_stats', array($this, 'ajax_dashboard_stats'));
         add_action('wp_ajax_save_export_config', array($this, 'ajax_save_export_config'));
+        add_action('wp_ajax_ahgmh_toggle_wildart_specific', array($this, 'ajax_toggle_wildart_specific'));
+        add_action('wp_ajax_ahgmh_load_wildart_meldegruppen', array($this, 'ajax_load_wildart_meldegruppen'));
+        add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
+        add_action('wp_ajax_ahgmh_load_meldegruppen_limits', array($this, 'ajax_load_meldegruppen_limits'));
+        add_action('wp_ajax_ahgmh_toggle_meldegruppe_custom_limits', array($this, 'ajax_toggle_meldegruppe_custom_limits'));
+        add_action('wp_ajax_ahgmh_save_meldegruppe_limits', array($this, 'ajax_save_meldegruppe_limits'));
+        add_action('wp_ajax_ahgmh_save_species_default_limits', array($this, 'ajax_save_species_default_limits'));
         
         // Add WordPress dashboard widget
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
@@ -341,6 +348,11 @@ class AHGMH_Admin_Page_Modern {
                     <span class="dashicons dashicons-location-alt"></span>
                     <?php echo esc_html__('Jagdbezirke', 'abschussplan-hgmh'); ?>
                 </a>
+                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=meldegruppen'); ?>" 
+                   class="ahgmh-tab <?php echo $active_tab === 'meldegruppen' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-groups"></span>
+                    <?php echo esc_html__('Meldegruppen', 'abschussplan-hgmh'); ?>
+                </a>
                 <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=export'); ?>" 
                    class="ahgmh-tab <?php echo $active_tab === 'export' ? 'active' : ''; ?>">
                     <span class="dashicons dashicons-download"></span>
@@ -363,6 +375,9 @@ class AHGMH_Admin_Page_Modern {
                         break;
                     case 'districts':
                         $this->render_districts_settings();
+                        break;
+                    case 'meldegruppen':
+                        $this->render_meldegruppen_settings();
                         break;
                     case 'export':
                         $this->render_export_settings();
@@ -1793,6 +1808,165 @@ class AHGMH_Admin_Page_Modern {
     }
 
     /**
+     * Render meldegruppen settings tab
+     */
+    private function render_meldegruppen_settings() {
+        $database = abschussplan_hgmh()->database;
+        $is_wildart_specific_enabled = $database->is_wildart_specific_enabled();
+        $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+        ?>
+        <div class="ahgmh-panel">
+            <h2><?php echo esc_html__('Meldegruppen-Konfiguration', 'abschussplan-hgmh'); ?></h2>
+            
+            <!-- Wildart-specific Configuration Toggle -->
+            <div class="ahgmh-settings-section">
+                <h3><?php echo esc_html__('Konfigurationsmodus', 'abschussplan-hgmh'); ?></h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><?php echo esc_html__('Meldegruppen-Modus', 'abschussplan-hgmh'); ?></th>
+                        <td>
+                            <label for="use_wildart_specific_meldegruppen">
+                                <input type="checkbox" 
+                                       id="use_wildart_specific_meldegruppen" 
+                                       name="use_wildart_specific_meldegruppen" 
+                                       value="1" 
+                                       <?php checked($is_wildart_specific_enabled); ?>>
+                                <?php echo esc_html__('Wildartspezifische Meldegruppen verwenden', 'abschussplan-hgmh'); ?>
+                            </label>
+                            <p class="description">
+                                <?php echo esc_html__('Wenn aktiviert, können für jede Wildart separate Meldegruppen konfiguriert werden. Bei Deaktivierung werden globale Meldegruppen aus den Jagdbezirken verwendet.', 'abschussplan-hgmh'); ?>
+                                <br><strong><?php echo esc_html__('⚠️ Achtung: Änderungen dieses Modus löschen alle bestehenden Abschussmeldungen!', 'abschussplan-hgmh'); ?></strong>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Global Configuration (shown when wildart-specific is disabled) -->
+            <div id="global-meldegruppen-config" style="<?php echo $is_wildart_specific_enabled ? 'display:none;' : ''; ?>">
+                <div class="ahgmh-settings-section">
+                    <h3><?php echo esc_html__('Globale Meldegruppen', 'abschussplan-hgmh'); ?></h3>
+                    <p><?php echo esc_html__('Im globalen Modus werden Meldegruppen über die Jagdbezirke-Konfiguration verwaltet.', 'abschussplan-hgmh'); ?></p>
+                    <p>
+                        <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=districts'); ?>" class="button">
+                            <?php echo esc_html__('Jagdbezirke verwalten', 'abschussplan-hgmh'); ?>
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Wildart-specific Configuration (shown when wildart-specific is enabled) -->
+            <div id="wildart-specific-meldegruppen-config" style="<?php echo !$is_wildart_specific_enabled ? 'display:none;' : ''; ?>">
+                <div class="ahgmh-settings-section">
+                    <h3><?php echo esc_html__('Wildartspezifische Meldegruppen', 'abschussplan-hgmh'); ?></h3>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="wildart_selector"><?php echo esc_html__('Wildart auswählen', 'abschussplan-hgmh'); ?></label>
+                            </th>
+                            <td>
+                                <select id="wildart_selector" class="regular-text">
+                                    <option value=""><?php echo esc_html__('Wildart auswählen...', 'abschussplan-hgmh'); ?></option>
+                                    <?php foreach ($available_species as $species): ?>
+                                        <option value="<?php echo esc_attr($species); ?>">
+                                            <?php echo esc_html($species); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="description"><?php echo esc_html__('Wählen Sie eine Wildart aus, um deren Meldegruppen zu konfigurieren.', 'abschussplan-hgmh'); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Dynamic Configuration for Selected Wildart -->
+                    <div id="wildart_meldegruppen_config_container" style="display:none;">
+                        <h4 id="selected_wildart_title"></h4>
+                        
+                        <form id="ahgmh-meldegruppen-config-form">
+                            <table class="form-table">
+                                <tr>
+                                    <th scope="row">
+                                        <label for="meldegruppen_input"><?php echo esc_html__('Meldegruppen', 'abschussplan-hgmh'); ?></label>
+                                    </th>
+                                    <td>
+                                        <textarea id="meldegruppen_input" 
+                                                  name="meldegruppen" 
+                                                  rows="4" 
+                                                  class="large-text" 
+                                                  placeholder="Gruppe A&#10;Gruppe B&#10;Gruppe C"></textarea>
+                                        <p class="description">
+                                            <?php echo esc_html__('Geben Sie eine Meldegruppe pro Zeile ein. Bestehende Meldegruppen werden überschrieben.', 'abschussplan-hgmh'); ?>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p class="submit">
+                                <button type="submit" class="button button-primary">
+                                    <span class="dashicons dashicons-yes"></span>
+                                    <?php echo esc_html__('Meldegruppen speichern', 'abschussplan-hgmh'); ?>
+                                </button>
+                                <button type="button" id="clear_meldegruppen" class="button button-secondary">
+                                    <span class="dashicons dashicons-trash"></span>
+                                    <?php echo esc_html__('Alle löschen', 'abschussplan-hgmh'); ?>
+                                </button>
+                            </p>
+                        </form>
+
+                        <!-- Current Configuration Display -->
+                        <div id="current_meldegruppen_display">
+                            <h4><?php echo esc_html__('Aktuelle Meldegruppen', 'abschussplan-hgmh'); ?></h4>
+                            <div id="current_meldegruppen_list">
+                                <p class="description"><?php echo esc_html__('Wählen Sie eine Wildart aus, um deren Meldegruppen anzuzeigen.', 'abschussplan-hgmh'); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meldegruppen-specific Limits Configuration -->
+            <div id="meldegruppen-limits-config" style="<?php echo !$is_wildart_specific_enabled ? 'display:none;' : ''; ?>">
+                <div class="ahgmh-settings-section">
+                    <h3><?php echo esc_html__('Meldegruppenspezifische Abschuss-Limits', 'abschussplan-hgmh'); ?></h3>
+                    
+                    <div id="limits_config_notice" class="notice notice-info" style="display:none;">
+                        <p><?php echo esc_html__('Wählen Sie eine Wildart aus, um die Limits-Konfiguration für deren Meldegruppen anzuzeigen.', 'abschussplan-hgmh'); ?></p>
+                    </div>
+
+                    <div id="limits_config_container" style="display:none;">
+                        <h4 id="limits_wildart_title"></h4>
+                        
+                        <!-- Species Default Limits -->
+                        <div class="limits-section">
+                            <h5><?php echo esc_html__('Standard-Limits für Wildart (Fallback für Meldegruppen ohne eigene Limits)', 'abschussplan-hgmh'); ?></h5>
+                            <form id="species_default_limits_form">
+                                <div id="species_default_limits_inputs">
+                                    <!-- Dynamic content will be loaded here -->
+                                </div>
+                                <p class="submit">
+                                    <button type="submit" class="button button-primary">
+                                        <?php echo esc_html__('Standard-Limits speichern', 'abschussplan-hgmh'); ?>
+                                    </button>
+                                </p>
+                            </form>
+                        </div>
+
+                        <!-- Meldegruppen-specific Limits -->
+                        <div class="limits-section">
+                            <h5><?php echo esc_html__('Meldegruppenspezifische Limits', 'abschussplan-hgmh'); ?></h5>
+                            <div id="meldegruppen_limits_container">
+                                <!-- Dynamic content will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
      * Render export settings tab
      */
     private function render_export_settings() {
@@ -2595,6 +2769,308 @@ class AHGMH_Admin_Page_Modern {
             wp_send_json_success(__('Export-Einstellungen erfolgreich gespeichert', 'abschussplan-hgmh'));
         } else {
             wp_send_json_error(__('Fehler beim Speichern der Export-Einstellungen', 'abschussplan-hgmh'));
+        }
+    }
+
+    /**
+     * AJAX handler: Toggle wildart-specific meldegruppen mode
+     */
+    public function ajax_toggle_wildart_specific() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $enabled = isset($_POST['enabled']) && $_POST['enabled'] === 'true';
+        $database = abschussplan_hgmh()->database;
+
+        // Delete all submissions when changing mode
+        if ($database->delete_all_submissions()) {
+            $database->set_wildart_specific_mode($enabled);
+            wp_send_json_success(array(
+                'message' => $enabled ? 
+                    __('Wildartspezifischer Modus aktiviert. Alle Abschussmeldungen wurden gelöscht.', 'abschussplan-hgmh') :
+                    __('Globaler Modus aktiviert. Alle Abschussmeldungen wurden gelöscht.', 'abschussplan-hgmh'),
+                'enabled' => $enabled
+            ));
+        } else {
+            wp_send_json_error(__('Fehler beim Löschen der Abschussmeldungen.', 'abschussplan-hgmh'));
+        }
+    }
+
+    /**
+     * AJAX handler: Load meldegruppen for a specific wildart
+     */
+    public function ajax_load_wildart_meldegruppen() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $wildart = sanitize_text_field($_POST['wildart'] ?? '');
+        
+        if (empty($wildart)) {
+            wp_send_json_error(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        $database = abschussplan_hgmh()->database;
+        $meldegruppen = $database->get_meldegruppen_for_wildart($wildart);
+
+        wp_send_json_success(array(
+            'wildart' => $wildart,
+            'meldegruppen' => $meldegruppen,
+            'meldegruppen_text' => implode("\n", $meldegruppen)
+        ));
+    }
+
+    /**
+     * AJAX handler: Save meldegruppen configuration for a wildart
+     */
+    public function ajax_save_wildart_meldegruppen() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $wildart = sanitize_text_field($_POST['wildart'] ?? '');
+        $meldegruppen_text = sanitize_textarea_field($_POST['meldegruppen'] ?? '');
+
+        if (empty($wildart)) {
+            wp_send_json_error(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        // Parse meldegruppen from textarea (one per line)
+        $meldegruppen = array_filter(
+            array_map('trim', explode("\n", $meldegruppen_text)),
+            function($item) { return !empty($item); }
+        );
+
+        $database = abschussplan_hgmh()->database;
+        
+        try {
+            $database->save_meldegruppen_config($wildart, $meldegruppen);
+            wp_send_json_success(array(
+                'message' => sprintf(
+                    __('Meldegruppen für %s erfolgreich gespeichert (%d Gruppen).', 'abschussplan-hgmh'),
+                    $wildart,
+                    count($meldegruppen)
+                ),
+                'meldegruppen' => $meldegruppen
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Speichern der Meldegruppen: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
+        }
+    }
+
+    /**
+     * AJAX handler: Load meldegruppen limits configuration for a species
+     */
+    public function ajax_load_meldegruppen_limits() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $species = sanitize_text_field($_POST['species'] ?? '');
+        
+        if (empty($species)) {
+            wp_send_json_error(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        $database = abschussplan_hgmh()->database;
+        
+        // Get categories for this species
+        $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+        $categories = get_option($categories_key, array());
+        
+        // Get available meldegruppen for this species
+        $meldegruppen = $database->get_meldegruppen_for_wildart($species);
+        
+        // Get species default limits
+        $default_limits = $database->get_meldegruppen_limits($species, null);
+        $default_exceeding = $database->get_meldegruppen_allow_exceeding($species, null);
+        
+        // Get meldegruppen-specific configuration
+        $meldegruppen_config = array();
+        foreach ($meldegruppen as $meldegruppe) {
+            $has_custom = $database->meldegruppe_has_custom_limits($species, $meldegruppe);
+            $meldegruppen_config[$meldegruppe] = array(
+                'has_custom_limits' => $has_custom,
+                'limits' => $has_custom ? $database->get_meldegruppen_limits($species, $meldegruppe) : array(),
+                'allow_exceeding' => $has_custom ? $database->get_meldegruppen_allow_exceeding($species, $meldegruppe) : array()
+            );
+        }
+
+        wp_send_json_success(array(
+            'species' => $species,
+            'categories' => $categories,
+            'meldegruppen' => $meldegruppen,
+            'default_limits' => $default_limits,
+            'default_exceeding' => $default_exceeding,
+            'meldegruppen_config' => $meldegruppen_config
+        ));
+    }
+
+    /**
+     * AJAX handler: Toggle custom limits for a meldegruppe
+     */
+    public function ajax_toggle_meldegruppe_custom_limits() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $species = sanitize_text_field($_POST['species'] ?? '');
+        $meldegruppe = sanitize_text_field($_POST['meldegruppe'] ?? '');
+        $has_custom_limits = isset($_POST['has_custom_limits']) && $_POST['has_custom_limits'] === 'true';
+
+        if (empty($species) || empty($meldegruppe)) {
+            wp_send_json_error(__('Wildart und Meldegruppe sind erforderlich.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        $database = abschussplan_hgmh()->database;
+        
+        try {
+            $database->toggle_meldegruppe_custom_limits($species, $meldegruppe, $has_custom_limits);
+            
+            $message = $has_custom_limits ? 
+                sprintf(__('Eigene Limits für %s aktiviert.', 'abschussplan-hgmh'), $meldegruppe) :
+                sprintf(__('Eigene Limits für %s deaktiviert. Verwendet jetzt Standard-Limits.', 'abschussplan-hgmh'), $meldegruppe);
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'has_custom_limits' => $has_custom_limits
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Ändern der Limits-Konfiguration: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
+        }
+    }
+
+    /**
+     * AJAX handler: Save limits configuration for a meldegruppe
+     */
+    public function ajax_save_meldegruppe_limits() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $species = sanitize_text_field($_POST['species'] ?? '');
+        $meldegruppe = sanitize_text_field($_POST['meldegruppe'] ?? '');
+        $limits = $_POST['limits'] ?? array();
+        $allow_exceeding = $_POST['allow_exceeding'] ?? array();
+
+        if (empty($species) || empty($meldegruppe)) {
+            wp_send_json_error(__('Wildart und Meldegruppe sind erforderlich.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        // Sanitize limits data
+        $sanitized_limits = array();
+        foreach ($limits as $category => $limit) {
+            $sanitized_limits[sanitize_text_field($category)] = (int) $limit;
+        }
+
+        $sanitized_exceeding = array();
+        foreach ($allow_exceeding as $category => $allow) {
+            $sanitized_exceeding[sanitize_text_field($category)] = (bool) $allow;
+        }
+
+        $database = abschussplan_hgmh()->database;
+        
+        try {
+            $database->save_meldegruppen_limits($species, $meldegruppe, $sanitized_limits, $sanitized_exceeding, true);
+            
+            wp_send_json_success(array(
+                'message' => sprintf(
+                    __('Limits für %s erfolgreich gespeichert.', 'abschussplan-hgmh'),
+                    $meldegruppe
+                )
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Speichern der Limits: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
+        }
+    }
+
+    /**
+     * AJAX handler: Save species default limits
+     */
+    public function ajax_save_species_default_limits() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $species = sanitize_text_field($_POST['species'] ?? '');
+        $limits = $_POST['limits'] ?? array();
+        $allow_exceeding = $_POST['allow_exceeding'] ?? array();
+
+        if (empty($species)) {
+            wp_send_json_error(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        // Sanitize limits data
+        $sanitized_limits = array();
+        foreach ($limits as $category => $limit) {
+            $sanitized_limits[sanitize_text_field($category)] = (int) $limit;
+        }
+
+        $sanitized_exceeding = array();
+        foreach ($allow_exceeding as $category => $allow) {
+            $sanitized_exceeding[sanitize_text_field($category)] = (bool) $allow;
+        }
+
+        $database = abschussplan_hgmh()->database;
+        
+        try {
+            $database->save_meldegruppen_limits($species, null, $sanitized_limits, $sanitized_exceeding, false);
+            
+            wp_send_json_success(array(
+                'message' => sprintf(
+                    __('Standard-Limits für %s erfolgreich gespeichert.', 'abschussplan-hgmh'),
+                    $species
+                )
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Speichern der Standard-Limits: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
         }
     }
 }

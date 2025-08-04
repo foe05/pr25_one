@@ -83,10 +83,72 @@ class AHGMH_Database_Handler {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
         
+        // Create wildart-specific meldegruppen configuration table
+        $this->create_meldegruppen_config_table();
+        
+        // Create meldegruppen-specific limits table
+        $this->create_meldegruppen_limits_table();
+        
         // Add some default Jagdbezirke if table is empty
         $this->seed_default_jagdbezirke();
     }
-    
+
+    /**
+     * Create the meldegruppen configuration table for wildart-specific settings
+     */
+    public function create_meldegruppen_config_table() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        $sql = "CREATE TABLE $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            wildart varchar(50) NULL,
+            meldegruppe varchar(100) NOT NULL,
+            jagdbezirke text,
+            is_wildart_specific tinyint(1) NOT NULL DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY wildart_idx (wildart),
+            KEY meldegruppe_idx (meldegruppe)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+        }
+
+        /**
+        * Create the meldegruppen-specific limits table
+        */
+    public function create_meldegruppen_limits_table() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        $sql = "CREATE TABLE $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            species varchar(50) NOT NULL,
+            meldegruppe varchar(100) NULL,
+            category varchar(100) NOT NULL,
+            max_count int(11) NOT NULL DEFAULT 0,
+            allow_exceeding tinyint(1) NOT NULL DEFAULT 0,
+            has_custom_limits tinyint(1) NOT NULL DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_species_meldegruppe_category (species, meldegruppe, category),
+            KEY species_idx (species),
+            KEY meldegruppe_idx (meldegruppe),
+            KEY category_idx (category)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+     
     /**
      * Seed default Jagdbezirke if table is empty
      */
@@ -395,6 +457,318 @@ class AHGMH_Database_Handler {
         $count = $wpdb->get_var($wpdb->prepare($query, $wus_number));
         
         return (int) $count > 0;
+    }
+
+    /**
+     * Check if wildart-specific meldegruppen mode is enabled
+     * 
+     * @return bool
+     */
+    public function is_wildart_specific_enabled() {
+        return (bool) get_option('ahgmh_use_wildart_specific_meldegruppen', false);
+    }
+
+    /**
+     * Toggle wildart-specific meldegruppen mode
+     * 
+     * @param bool $enabled
+     */
+    public function set_wildart_specific_mode($enabled) {
+        update_option('ahgmh_use_wildart_specific_meldegruppen', (bool) $enabled);
+    }
+
+    /**
+     * Get meldegruppen for a specific wildart
+     * 
+     * @param string $wildart The wildart name (optional, gets all if empty)
+     * @return array Array of meldegruppen
+     */
+    public function get_meldegruppen_for_wildart($wildart = '') {
+        global $wpdb;
+        
+        if (!$this->is_wildart_specific_enabled()) {
+            // Return global meldegruppen from jagdbezirke table
+            return $this->get_global_meldegruppen();
+        }
+        
+        $config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        
+        if (empty($wildart)) {
+            // Get all meldegruppen for all wildarten
+            $query = "SELECT DISTINCT meldegruppe FROM $config_table WHERE is_wildart_specific = 1 ORDER BY meldegruppe";
+            return $wpdb->get_col($query);
+        }
+        
+        $query = $wpdb->prepare(
+            "SELECT meldegruppe FROM $config_table WHERE wildart = %s AND is_wildart_specific = 1 ORDER BY meldegruppe",
+            $wildart
+        );
+        
+        return $wpdb->get_col($query);
+    }
+
+    /**
+     * Get global meldegruppen from jagdbezirke table
+     * 
+     * @return array Array of global meldegruppen
+     */
+    public function get_global_meldegruppen() {
+        global $wpdb;
+        
+        $jagdbezirke_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        $query = "SELECT DISTINCT meldegruppe 
+                  FROM $jagdbezirke_table 
+                  WHERE ungueltig = 0 
+                  ORDER BY meldegruppe";
+        
+        return $wpdb->get_col($query);
+    }
+
+    /**
+     * Save meldegruppen configuration for a wildart
+     * 
+     * @param string $wildart Wildart name
+     * @param array $meldegruppen Array of meldegruppen 
+     * @param array $jagdbezirke_map Map of meldegruppe -> jagdbezirke array
+     */
+    public function save_meldegruppen_config($wildart, $meldegruppen, $jagdbezirke_map = array()) {
+        global $wpdb;
+        
+        $config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        
+        // First, delete existing config for this wildart
+        $wpdb->delete($config_table, array('wildart' => $wildart), array('%s'));
+        
+        // Insert new configuration
+        foreach ($meldegruppen as $meldegruppe) {
+            $jagdbezirke_json = isset($jagdbezirke_map[$meldegruppe]) ? 
+                json_encode($jagdbezirke_map[$meldegruppe]) : '[]';
+            
+            $wpdb->insert(
+                $config_table,
+                array(
+                    'wildart' => $wildart,
+                    'meldegruppe' => $meldegruppe,
+                    'jagdbezirke' => $jagdbezirke_json,
+                    'is_wildart_specific' => 1
+                ),
+                array('%s', '%s', '%s', '%d')
+            );
+        }
+    }
+
+    /**
+     * Delete all submissions (used when changing meldegruppen configuration)
+     */
+    public function delete_all_submissions() {
+        global $wpdb;
+        
+        $result = $wpdb->query("DELETE FROM $this->table_name");
+        return $result !== false;
+    }
+
+    /**
+     * Check if meldegruppe has custom limits for a species
+     * 
+     * @param string $species Species name
+     * @param string $meldegruppe Meldegruppe name
+     * @return bool
+     */
+    public function meldegruppe_has_custom_limits($species, $meldegruppe) {
+        global $wpdb;
+        
+        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        
+        $query = $wpdb->prepare(
+            "SELECT COUNT(*) FROM $limits_table 
+             WHERE species = %s AND meldegruppe = %s AND has_custom_limits = 1",
+            $species,
+            $meldegruppe
+        );
+        
+        return (int) $wpdb->get_var($query) > 0;
+    }
+
+    /**
+     * Get limits for specific meldegruppe and species
+     * 
+     * @param string $species Species name
+     * @param string $meldegruppe Meldegruppe name (NULL for species defaults)
+     * @return array Array of category => limit
+     */
+    public function get_meldegruppen_limits($species, $meldegruppe = null) {
+        global $wpdb;
+        
+        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        
+        if ($meldegruppe === null) {
+            // Get species default limits (for meldegruppen without custom limits)
+            $query = $wpdb->prepare(
+                "SELECT category, max_count FROM $limits_table 
+                 WHERE species = %s AND meldegruppe IS NULL",
+                $species
+            );
+        } else {
+            // Get meldegruppe-specific limits
+            $query = $wpdb->prepare(
+                "SELECT category, max_count FROM $limits_table 
+                 WHERE species = %s AND meldegruppe = %s",
+                $species,
+                $meldegruppe
+            );
+        }
+        
+        $results = $wpdb->get_results($query, ARRAY_A);
+        
+        $limits = array();
+        foreach ($results as $result) {
+            $limits[$result['category']] = (int) $result['max_count'];
+        }
+        
+        return $limits;
+    }
+
+    /**
+     * Get allow exceeding settings for specific meldegruppe and species
+     * 
+     * @param string $species Species name
+     * @param string $meldegruppe Meldegruppe name (NULL for species defaults)
+     * @return array Array of category => allow_exceeding
+     */
+    public function get_meldegruppen_allow_exceeding($species, $meldegruppe = null) {
+        global $wpdb;
+        
+        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        
+        if ($meldegruppe === null) {
+            // Get species default settings
+            $query = $wpdb->prepare(
+                "SELECT category, allow_exceeding FROM $limits_table 
+                 WHERE species = %s AND meldegruppe IS NULL",
+                $species
+            );
+        } else {
+            // Get meldegruppe-specific settings
+            $query = $wpdb->prepare(
+                "SELECT category, allow_exceeding FROM $limits_table 
+                 WHERE species = %s AND meldegruppe = %s",
+                $species,
+                $meldegruppe
+            );
+        }
+        
+        $results = $wpdb->get_results($query, ARRAY_A);
+        
+        $settings = array();
+        foreach ($results as $result) {
+            $settings[$result['category']] = (bool) $result['allow_exceeding'];
+        }
+        
+        return $settings;
+    }
+
+    /**
+     * Save limits configuration for meldegruppe
+     * 
+     * @param string $species Species name
+     * @param string $meldegruppe Meldegruppe name (NULL for species defaults)
+     * @param array $limits Array of category => limit
+     * @param array $allow_exceeding Array of category => allow_exceeding
+     * @param bool $has_custom_limits Whether this meldegruppe uses custom limits
+     */
+    public function save_meldegruppen_limits($species, $meldegruppe, $limits, $allow_exceeding = array(), $has_custom_limits = true) {
+        global $wpdb;
+        
+        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        
+        // First, delete existing limits for this species/meldegruppe combination
+        if ($meldegruppe === null) {
+            $wpdb->delete($limits_table, array('species' => $species, 'meldegruppe' => null), array('%s', '%s'));
+        } else {
+            $wpdb->delete($limits_table, array('species' => $species, 'meldegruppe' => $meldegruppe), array('%s', '%s'));
+        }
+        
+        // Insert new limits
+        foreach ($limits as $category => $limit) {
+            $allow_exceed = isset($allow_exceeding[$category]) ? (bool) $allow_exceeding[$category] : false;
+            
+            $wpdb->insert(
+                $limits_table,
+                array(
+                    'species' => $species,
+                    'meldegruppe' => $meldegruppe,
+                    'category' => $category,
+                    'max_count' => (int) $limit,
+                    'allow_exceeding' => $allow_exceed ? 1 : 0,
+                    'has_custom_limits' => $has_custom_limits ? 1 : 0
+                ),
+                array('%s', '%s', '%s', '%d', '%d', '%d')
+            );
+        }
+    }
+
+    /**
+     * Toggle custom limits setting for a meldegruppe
+     * 
+     * @param string $species Species name
+     * @param string $meldegruppe Meldegruppe name
+     * @param bool $has_custom_limits Whether meldegruppe should use custom limits
+     */
+    public function toggle_meldegruppe_custom_limits($species, $meldegruppe, $has_custom_limits) {
+        global $wpdb;
+        
+        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        
+        if (!$has_custom_limits) {
+            // Delete custom limits, meldegruppe will fall back to species defaults
+            $wpdb->delete(
+                $limits_table,
+                array('species' => $species, 'meldegruppe' => $meldegruppe),
+                array('%s', '%s')
+            );
+        } else {
+            // Initialize with species default limits if they exist
+            $default_limits = $this->get_meldegruppen_limits($species, null);
+            $default_exceeding = $this->get_meldegruppen_allow_exceeding($species, null);
+            
+            if (!empty($default_limits)) {
+                $this->save_meldegruppen_limits($species, $meldegruppe, $default_limits, $default_exceeding, true);
+            }
+        }
+    }
+
+    /**
+     * Get applicable limits for a specific species/meldegruppe/category combination
+     * Falls back to species defaults if meldegruppe doesn't have custom limits
+     * 
+     * @param string $species Species name
+     * @param string $meldegruppe Meldegruppe name
+     * @param string $category Category name
+     * @return array Array with 'limit' and 'allow_exceeding' keys
+     */
+    public function get_applicable_limits($species, $meldegruppe, $category) {
+        // Check if meldegruppe has custom limits
+        if ($this->meldegruppe_has_custom_limits($species, $meldegruppe)) {
+            $meldegruppe_limits = $this->get_meldegruppen_limits($species, $meldegruppe);
+            $meldegruppe_exceeding = $this->get_meldegruppen_allow_exceeding($species, $meldegruppe);
+            
+            if (isset($meldegruppe_limits[$category])) {
+                return array(
+                    'limit' => $meldegruppe_limits[$category],
+                    'allow_exceeding' => isset($meldegruppe_exceeding[$category]) ? $meldegruppe_exceeding[$category] : false
+                );
+            }
+        }
+        
+        // Fall back to species defaults
+        $default_limits = $this->get_meldegruppen_limits($species, null);
+        $default_exceeding = $this->get_meldegruppen_allow_exceeding($species, null);
+        
+        return array(
+            'limit' => isset($default_limits[$category]) ? $default_limits[$category] : 0,
+            'allow_exceeding' => isset($default_exceeding[$category]) ? $default_exceeding[$category] : false
+        );
     }
     
     /**

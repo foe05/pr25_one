@@ -13,6 +13,7 @@
         initTooltips();
         initProgressAnimations();
         initAutoRefresh();
+        initMeldegruppenConfig();
     }
 
     /**
@@ -1293,3 +1294,486 @@ const notificationCSS = `
 
 // Inject notification CSS
 document.head.insertAdjacentHTML('beforeend', notificationCSS);
+
+    /**
+     * Initialize wildart-specific meldegruppen configuration
+     */
+    function initMeldegruppenConfig() {
+        // Toggle wildart-specific mode
+        $('#use_wildart_specific_meldegruppen').on('change', function() {
+            const enabled = $(this).is(':checked');
+            
+            if (enabled) {
+                if (!confirm('⚠️ Alle bestehenden Abschussmeldungen werden gelöscht! Fortfahren?')) {
+                    $(this).prop('checked', false);
+                    return;
+                }
+            }
+            
+            handleToggleWildartSpecific(enabled);
+        });
+
+        // Wildart selector change
+        $('#wildart_selector').on('change', function() {
+            const selectedWildart = $(this).val();
+            
+            if (selectedWildart) {
+                loadWildartMeldegruppen(selectedWildart);
+                loadMeldegruppenLimitsConfig(selectedWildart);
+            } else {
+                $('#wildart_meldegruppen_config_container').hide();
+                $('#limits_config_container').hide();
+                $('#limits_config_notice').show();
+            }
+        });
+
+        // Meldegruppen config form submit
+        $('#ahgmh-meldegruppen-config-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const selectedWildart = $('#wildart_selector').val();
+            const meldegruppen = $('#meldegruppen_input').val();
+            
+            if (!selectedWildart) {
+                showNotification('Bitte wählen Sie eine Wildart aus.', 'error');
+                return;
+            }
+            
+            saveWildartMeldegruppen(selectedWildart, meldegruppen);
+        });
+
+        // Clear meldegruppen button
+        $('#clear_meldegruppen').on('click', function() {
+            if (confirm('Alle Meldegruppen für diese Wildart löschen?')) {
+                $('#meldegruppen_input').val('');
+                const selectedWildart = $('#wildart_selector').val();
+                if (selectedWildart) {
+                    saveWildartMeldegruppen(selectedWildart, '');
+                }
+            }
+        });
+    }
+
+    /**
+     * Handle toggle of wildart-specific mode
+     */
+    function handleToggleWildartSpecific(enabled) {
+        const $checkbox = $('#use_wildart_specific_meldegruppen');
+        $checkbox.prop('disabled', true);
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'ahgmh_toggle_wildart_specific',
+                enabled: enabled,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                    
+                    // Toggle visibility of configuration sections
+                    if (enabled) {
+                        $('#global-meldegruppen-config').hide();
+                        $('#wildart-specific-meldegruppen-config').show();
+                    } else {
+                        $('#global-meldegruppen-config').show();
+                        $('#wildart-specific-meldegruppen-config').hide();
+                        $('#wildart_meldegruppen_config_container').hide();
+                    }
+                } else {
+                    showNotification(response.data, 'error');
+                    $checkbox.prop('checked', !enabled); // Revert checkbox
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Ändern des Modus.', 'error');
+                $checkbox.prop('checked', !enabled); // Revert checkbox
+            },
+            complete: function() {
+                $checkbox.prop('disabled', false);
+            }
+        });
+    }
+
+    /**
+     * Load meldegruppen for selected wildart
+     */
+    function loadWildartMeldegruppen(wildart) {
+        $('#selected_wildart_title').text('Meldegruppen für ' + wildart);
+        $('#wildart_meldegruppen_config_container').show();
+        
+        // Show loading state
+        $('#meldegruppen_input').prop('disabled', true).val('Laden...');
+        $('#current_meldegruppen_list').html('<p class="description">Laden...</p>');
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'ahgmh_load_wildart_meldegruppen',
+                wildart: wildart,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#meldegruppen_input').val(response.data.meldegruppen_text);
+                    
+                    // Update current meldegruppen display
+                    let meldegruppen = response.data.meldegruppen;
+                    if (meldegruppen.length > 0) {
+                        let html = '<ul>';
+                        meldegruppen.forEach(function(gruppe) {
+                            html += '<li><code>' + gruppe + '</code></li>';
+                        });
+                        html += '</ul>';
+                        $('#current_meldegruppen_list').html(html);
+                    } else {
+                        $('#current_meldegruppen_list').html('<p class="description">Keine Meldegruppen konfiguriert.</p>');
+                    }
+                } else {
+                    showNotification(response.data, 'error');
+                    $('#current_meldegruppen_list').html('<p class="description">Fehler beim Laden.</p>');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Laden der Meldegruppen.', 'error');
+                $('#current_meldegruppen_list').html('<p class="description">Fehler beim Laden.</p>');
+            },
+            complete: function() {
+                $('#meldegruppen_input').prop('disabled', false);
+            }
+        });
+    }
+
+    /**
+     * Save meldegruppen configuration for wildart
+     */
+    function saveWildartMeldegruppen(wildart, meldegruppen) {
+        const $form = $('#ahgmh-meldegruppen-config-form');
+        const $submitBtn = $form.find('button[type="submit"]');
+        const originalText = $submitBtn.text();
+        
+        $submitBtn.prop('disabled', true).text('Speichern...');
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'ahgmh_save_wildart_meldegruppen',
+                wildart: wildart,
+                meldegruppen: meldegruppen,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                    
+                    // Update current meldegruppen display
+                    let meldegruppen = response.data.meldegruppen;
+                    if (meldegruppen.length > 0) {
+                        let html = '<ul>';
+                        meldegruppen.forEach(function(gruppe) {
+                            html += '<li><code>' + gruppe + '</code></li>';
+                        });
+                        html += '</ul>';
+                        $('#current_meldegruppen_list').html(html);
+                    } else {
+                        $('#current_meldegruppen_list').html('<p class="description">Keine Meldegruppen konfiguriert.</p>');
+                    }
+                } else {
+                    showNotification(response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Speichern der Meldegruppen.', 'error');
+            },
+            complete: function() {
+                $submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+
+    /**
+     * Load meldegruppen limits configuration for selected wildart
+     */
+    function loadMeldegruppenLimitsConfig(wildart) {
+        $('#limits_wildart_title').text('Abschuss-Limits für ' + wildart);
+        $('#limits_config_notice').hide();
+        $('#limits_config_container').show();
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'ahgmh_load_meldegruppen_limits',
+                species: wildart,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    
+                    // Render species default limits
+                    renderSpeciesDefaultLimits(data.species, data.categories, data.default_limits, data.default_exceeding);
+                    
+                    // Render meldegruppen-specific limits
+                    renderMeldegruppenLimits(data.species, data.categories, data.meldegruppen, data.meldegruppen_config);
+                } else {
+                    showNotification('Fehler beim Laden der Limits-Konfiguration: ' + response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('AJAX-Fehler beim Laden der Limits-Konfiguration.', 'error');
+            }
+        });
+    }
+
+    /**
+     * Render species default limits form
+     */
+    function renderSpeciesDefaultLimits(species, categories, limits, exceeding) {
+        let html = '<table class="form-table">';
+        
+        categories.forEach(function(category) {
+            const limit = limits[category] || 0;
+            const allowExceed = exceeding[category] || false;
+            
+            html += `
+                <tr>
+                    <th scope="row">${category}</th>
+                    <td>
+                        <input type="number" name="limits[${category}]" value="${limit}" min="0" class="small-text"> 
+                        <label>
+                            <input type="checkbox" name="allow_exceeding[${category}]" ${allowExceed ? 'checked' : ''}> 
+                            Überschießen möglich
+                        </label>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += '</table>';
+        $('#species_default_limits_inputs').html(html);
+        
+        // Bind form submit
+        $('#species_default_limits_form').off('submit').on('submit', function(e) {
+            e.preventDefault();
+            saveSpeciesDefaultLimits(species, $(this));
+        });
+    }
+
+    /**
+     * Render meldegruppen-specific limits configuration
+     */
+    function renderMeldegruppenLimits(species, categories, meldegruppen, config) {
+        let html = '';
+        
+        meldegruppen.forEach(function(meldegruppe) {
+            const gruppeConfig = config[meldegruppe] || {};
+            const hasCustom = gruppeConfig.has_custom_limits || false;
+            const limits = gruppeConfig.limits || {};
+            const exceeding = gruppeConfig.allow_exceeding || {};
+            
+            html += `
+                <div class="meldegruppe-limits-section" data-meldegruppe="${meldegruppe}">
+                    <h6>${meldegruppe}</h6>
+                    <label>
+                        <input type="checkbox" class="custom-limits-checkbox" 
+                               data-species="${species}" data-meldegruppe="${meldegruppe}" 
+                               ${hasCustom ? 'checked' : ''}> 
+                        Eigene Limits verwenden
+                    </label>
+                    
+                    <div class="custom-limits-inputs" style="${hasCustom ? '' : 'display:none;'}">
+                        <form class="meldegruppe-limits-form" data-species="${species}" data-meldegruppe="${meldegruppe}">
+                            <table class="form-table">
+            `;
+            
+            categories.forEach(function(category) {
+                const limit = limits[category] || 0;
+                const allowExceed = exceeding[category] || false;
+                
+                html += `
+                    <tr>
+                        <th scope="row">${category}</th>
+                        <td>
+                            <input type="number" name="limits[${category}]" value="${limit}" min="0" class="small-text"> 
+                            <label>
+                                <input type="checkbox" name="allow_exceeding[${category}]" ${allowExceed ? 'checked' : ''}> 
+                                Überschießen möglich
+                            </label>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </table>
+                            <p class="submit">
+                                <button type="submit" class="button button-secondary">
+                                    Limits für ${meldegruppe} speichern
+                                </button>
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            `;
+        });
+        
+        $('#meldegruppen_limits_container').html(html);
+        
+        // Bind event handlers
+        $('.custom-limits-checkbox').on('change', function() {
+            const species = $(this).data('species');
+            const meldegruppe = $(this).data('meldegruppe');
+            const hasCustom = $(this).is(':checked');
+            
+            toggleMeldegruppeCustomLimits(species, meldegruppe, hasCustom);
+            
+            // Toggle visibility
+            $(this).closest('.meldegruppe-limits-section').find('.custom-limits-inputs')
+                .toggle(hasCustom);
+        });
+        
+        $('.meldegruppe-limits-form').on('submit', function(e) {
+            e.preventDefault();
+            const species = $(this).data('species');
+            const meldegruppe = $(this).data('meldegruppe');
+            saveMeldegruppeLimits(species, meldegruppe, $(this));
+        });
+    }
+
+    /**
+     * Save species default limits
+     */
+    function saveSpeciesDefaultLimits(species, $form) {
+        const $submitBtn = $form.find('button[type="submit"]');
+        const originalText = $submitBtn.text();
+        
+        $submitBtn.prop('disabled', true).text('Speichern...');
+        
+        const formData = $form.serializeArray();
+        const limits = {};
+        const allowExceeding = {};
+        
+        formData.forEach(function(field) {
+            if (field.name.startsWith('limits[')) {
+                const category = field.name.match(/limits\[(.+)\]/)[1];
+                limits[category] = field.value;
+            } else if (field.name.startsWith('allow_exceeding[')) {
+                const category = field.name.match(/allow_exceeding\[(.+)\]/)[1];
+                allowExceeding[category] = true;
+            }
+        });
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'ahgmh_save_species_default_limits',
+                species: species,
+                limits: limits,
+                allow_exceeding: allowExceeding,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                } else {
+                    showNotification(response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Speichern der Standard-Limits.', 'error');
+            },
+            complete: function() {
+                $submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+
+    /**
+     * Toggle custom limits for meldegruppe
+     */
+    function toggleMeldegruppeCustomLimits(species, meldegruppe, hasCustom) {
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'ahgmh_toggle_meldegruppe_custom_limits',
+                species: species,
+                meldegruppe: meldegruppe,
+                has_custom_limits: hasCustom,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                } else {
+                    showNotification(response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Ändern der Limits-Einstellung.', 'error');
+            }
+        });
+    }
+
+    /**
+     * Save meldegruppe limits
+     */
+    function saveMeldegruppeLimits(species, meldegruppe, $form) {
+        const $submitBtn = $form.find('button[type="submit"]');
+        const originalText = $submitBtn.text();
+        
+        $submitBtn.prop('disabled', true).text('Speichern...');
+        
+        const formData = $form.serializeArray();
+        const limits = {};
+        const allowExceeding = {};
+        
+        formData.forEach(function(field) {
+            if (field.name.startsWith('limits[')) {
+                const category = field.name.match(/limits\[(.+)\]/)[1];
+                limits[category] = field.value;
+            } else if (field.name.startsWith('allow_exceeding[')) {
+                const category = field.name.match(/allow_exceeding\[(.+)\]/)[1];
+                allowExceeding[category] = true;
+            }
+        });
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'ahgmh_save_meldegruppe_limits',
+                species: species,
+                meldegruppe: meldegruppe,
+                limits: limits,
+                allow_exceeding: allowExceeding,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                } else {
+                    showNotification(response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Speichern der Meldegruppen-Limits.', 'error');
+            },
+            complete: function() {
+                $submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    }
