@@ -12,8 +12,10 @@ The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digit
 - ✅ **Digital Hunting Reports** - Advanced web forms with validation
 - ✅ **Comprehensive Admin Panel** - Modern tabbed interface with full CRUD operations
 - ✅ **Master-Detail Wildart Configuration** - Intuitive wildart-specific category and meldegruppe management
+- ✅ **Flexible Limits Management** - Dual-mode system: Meldegruppen-specific vs. Hegegemeinschaft-total limits
 - ✅ **Advanced Export System** - Configurable CSV exports with custom filename patterns  
-- ✅ **Category Management** - Full CRUD for species and categories with limit controls
+- ✅ **Category Management** - Full CRUD for species and categories with integrated limit controls
+- ✅ **Status Tracking** - Real-time status badges (🟢 🟡 🔴 🔥) based on limit compliance
 - ✅ **Date Range Operations** - Delete submissions by custom date ranges
 - ✅ **Responsive Design** - Mobile-optimized Bootstrap 5.3 interface
 - ✅ **Multi-Database** - WordPress MySQL, SQLite, PostgreSQL support
@@ -146,21 +148,39 @@ Comprehensive admin configuration panel with modern tabbed interface (requires `
 - ✅ **Date Range Operations** - Delete submissions by custom date ranges
 - ✅ **Export Configuration** - Filename patterns and parameter documentation
 
-### `[abschuss_limits]`
-Advanced limit configuration interface with integrated category management.
+### `[abschuss_limits]` ⚠️ **Admin-Only**
+Comprehensive limits management interface with dual-mode support.
 ```html
-[abschuss_limits species="Rotwild"]
+[abschuss_limits]                    <!-- Shows redirect to admin panel -->
+[abschuss_limits wildart="Rotwild"]  <!-- Direct access for specific wildart -->
 ```
 **Parameters:**
-- `species` (required): Game species name
+- `wildart` (optional): Specific wildart name. If empty, redirects to admin panel.
 
-**Features:**
-- ✅ **Integrated Category Management** - Edit categories and limits in one interface
-- ✅ **Target Value Configuration** - Set Abschuss Soll (harvest targets) per category
-- ✅ **Overshoot Controls** - "Overshoot allowed" configuration per category
-- ✅ Admin-only access (`manage_options`)
-- ✅ AJAX-based real-time updates
-- ✅ Synchronized with admin panel settings
+**Access Control:**
+- ⚠️ **Administrator Only** (`manage_options` capability required)
+- 🔒 Non-admins see permission error with contact information
+- 🔗 Automatic redirect to login if not authenticated
+
+**Dual-Mode System:**
+
+**Mode A: Meldegruppen-Specific Limits**
+- 📋 Matrix-based configuration per meldegruppe and category
+- 🔢 Individual SOLL values for each combination
+- ➕ Automatic total calculation
+- 📊 Detailed IST vs SOLL comparison
+- 🎯 Perfect for large hunting districts
+
+**Mode B: Hegegemeinschaft Total Limits** 
+- 🔢 Simple total limits per category
+- 📋 IST breakdown by meldegruppe (read-only)
+- ⚡ Simplified management for smaller districts
+
+**Status Badge System:**
+- 🟢 **Green (< 80%)**: Well within limits
+- 🟡 **Yellow (80-95%)**: Approaching limit  
+- 🔴 **Red (95-110%)**: Near or at limit
+- 🔥 **Fire (> 110%)**: Exceeded limit
 
 ---
 
@@ -193,12 +213,16 @@ The plugin provides a comprehensive, tabbed admin interface with the following s
 - **Date Range Deletion**: Remove submissions by custom date ranges
 - **Backup/Restore**: Data management utilities
 
-#### **🦌 Wildarten-Konfiguration Tab** (New in v2.0.0)
+#### **🦌 Wildarten-Konfiguration Tab** (Enhanced in v2.0.0)
 - **Master-Detail Interface**: Left sidebar wildart navigation + right panel detail configuration
 - **Wildart Management**: Create, edit, delete game species with full data management
 - **Category Configuration**: Species-specific categories with inline editing and auto-save
 - **Meldegruppe Management**: Species-specific meldegruppen with CRUD operations
-- **Overview Dashboard**: Real-time statistics per species (current/target/percentage)
+- **Limits Management**: Comprehensive dual-mode limits system integrated into detail panel
+- **Limit Mode Switching**: Toggle between meldegruppen-specific and hegegemeinschaft-total modes
+- **Status Tracking**: Real-time status badges with IST vs SOLL comparison
+- **Limits Matrix**: Interactive tables for both limit modes with auto-calculation
+- **Overview Dashboard**: Real-time statistics per species (current/target/percentage/status)
 - **Responsive Design**: Mobile-first layout with sidebar collapsing on tablets
 - **AJAX Operations**: All operations without page reloads for optimal user experience
 
@@ -238,6 +262,46 @@ wp-content/plugins/abschussplan-hgmh/
 └── 📄 uninstall.php               # Complete cleanup on uninstall
 ```
 
+---
+
+## 🎯 Comprehensive Limits Management System
+
+### 🔄 Dual-Mode Architecture
+The plugin provides a flexible limits management system that adapts to different hunting district structures:
+
+#### **Mode A: Meldegruppen-Specific Limits** 
+Ideal for larger hunting districts with structured reporting groups:
+
+- **📊 Matrix Configuration**: Interactive table for setting individual SOLL values per meldegruppe and category
+- **➕ Auto-Calculation**: Automatic total SOLL calculation across all meldegruppen  
+- **📈 Detailed Tracking**: IST vs SOLL comparison with group-specific breakdown
+- **🎯 Granular Control**: Perfect for districts with specific quotas per reporting group
+
+#### **Mode B: Hegegemeinschaft Total Limits**
+Simplified system for smaller hunting districts:
+
+- **🔢 Simple Configuration**: Single SOLL value per category for entire hunting district
+- **📋 Transparent Breakdown**: IST values shown by meldegruppen for transparency
+- **⚡ Easy Management**: Streamlined interface for districts without complex quota systems
+- **🏠 District-Wide**: Single point of configuration per wildart-category combination
+
+### 🏷️ Status Badge System
+Real-time visual indicators for limit compliance:
+
+| Badge | Range | Meaning | Visual |
+|-------|-------|---------|---------|
+| 🟢 Green | < 80% | Well within limits | Safe harvest range |
+| 🟡 Yellow | 80-95% | Approaching limit | Caution advised |
+| 🔴 Red | 95-110% | Near/at limit | Critical range |
+| 🔥 Fire | > 110% | Exceeded limit | Over-harvest alert |
+
+### 🛠️ Technical Features
+- **🔄 Mode Switching**: Instant toggle between limit modes via AJAX
+- **💾 Auto-Save**: Automatic saving of all configuration changes
+- **📱 Responsive Design**: Mobile-optimized limit matrices and tables
+- **🔒 Admin Security**: Requires `manage_options` capability for all limit operations
+- **🔄 Real-Time Updates**: Live status calculation based on current submissions
+
 ### 🔐 Security Features
 - **WordPress Integration**: Uses WordPress security standards
 - **Nonce Verification**: CSRF protection for all AJAX requests
@@ -272,16 +336,36 @@ CREATE TABLE wp_ahgmh_jagdbezirke (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Meldegruppen configuration table (wp_ahgmh_meldegruppen_config)
+-- Enhanced with limits management capabilities
+CREATE TABLE wp_ahgmh_meldegruppen_config (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    wildart VARCHAR(50),                            -- Game species  
+    meldegruppe VARCHAR(100) NOT NULL,              -- Reporting group
+    jagdbezirke TEXT,                               -- Associated hunting districts
+    kategorie VARCHAR(100) DEFAULT NULL,            -- Category for limits
+    limit_value INT DEFAULT NULL,                   -- Limit value for this combination
+    limit_mode ENUM('meldegruppen_specific','hegegemeinschaft_total') DEFAULT 'meldegruppen_specific',
+    is_wildart_specific BOOLEAN DEFAULT FALSE,      -- Wildart-specific configuration
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY wildart_idx (wildart),
+    KEY meldegruppe_idx (meldegruppe),
+    KEY wildart_meldegruppe_kategorie_idx (wildart, meldegruppe, kategorie)
+);
+
 -- WordPress Options for Configuration:
 -- ahgmh_species: Array of game species
 -- ahgmh_categories_{species}: Categories per species  
--- abschuss_category_limits_{species}: Target values per category
--- abschuss_category_allow_exceeding_{species}: Overshoot permissions
+-- ahgmh_limit_mode_{wildart}: Limit mode per wildart (meldegruppen_specific/hegegemeinschaft_total)
+-- ahgmh_hegegemeinschaft_limit_{wildart}_{category}: Total limits for hegegemeinschaft mode
+-- abschuss_category_limits_{species}: Legacy target values per category
+-- abschuss_category_allow_exceeding_{species}: Legacy overshoot permissions
 -- ahgmh_export_filename_pattern: Export filename template
 -- ahgmh_export_include_time: Include timestamp in exports
 ```
 
-### 🔌 Database API (New in v2.0.0)
+### 🔌 Database API (Enhanced in v2.0.0)
 
 **Public Summary Data Methods:**
 ```php
@@ -294,6 +378,25 @@ get_total_summary_data($species_list)               // Aggregate all species/gro
 get_species_summary_data($species)                  // Species-specific data
 get_meldegruppe_summary_data($meldegruppe, $species_list)  // Group-specific data
 get_specific_summary_data($species, $meldegruppe)   // Specific combination
+```
+
+**Limits Management Methods:**
+```php
+// Limit mode management
+set_wildart_limit_mode($wildart, $mode)             // Set limit mode for wildart
+get_wildart_limit_mode($wildart)                    // Get current limit mode
+
+// Meldegruppen-specific limits
+save_meldegruppen_limit($wildart, $meldegruppe, $kategorie, $limit)  // Save specific limit
+get_meldegruppen_limits($wildart, $meldegruppe)     // Get limits for meldegruppe
+
+// Hegegemeinschaft total limits  
+save_hegegemeinschaft_limit($wildart, $kategorie, $limit)  // Save total limit
+get_hegegemeinschaft_limit($wildart, $kategorie)    // Get total limit
+
+// Status calculation
+get_status_badge($ist, $soll)                       // Generate status badge HTML
+count_submissions_by_species_category_meldegruppe($species, $category, $meldegruppe) // Detailed counts
 ```
 
 **Parameter Combinations:**

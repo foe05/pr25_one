@@ -1329,3 +1329,261 @@
         opacity: 1;
     }
 }
+
+/* === Limits Configuration Section === */
+.limits-config-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.limits-config-section h3 {
+    margin: 0 0 20px 0;
+    color: #2271b1;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Limit Mode Selector */
+.limit-mode-selector {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+.limit-mode-selector h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.limit-mode-selector label {
+    display: inline-block;
+    margin-right: 20px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.limit-mode-selector input[type="radio"] {
+    margin-right: 6px;
+}
+
+/* Limits Matrix Tables */
+.limits-matrix {
+    margin-bottom: 25px;
+}
+
+.limits-matrix h4 {
+    margin: 0 0 15px 0;
+    color: #2271b1;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.ahgmh-limits-table,
+.ahgmh-ist-table,
+.ahgmh-ist-breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ahgmh-limits-table th,
+.ahgmh-ist-table th,
+.ahgmh-ist-breakdown-table th,
+.ahgmh-limits-table td,
+.ahgmh-ist-table td,
+.ahgmh-ist-breakdown-table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    font-size: 13px;
+}
+
+.ahgmh-limits-table th,
+.ahgmh-ist-table th,
+.ahgmh-ist-breakdown-table th {
+    background: #f6f7f7;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.ahgmh-limits-table th:last-child,
+.ahgmh-ist-table th:last-child,
+.ahgmh-ist-breakdown-table th:last-child,
+.ahgmh-limits-table td:last-child,
+.ahgmh-ist-table td:last-child,
+.ahgmh-ist-breakdown-table td:last-child {
+    border-right: none;
+}
+
+.ahgmh-limits-table tr:last-child td,
+.ahgmh-ist-table tr:last-child td,
+.ahgmh-ist-breakdown-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Limit Input Fields */
+.limit-input,
+.hegegemeinschaft-limit-input {
+    width: 80px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: center;
+}
+
+.limit-input:focus,
+.hegegemeinschaft-limit-input:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+/* Gesamt Cells */
+.gesamt-cell {
+    background: #f0f6fc !important;
+    font-weight: 600;
+    text-align: center;
+    color: #2271b1;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 50px;
+}
+
+.status-badge.status-na {
+    background: #f6f7f7;
+    color: #646970;
+}
+
+.status-badge.status-low {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.status-badge.status-medium {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.status-badge.status-high {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-badge.status-exceeded {
+    background: #dc3545;
+    color: white;
+}
+
+/* Limits Save Section */
+.limits-save-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-top: 20px;
+}
+
+.limits-save-section .button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.limits-save-status {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.limits-save-status.success {
+    color: #0f5132;
+}
+
+.limits-save-status.error {
+    color: #721c24;
+}
+
+/* IST-Werte Tables Styling */
+.ahgmh-ist-table tbody tr:hover,
+.ahgmh-ist-breakdown-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.ahgmh-ist-table td strong,
+.ahgmh-ist-breakdown-table td strong {
+    color: #2271b1;
+}
+
+/* Responsive adjustments for limits */
+@media (max-width: 1200px) {
+    .ahgmh-limits-table,
+    .ahgmh-ist-table,
+    .ahgmh-ist-breakdown-table {
+        font-size: 12px;
+    }
+    
+    .ahgmh-limits-table th,
+    .ahgmh-ist-table th,
+    .ahgmh-ist-breakdown-table th,
+    .ahgmh-limits-table td,
+    .ahgmh-ist-table td,
+    .ahgmh-ist-breakdown-table td {
+        padding: 8px 6px;
+    }
+    
+    .limit-input,
+    .hegegemeinschaft-limit-input {
+        width: 60px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .limits-matrix {
+        overflow-x: auto;
+    }
+    
+    .ahgmh-limits-table,
+    .ahgmh-ist-table,
+    .ahgmh-ist-breakdown-table {
+        min-width: 600px;
+    }
+    
+    .limit-mode-selector label {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 8px;
+    }
+    
+    .limits-save-section {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+}

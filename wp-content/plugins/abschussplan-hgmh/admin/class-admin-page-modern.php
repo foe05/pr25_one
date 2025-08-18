@@ -54,6 +54,8 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_load_wildart_config', array($this, 'ajax_load_wildart_config'));
         add_action('wp_ajax_ahgmh_save_wildart_categories', array($this, 'ajax_save_wildart_categories'));
         add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
+        add_action('wp_ajax_ahgmh_toggle_limit_mode', array($this, 'ajax_toggle_limit_mode'));
+        add_action('wp_ajax_ahgmh_save_limits', array($this, 'ajax_save_limits'));
         
         // Add WordPress dashboard widget
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
@@ -3630,7 +3632,227 @@ class AHGMH_Admin_Page_Modern {
                 </button>
             </div>
         </div>
+        
+        <!-- Limits Configuration Section -->
+        <?php $this->render_limits_config($wildart, $categories, $meldegruppen); ?>
+        
         <?php
+    }
+    
+    /**
+     * Render limits configuration for wildart
+     */
+    private function render_limits_config($wildart, $categories, $meldegruppen) {
+        $database = abschussplan_hgmh()->database;
+        
+        // Get current limit mode
+        $current_mode = $database->get_wildart_limit_mode($wildart);
+        
+        // Get existing limits based on mode
+        $meldegruppen_limits = array();
+        $hegegemeinschaft_limits = array();
+        
+        if ($current_mode === 'meldegruppen_specific') {
+            foreach ($meldegruppen as $meldegruppe) {
+                foreach ($categories as $category) {
+                    $limits = $database->get_meldegruppen_limits($wildart, $meldegruppe);
+                    $meldegruppen_limits[$meldegruppe][$category] = $limits[$category] ?? '';
+                }
+            }
+        } else {
+            foreach ($categories as $category) {
+                $hegegemeinschaft_limits[$category] = $database->get_hegegemeinschaft_limit($wildart, $category);
+            }
+        }
+        
+        // Get current IST-values for status calculation
+        $ist_values = $this->get_ist_values_for_limits($wildart, $categories, $meldegruppen);
+        ?>
+        
+        <div class="limits-config-section">
+            <h3>⚙️ <?php echo esc_html(sprintf(__('Limits-Konfiguration für %s', 'abschussplan-hgmh'), $wildart)); ?></h3>
+            
+            <!-- Limit Mode Selector -->
+            <div class="limit-mode-selector">
+                <h4><?php echo esc_html__('Limit-Modus:', 'abschussplan-hgmh'); ?></h4>
+                <label>
+                    <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="meldegruppen_specific" 
+                           <?php checked($current_mode, 'meldegruppen_specific'); ?>
+                           onchange="toggleLimitMode('<?php echo esc_js($wildart); ?>', 'meldegruppen_specific')">
+                    <?php echo esc_html__('Meldegruppen-spezifische Limits', 'abschussplan-hgmh'); ?>
+                </label>
+                <label>
+                    <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="hegegemeinschaft_total" 
+                           <?php checked($current_mode, 'hegegemeinschaft_total'); ?>
+                           onchange="toggleLimitMode('<?php echo esc_js($wildart); ?>', 'hegegemeinschaft_total')">
+                    <?php echo esc_html__('Gesamt-Hegegemeinschaft Limits', 'abschussplan-hgmh'); ?>
+                </label>
+            </div>
+            
+            <!-- Meldegruppen-specific Limits Matrix -->
+            <div class="limits-matrix meldegruppen-specific" id="meldegruppen-limits-<?php echo esc_attr($wildart); ?>" 
+                 style="display: <?php echo $current_mode === 'meldegruppen_specific' ? 'block' : 'none'; ?>">
+                <h4>📋 <?php echo esc_html(sprintf(__('Abschuss-Limits für %s (Meldegruppen-spezifisch)', 'abschussplan-hgmh'), $wildart)); ?></h4>
+                
+                <table class="ahgmh-limits-table">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('SOLL-WERTE', 'abschussplan-hgmh'); ?></th>
+                            <?php foreach ($meldegruppen as $gruppe): ?>
+                                <th><?php echo esc_html($gruppe); ?></th>
+                            <?php endforeach; ?>
+                            <th><?php echo esc_html__('GESAMT-SOLL', 'abschussplan-hgmh'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $category): ?>
+                        <tr>
+                            <td><strong><?php echo esc_html($category); ?></strong></td>
+                            <?php foreach ($meldegruppen as $gruppe): ?>
+                                <td>
+                                    <input type="number" 
+                                           name="limit[<?php echo esc_attr($wildart); ?>][<?php echo esc_attr($gruppe); ?>][<?php echo esc_attr($category); ?>]" 
+                                           value="<?php echo esc_attr($meldegruppen_limits[$gruppe][$category] ?? ''); ?>"
+                                           onchange="updateGesamt('<?php echo esc_js($category); ?>')" 
+                                           class="limit-input" />
+                                </td>
+                            <?php endforeach; ?>
+                            <td class="gesamt-cell" id="gesamt_<?php echo sanitize_title($category); ?>">
+                                <?php 
+                                $gesamt = 0;
+                                foreach ($meldegruppen as $gruppe) {
+                                    $gesamt += intval($meldegruppen_limits[$gruppe][$category] ?? 0);
+                                }
+                                echo esc_html($gesamt);
+                                ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+                <!-- IST-WERTE & STATUS (Read-only, Live-Daten) -->
+                <h4><?php echo esc_html__('IST-WERTE & STATUS:', 'abschussplan-hgmh'); ?></h4>
+                <table class="ahgmh-ist-table">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('IST-WERTE', 'abschussplan-hgmh'); ?></th>
+                            <?php foreach ($meldegruppen as $gruppe): ?>
+                                <th><?php echo esc_html($gruppe); ?></th>
+                            <?php endforeach; ?>
+                            <th><?php echo esc_html__('GESAMT-IST', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('STATUS', 'abschussplan-hgmh'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $category): ?>
+                        <tr>
+                            <td><strong><?php echo esc_html($category); ?></strong></td>
+                            <?php 
+                            $gesamt_ist = 0;
+                            $gesamt_soll = 0;
+                            foreach ($meldegruppen as $gruppe): 
+                                $ist = $ist_values[$gruppe][$category] ?? 0;
+                                $soll = intval($meldegruppen_limits[$gruppe][$category] ?? 0);
+                                $gesamt_ist += $ist;
+                                $gesamt_soll += $soll;
+                            ?>
+                                <td><?php echo esc_html($ist); ?></td>
+                            <?php endforeach; ?>
+                            <td><strong><?php echo esc_html($gesamt_ist); ?></strong></td>
+                            <td><?php echo $database->get_status_badge($gesamt_ist, $gesamt_soll); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Hegegemeinschaft Total Limits -->
+            <div class="limits-matrix hegegemeinschaft-total" id="hegegemeinschaft-limits-<?php echo esc_attr($wildart); ?>" 
+                 style="display: <?php echo $current_mode === 'hegegemeinschaft_total' ? 'block' : 'none'; ?>">
+                <h4>📋 <?php echo esc_html(sprintf(__('Abschuss-Limits für %s (Gesamt-Hegegemeinschaft)', 'abschussplan-hgmh'), $wildart)); ?></h4>
+                
+                <table class="ahgmh-limits-table">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('HEGEGEMEINSCHAFTS-LIMITS', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('SOLL', 'abschussplan-hgmh'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $category): ?>
+                        <tr>
+                            <td><strong><?php echo esc_html($category); ?></strong></td>
+                            <td>
+                                <input type="number" 
+                                       name="hegegemeinschaft_limit[<?php echo esc_attr($wildart); ?>][<?php echo esc_attr($category); ?>]" 
+                                       value="<?php echo esc_attr($hegegemeinschaft_limits[$category] ?? ''); ?>" 
+                                       class="hegegemeinschaft-limit-input" />
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+                <!-- IST-WERTE nach Meldegruppen (Read-only Aufschlüsselung) -->
+                <h4><?php echo esc_html__('IST-WERTE nach Meldegruppen (Aufschlüsselung):', 'abschussplan-hgmh'); ?></h4>
+                <table class="ahgmh-ist-breakdown-table">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('KATEGORIE', 'abschussplan-hgmh'); ?></th>
+                            <?php foreach ($meldegruppen as $gruppe): ?>
+                                <th><?php echo esc_html($gruppe); ?></th>
+                            <?php endforeach; ?>
+                            <th><?php echo esc_html__('GESAMT-IST', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('STATUS', 'abschussplan-hgmh'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $category): ?>
+                        <tr>
+                            <td><strong><?php echo esc_html($category); ?></strong></td>
+                            <?php 
+                            $gesamt_ist = 0;
+                            foreach ($meldegruppen as $gruppe): 
+                                $ist = $ist_values[$gruppe][$category] ?? 0;
+                                $gesamt_ist += $ist;
+                            ?>
+                                <td><?php echo esc_html($ist); ?></td>
+                            <?php endforeach; ?>
+                            <td><strong><?php echo esc_html($gesamt_ist); ?></strong></td>
+                            <td><?php echo $database->get_status_badge($gesamt_ist, intval($hegegemeinschaft_limits[$category] ?? 0)); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Save Button -->
+            <div class="limits-save-section">
+                <button type="button" class="button button-primary" onclick="saveLimits('<?php echo esc_js($wildart); ?>')">
+                    <span class="dashicons dashicons-yes"></span>
+                    <?php echo esc_html__('Limits speichern', 'abschussplan-hgmh'); ?>
+                </button>
+                <div class="limits-save-status" id="limits-save-status-<?php echo esc_attr($wildart); ?>"></div>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Get IST values for limits calculation
+     */
+    private function get_ist_values_for_limits($wildart, $categories, $meldegruppen) {
+        $database = abschussplan_hgmh()->database;
+        $ist_values = array();
+        
+        foreach ($meldegruppen as $meldegruppe) {
+            foreach ($categories as $category) {
+                $ist_values[$meldegruppe][$category] = $database->count_submissions_by_species_category_meldegruppe($wildart, $category, $meldegruppe);
+            }
+        }
+        
+        return $ist_values;
     }
     
     /**
@@ -3887,6 +4109,114 @@ class AHGMH_Admin_Page_Modern {
         } catch (Exception $e) {
             wp_send_json_error(sprintf(
                 __('Fehler beim Speichern der Meldegruppen: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * AJAX handler: Toggle limit mode for wildart
+     */
+    public function ajax_toggle_limit_mode() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $wildart = sanitize_text_field($_POST['wildart'] ?? '');
+        $mode = sanitize_text_field($_POST['mode'] ?? '');
+
+        if (empty($wildart)) {
+            wp_send_json_error(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        if (!in_array($mode, array('meldegruppen_specific', 'hegegemeinschaft_total'))) {
+            wp_send_json_error(__('Ungültiger Limit-Modus.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        try {
+            $database = abschussplan_hgmh()->database;
+            $database->set_wildart_limit_mode($wildart, $mode);
+
+            wp_send_json_success(array(
+                'message' => sprintf(
+                    __('Limit-Modus für %s erfolgreich geändert zu: %s', 'abschussplan-hgmh'),
+                    $wildart,
+                    $mode === 'meldegruppen_specific' ? 'Meldegruppen-spezifisch' : 'Gesamt-Hegegemeinschaft'
+                ),
+                'mode' => $mode
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Ändern des Limit-Modus: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * AJAX handler: Save limits
+     */
+    public function ajax_save_limits() {
+        // Security checks
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        $wildart = sanitize_text_field($_POST['wildart'] ?? '');
+
+        if (empty($wildart)) {
+            wp_send_json_error(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
+            return;
+        }
+
+        try {
+            $database = abschussplan_hgmh()->database;
+            $mode = $database->get_wildart_limit_mode($wildart);
+            
+            $saved_count = 0;
+
+            if ($mode === 'meldegruppen_specific') {
+                // Handle meldegruppen-specific limits
+                $limits = $_POST['limit'][$wildart] ?? array();
+                
+                foreach ($limits as $meldegruppe => $kategorien) {
+                    foreach ($kategorien as $kategorie => $limit) {
+                        $database->save_meldegruppen_limit($wildart, $meldegruppe, $kategorie, $limit);
+                        $saved_count++;
+                    }
+                }
+                
+            } else {
+                // Handle hegegemeinschaft total limits
+                $hegegemeinschaft_limits = $_POST['hegegemeinschaft_limit'][$wildart] ?? array();
+                
+                foreach ($hegegemeinschaft_limits as $kategorie => $limit) {
+                    $database->save_hegegemeinschaft_limit($wildart, $kategorie, $limit);
+                    $saved_count++;
+                }
+            }
+
+            wp_send_json_success(array(
+                'message' => sprintf(
+                    __('Limits für %s erfolgreich gespeichert. %d Limits konfiguriert.', 'abschussplan-hgmh'),
+                    $wildart,
+                    $saved_count
+                ),
+                'mode' => $mode,
+                'saved_count' => $saved_count
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Speichern der Limits: %s', 'abschussplan-hgmh'),
                 $e->getMessage()
             ));
         }

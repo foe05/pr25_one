@@ -683,23 +683,55 @@ class AHGMH_Form_Handler {
     public function render_limits_config($atts = array()) {
         // Parse shortcode attributes
         $atts = shortcode_atts(array(
-            'species' => 'Rotwild',
-            'meldegruppe' => ''
+            'wildart' => ''
         ), $atts, 'abschuss_limits');
         
-        // Check if user has admin capabilities
+        // SECURITY: Only for Vorstand (administrators) accessible
         if (!current_user_can('manage_options')) {
-            return '<p>' . __('Sie haben keine Berechtigung, diese Seite anzuzeigen.', 'abschussplan-hgmh') . '</p>';
+            if (!is_user_logged_in()) {
+                return $this->render_login_form('Anmeldung als Vorstand erforderlich für Limits-Verwaltung');
+            } else {
+                return '<div class="alert alert-danger" style="padding: 15px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px; margin: 10px 0;">
+                    <h4 style="margin: 0 0 10px 0;">⚠️ Keine Berechtigung</h4>
+                    <p style="margin: 0;">Nur der Vorstand kann Limits für die Hegegemeinschaft verwalten.</p>
+                    <p style="margin: 5px 0 0 0;"><small>Kontaktieren Sie einen Administrator.</small></p>
+                </div>';
+            }
         }
         
         // Enqueue jQuery
         wp_enqueue_script('jquery');
         
-        $selected_species = sanitize_text_field($atts['species']);
-        $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
+        $selected_wildart = sanitize_text_field($atts['wildart']);
         
-        // Get dynamic categories for the selected species
-        $categories_key = 'ahgmh_categories_' . sanitize_key($selected_species);
+        // Verweis auf Admin-Panel oder Embedded Interface
+        if (empty($selected_wildart)) {
+            return '<div class="ahgmh-limits-redirect" style="padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; margin: 15px 0;">
+                <h4 style="margin: 0 0 15px 0; color: #2271b1;">⚙️ Limits-Verwaltung</h4>
+                <p style="margin: 0 0 15px 0;">Für die vollständige Limits-Verwaltung nutzen Sie das Admin-Panel:</p>
+                <p style="margin: 0;">
+                    <a href="' . admin_url('admin.php?page=abschussplan-hgmh-settings#wildart-config') . '" class="button button-primary" style="text-decoration: none;">
+                        🔗 Zum Admin-Panel
+                    </a>
+                </p>
+            </div>';
+        }
+        
+        // Get available species list
+        $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+        if (!in_array($selected_wildart, $available_species)) {
+            return '<div class="alert alert-warning" style="padding: 15px; background: #fff3cd; color: #664d03; border: 1px solid #ffecb5; border-radius: 4px; margin: 10px 0;">
+                <h4 style="margin: 0 0 10px 0;">⚠️ Wildart nicht gefunden</h4>
+                <p style="margin: 0;">Die Wildart "' . esc_html($selected_wildart) . '" existiert nicht in der Konfiguration.</p>
+                <p style="margin: 5px 0 0 0;"><small>Verfügbare Wildarten: ' . esc_html(implode(', ', $available_species)) . '</small></p>
+            </div>';
+        }
+        
+        // Get database instance
+        $database = abschussplan_hgmh()->database;
+        
+        // Get dynamic categories for the selected wildart
+        $categories_key = 'ahgmh_categories_' . sanitize_key($selected_wildart);
         $categories = get_option($categories_key, array());
         
         // Use meldegruppen-specific limits if available and meldegruppe is specified

@@ -2268,6 +2268,30 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
                 }
             }
         });
+        
+        // === LIMITS FUNCTIONALITY ===
+        
+        // Limit mode radio button change handler
+        $(document).on('change', 'input[name^="limit_mode_"]', function(e) {
+            const wildart = $(this).attr('name').replace('limit_mode_', '');
+            const mode = $(this).val();
+            toggleLimitMode(wildart, mode);
+        });
+        
+        // Limit input change handler for auto-calculation
+        $(document).on('change', '.limit-input', function(e) {
+            const $input = $(this);
+            const category = $input.closest('tr').find('td:first-child').text().trim();
+            updateGesamt(category);
+        });
+        
+        // Save limits button handler
+        $(document).on('click', 'button[onclick^="saveLimits"]', function(e) {
+            e.preventDefault();
+            const onclick = $(this).attr('onclick');
+            const wildart = onclick.match(/saveLimits\('([^']+)'\)/)[1];
+            saveLimits(wildart);
+        });
     }
     
     /**
@@ -2531,13 +2555,168 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
         });
     }
 
+    /**
+     * Toggle limit mode between meldegruppen-specific and hegegemeinschaft-total
+    */
+    function toggleLimitMode(wildart, mode) {
+    // Show/hide appropriate matrix containers
+    const $meldegruppen_matrix = $(`#meldegruppen-limits-${wildart}`);
+        const $hegegemeinschaft_matrix = $(`#hegegemeinschaft-limits-${wildart}`);
+    
+        if (mode === 'meldegruppen_specific') {
+            $meldegruppen_matrix.show();
+            $hegegemeinschaft_matrix.hide();
+        } else {
+            $meldegruppen_matrix.hide();
+            $hegegemeinschaft_matrix.show();
+        }
+        
+        // Send AJAX to save mode preference
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_toggle_limit_mode',
+                wildart: wildart,
+                mode: mode,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                } else {
+                    showNotification(response.data || 'Fehler beim Ändern des Limit-Modus.', 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Ändern des Limit-Modus.', 'error');
+            }
+        });
+    }
+    
+    /**
+     * Update gesamt (total) calculation for a category row
+     */
+    function updateGesamt(category) {
+        const categoryKey = category.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        const $gesamtCell = $(`#gesamt_${categoryKey}`);
+        
+        if ($gesamtCell.length === 0) {
+            return;
+        }
+        
+        let total = 0;
+        const $row = $gesamtCell.closest('tr');
+        
+        // Sum up all limit inputs in this row (excluding first and last columns)
+        $row.find('.limit-input').each(function() {
+            const value = parseInt($(this).val()) || 0;
+            total += value;
+        });
+        
+        $gesamtCell.text(total);
+    }
+    
+    /**
+     * Save limits for a wildart
+     */
+    function saveLimits(wildart) {
+        const $statusDiv = $(`#limits-save-status-${wildart}`);
+        $statusDiv.removeClass('success error').text('Speichern...');
+        
+        // Collect all form data
+        const formData = new FormData();
+        formData.append('action', 'ahgmh_save_limits');
+        formData.append('wildart', wildart);
+        formData.append('nonce', ahgmh_admin.nonce);
+        
+        // Get current limit mode
+        const mode = $(`input[name="limit_mode_${wildart}"]:checked`).val();
+        
+        if (mode === 'meldegruppen_specific') {
+            // Collect meldegruppen-specific limits
+            const limits = {};
+            $(`.limit-input`).each(function() {
+                const $input = $(this);
+                const name = $input.attr('name');
+                
+                if (name && name.includes(`[${wildart}]`)) {
+                    const value = $input.val();
+                    if (value !== '') {
+                        // Parse name attribute: limit[Rotwild][Meldegruppe1][Männlich]
+                        const match = name.match(/limit\[([^\]]+)\]\[([^\]]+)\]\[([^\]]+)\]/);
+                        if (match) {
+                            const [, w, meldegruppe, kategorie] = match;
+                            if (w === wildart) {
+                                if (!limits[w]) limits[w] = {};
+                                if (!limits[w][meldegruppe]) limits[w][meldegruppe] = {};
+                                limits[w][meldegruppe][kategorie] = value;
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Add to form data
+            for (const [w, meldegruppen] of Object.entries(limits)) {
+                for (const [meldegruppe, kategorien] of Object.entries(meldegruppen)) {
+                    for (const [kategorie, value] of Object.entries(kategorien)) {
+                        formData.append(`limit[${w}][${meldegruppe}][${kategorie}]`, value);
+                    }
+                }
+            }
+        } else {
+            // Collect hegegemeinschaft total limits
+            $(`.hegegemeinschaft-limit-input`).each(function() {
+                const $input = $(this);
+                const name = $input.attr('name');
+                
+                if (name && name.includes(`[${wildart}]`)) {
+                    const value = $input.val();
+                    if (value !== '') {
+                        formData.append(name, value);
+                    }
+                }
+            });
+        }
+        
+        // Send AJAX request
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    $statusDiv.addClass('success').text(response.data.message);
+                    showNotification(response.data.message, 'success');
+                } else {
+                    $statusDiv.addClass('error').text(response.data || 'Fehler beim Speichern der Limits.');
+                    showNotification(response.data || 'Fehler beim Speichern der Limits.', 'error');
+                }
+            },
+            error: function() {
+                const errorMsg = 'Fehler beim Speichern der Limits.';
+                $statusDiv.addClass('error').text(errorMsg);
+                showNotification(errorMsg, 'error');
+            },
+            complete: function() {
+                // Clear status after 3 seconds
+                setTimeout(function() {
+                    $statusDiv.removeClass('success error').text('');
+                }, 3000);
+            }
+        });
+    }
+
     // Initialize when document is ready
     $(document).ready(function() {
         // Check if ahgmh_admin object is available
         if (typeof ahgmh_admin === 'undefined') {
             return;
         }
-        
+
         initAdmin();
     });
 

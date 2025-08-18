@@ -110,12 +110,16 @@ class AHGMH_Database_Handler {
             wildart varchar(50) NULL,
             meldegruppe varchar(100) NOT NULL,
             jagdbezirke text,
+            kategorie varchar(100) DEFAULT NULL,
+            limit_value int(11) DEFAULT NULL,
+            limit_mode enum('meldegruppen_specific','hegegemeinschaft_total') DEFAULT 'meldegruppen_specific',
             is_wildart_specific tinyint(1) NOT NULL DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
             KEY wildart_idx (wildart),
-            KEY meldegruppe_idx (meldegruppe)
+            KEY meldegruppe_idx (meldegruppe),
+            KEY wildart_meldegruppe_kategorie_idx (wildart, meldegruppe, kategorie)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -1427,5 +1431,160 @@ class AHGMH_Database_Handler {
         }
         
         return true;
+    }
+    
+    /**
+     * Set wildart limit mode
+     * 
+     * @param string $wildart Wildart name
+     * @param string $mode 'meldegruppen_specific' or 'hegegemeinschaft_total'
+     * @return bool
+     */
+    public function set_wildart_limit_mode($wildart, $mode) {
+        $wildart = sanitize_text_field($wildart);
+        $mode = sanitize_text_field($mode);
+        
+        if (!in_array($mode, array('meldegruppen_specific', 'hegegemeinschaft_total'))) {
+            $mode = 'meldegruppen_specific'; // Default fallback
+        }
+        
+        return update_option("ahgmh_limit_mode_" . sanitize_key($wildart), $mode);
+    }
+    
+    /**
+     * Get wildart limit mode
+     * 
+     * @param string $wildart Wildart name
+     * @return string 'meldegruppen_specific' or 'hegegemeinschaft_total'
+     */
+    public function get_wildart_limit_mode($wildart) {
+        $wildart = sanitize_text_field($wildart);
+        return get_option("ahgmh_limit_mode_" . sanitize_key($wildart), 'meldegruppen_specific');
+    }
+    
+    /**
+     * Save meldegruppen-specific limit
+     * 
+     * @param string $wildart Wildart name
+     * @param string $meldegruppe Meldegruppe name
+     * @param string $kategorie Category name
+     * @param int $limit Limit value
+     * @return bool|int
+     */
+    public function save_meldegruppen_limit($wildart, $meldegruppe, $kategorie, $limit) {
+        global $wpdb;
+        
+        $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        
+        // Check if entry exists
+        $existing_id = $wpdb->get_var($wpdb->prepare("
+            SELECT id FROM $meldegruppen_config_table 
+            WHERE wildart = %s AND meldegruppe = %s AND kategorie = %s
+        ", sanitize_text_field($wildart), sanitize_text_field($meldegruppe), sanitize_text_field($kategorie)));
+        
+        $data = array(
+            'wildart' => sanitize_text_field($wildart),
+            'meldegruppe' => sanitize_text_field($meldegruppe),
+            'kategorie' => sanitize_text_field($kategorie),
+            'limit_value' => intval($limit),
+            'limit_mode' => 'meldegruppen_specific'
+        );
+        
+        if ($existing_id) {
+            // Update existing
+            return $wpdb->update(
+                $meldegruppen_config_table,
+                $data,
+                array('id' => $existing_id),
+                array('%s', '%s', '%s', '%d', '%s'),
+                array('%d')
+            );
+        } else {
+            // Insert new
+            $data['active'] = 1;
+            $data['created_at'] = current_time('mysql');
+            return $wpdb->insert(
+                $meldegruppen_config_table,
+                $data,
+                array('%s', '%s', '%s', '%d', '%s', '%d', '%s')
+            );
+        }
+    }
+    
+    /**
+     * Save hegegemeinschaft total limit
+     * 
+     * @param string $wildart Wildart name
+     * @param string $kategorie Category name
+     * @param int $limit Limit value
+     * @return bool
+     */
+    public function save_hegegemeinschaft_limit($wildart, $kategorie, $limit) {
+        $wildart = sanitize_text_field($wildart);
+        $kategorie = sanitize_text_field($kategorie);
+        $limit = intval($limit);
+        
+        $option_key = "ahgmh_hegegemeinschaft_limit_" . sanitize_key($wildart) . "_" . sanitize_key($kategorie);
+        return update_option($option_key, $limit);
+    }
+    
+    /**
+     * Get hegegemeinschaft total limit
+     * 
+     * @param string $wildart Wildart name
+     * @param string $kategorie Category name
+     * @return int
+     */
+    public function get_hegegemeinschaft_limit($wildart, $kategorie) {
+        $wildart = sanitize_text_field($wildart);
+        $kategorie = sanitize_text_field($kategorie);
+        
+        $option_key = "ahgmh_hegegemeinschaft_limit_" . sanitize_key($wildart) . "_" . sanitize_key($kategorie);
+        return intval(get_option($option_key, 0));
+    }
+    
+    /**
+     * Get status badge for limit comparison
+     * 
+     * @param int $ist Current count
+     * @param int $soll Target limit
+     * @return string HTML status badge
+     */
+    public function get_status_badge($ist, $soll) {
+        if ($soll <= 0) {
+            return '<span class="status-badge status-na">⚪ N/A</span>';
+        }
+        
+        $percentage = round(($ist / $soll) * 100);
+        
+        if ($percentage < 80) {
+            return '<span class="status-badge status-low">🟢 ' . $percentage . '%</span>';
+        } elseif ($percentage < 95) {
+            return '<span class="status-badge status-medium">🟡 ' . $percentage . '%</span>';
+        } elseif ($percentage <= 110) {
+            return '<span class="status-badge status-high">🔴 ' . $percentage . '%</span>';
+        } else {
+            return '<span class="status-badge status-exceeded">🔥 ' . $percentage . '%</span>';
+        }
+    }
+    
+    /**
+     * Count submissions by species, category and meldegruppe
+     * 
+     * @param string $species Species name
+     * @param string $category Category name
+     * @param string $meldegruppe Meldegruppe name
+     * @return int
+     */
+    public function count_submissions_by_species_category_meldegruppe($species, $category, $meldegruppe) {
+        global $wpdb;
+        
+        return $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) 
+            FROM {$this->table_name} 
+            WHERE game_species = %s 
+                AND field2 = %s 
+                AND field4 = %s
+        ", sanitize_text_field($species), sanitize_text_field($category), sanitize_text_field($meldegruppe)));
     }
 }
