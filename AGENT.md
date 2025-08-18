@@ -15,7 +15,7 @@
 - **Templates**: PHP templates for frontend rendering with Bootstrap 5.3 integration
 - **Assets**: Bootstrap 5.3 + Bootstrap Icons, enhanced CSS/JS with AJAX functionality
 - **Database**: WordPress MySQL (default), with SQLite/PostgreSQL support
-- **Admin Interface**: Modern tabbed interface with comprehensive CRUD operations
+- **Admin Interface**: Modern tabbed interface with comprehensive CRUD operations and Master-Detail wildart configuration
 
 ## Development Commands
 - **Local WordPress**: Set up local WordPress development environment
@@ -26,15 +26,16 @@
 ## Plugin Architecture
 - **Shortcodes**: 5 main shortcodes (`[abschuss_form]`, `[abschuss_table]`, `[abschuss_admin]`, `[abschuss_summary]`, `[abschuss_limits]`)
 - **AJAX Handlers**: Form submission, admin config, CSV export via WordPress AJAX
-- **Database Tables**: `wp_ahgmh_submissions`, `wp_ahgmh_jagdbezirke`
+- **Database Tables**: `wp_ahgmh_submissions`, `wp_ahgmh_jagdbezirke`, `wp_ahgmh_meldegruppen_config`, `wp_ahgmh_meldegruppen_limits`
 - **User Integration**: WordPress user authentication and capabilities
 
 ## Core Functionality
 - **Form Submission**: Hunting harvest data entry with advanced validation
 - **Data Management**: Complete CRUD operations for harvest records with real-time updates
 - **CSV Export**: Advanced WordPress AJAX-based exports with configurable filename patterns
-- **Admin Interface**: Modern tabbed interface (Dashboard, Data Management, Categories, Database, CSV Export)
-- **Category Management**: Full CRUD for species and categories with integrated limit controls
+- **Admin Interface**: Modern tabbed interface (Dashboard, Data Management, Categories, Database, Wildarten-Konfiguration, CSV Export)
+- **Master-Detail Wildart Configuration**: Intuitive left-sidebar wildart navigation with right-panel detail editing
+- **Category Management**: Full CRUD for species and categories with integrated limit controls and inline editing
 - **Date Range Operations**: Custom date range deletion functionality with HTML5 datepickers
 - **Real-time Updates**: AJAX-powered table refreshing after form submissions
 - **Multi-Database**: Enhanced support for MySQL (default), SQLite, PostgreSQL
@@ -102,10 +103,14 @@ wp-content/plugins/abschussplan-hgmh/
 
 ## Development Notes
 - **Version 2.0.0**: Major update with modern admin interface and enhanced functionality
-- **Bootstrap 5.3**: Modern responsive design framework integration
-- **AJAX Integration**: Real-time updates without page reloads
+- **Bootstrap 5.3**: Modern responsive design framework integration with mobile-first approach
+- **Master-Detail UI**: Wildart-centric configuration with left-sidebar navigation and right-panel detail editing
+- **Responsive Design**: Sidebar collapsing on tablets (≤968px), horizontal navigation on mobile (≤600px)
+- **AJAX Integration**: Real-time updates without page reloads, including wildart configuration management
 - **Enhanced Security**: WordPress security best practices implemented
 - **Comprehensive CRUD**: Full Create, Read, Update, Delete operations for all entities
+- **Inline Editing**: Category and meldegruppe management with inline editing capabilities
+- **Auto-Save**: Automatic saving of configuration changes with user feedback
 - **Public Access**: [abschuss_summary] shortcode supports public access without authentication
 - **Flexible Parameters**: Enhanced parameter logic for species and meldegruppe filtering
 

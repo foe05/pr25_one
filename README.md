@@ -11,6 +11,7 @@ The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digit
 ### ✨ Core Features
 - ✅ **Digital Hunting Reports** - Advanced web forms with validation
 - ✅ **Comprehensive Admin Panel** - Modern tabbed interface with full CRUD operations
+- ✅ **Master-Detail Wildart Configuration** - Intuitive wildart-specific category and meldegruppe management
 - ✅ **Advanced Export System** - Configurable CSV exports with custom filename patterns  
 - ✅ **Category Management** - Full CRUD for species and categories with limit controls
 - ✅ **Date Range Operations** - Delete submissions by custom date ranges
@@ -192,6 +193,15 @@ The plugin provides a comprehensive, tabbed admin interface with the following s
 - **Date Range Deletion**: Remove submissions by custom date ranges
 - **Backup/Restore**: Data management utilities
 
+#### **🦌 Wildarten-Konfiguration Tab** (New in v2.0.0)
+- **Master-Detail Interface**: Left sidebar wildart navigation + right panel detail configuration
+- **Wildart Management**: Create, edit, delete game species with full data management
+- **Category Configuration**: Species-specific categories with inline editing and auto-save
+- **Meldegruppe Management**: Species-specific meldegruppen with CRUD operations
+- **Overview Dashboard**: Real-time statistics per species (current/target/percentage)
+- **Responsive Design**: Mobile-first layout with sidebar collapsing on tablets
+- **AJAX Operations**: All operations without page reloads for optimal user experience
+
 #### **📤 CSV Export Tab**
 - **Export Configuration**: Filename patterns with placeholders
 - **Parameter Documentation**: Complete API reference
@@ -347,17 +357,19 @@ abschussplan-hgmh/
 
 ### Version 2.0.0 (Current)
 - ✅ **Modern Admin Interface** - Complete redesign with tabbed navigation
+- ✅ **Master-Detail Wildart Configuration** - Intuitive left-sidebar navigation with right-panel detail editing
 - ✅ **Advanced Export System** - Configurable filename patterns and parameters
 - ✅ **Comprehensive CRUD Operations** - Full Create, Read, Update, Delete functionality
 - ✅ **Real-time Table Updates** - AJAX-powered auto-refresh after submissions
-- ✅ **Enhanced Category Management** - Integrated limits and overshoot controls
+- ✅ **Enhanced Category Management** - Integrated limits and overshoot controls with inline editing
 - ✅ **Date Range Operations** - Custom date range deletion functionality
 - ✅ **Improved Database Management** - Multi-database with enhanced connection handling
-- ✅ **Bootstrap 5.3 Integration** - Modern responsive UI framework
+- ✅ **Bootstrap 5.3 Integration** - Modern responsive UI framework with mobile-first design
 - ✅ **Advanced Security** - Enhanced WordPress security integration
 - ✅ **API Documentation** - Complete parameter reference in admin interface
 - ✅ **Public Summary Statistics** - [abschuss_summary] shortcode with flexible parameters
-- ✅ **Flexible Parameter Logic** - Species and meldegruppe combinations with graceful fallback
+- ✅ **Flexible Parameter Logic** - Species and meldegruppen combinations with graceful fallback
+- ✅ **Responsive Master-Detail UI** - Sidebar collapsing on tablets, horizontal navigation on mobile
 
 ### Version 1.5.0
 - ✅ **WordPress Plugin Architecture** - Complete WordPress integration

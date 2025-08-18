@@ -1210,4 +1210,222 @@ class AHGMH_Database_Handler {
             'allow_exceeding' => $allow_exceeding
         );
     }
+    
+    /**
+     * Save wildart (creates or updates wildart-specific settings)
+     */
+    public function save_wildart($wildart_name) {
+        // Sanitize wildart name
+        $wildart_name = sanitize_text_field($wildart_name);
+        
+        if (empty($wildart_name)) {
+            throw new Exception(__('Wildart Name ist erforderlich.', 'abschussplan-hgmh'));
+        }
+        
+        // Initialize empty categories and meldegruppen for new wildart
+        $categories_key = 'ahgmh_categories_' . sanitize_key($wildart_name);
+        if (!get_option($categories_key, false)) {
+            update_option($categories_key, array());
+        }
+        
+        // Initialize wildart-specific meldegruppen configuration
+        $this->initialize_wildart_meldegruppen_config($wildart_name);
+        
+        return true;
+    }
+    
+    /**
+     * Delete wildart and optionally its data
+     */
+    public function delete_wildart($wildart_name, $confirm_delete_data = false) {
+        global $wpdb;
+        
+        $wildart_name = sanitize_text_field($wildart_name);
+        
+        if (empty($wildart_name)) {
+            throw new Exception(__('Wildart Name ist erforderlich.', 'abschussplan-hgmh'));
+        }
+        
+        if ($confirm_delete_data) {
+            // Delete all submissions for this wildart
+            $deleted_submissions = $wpdb->delete(
+                $this->table_name,
+                array('game_species' => $wildart_name),
+                array('%s')
+            );
+            
+            // Delete wildart-specific jagdbezirke
+            $jagdbezirke_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
+            $deleted_jagdbezirke = $wpdb->delete(
+                $jagdbezirke_table,
+                array('wildart' => $wildart_name),
+                array('%s')
+            );
+            
+            // Delete wildart-specific meldegruppen configuration
+            $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+            $deleted_config = $wpdb->delete(
+                $meldegruppen_config_table,
+                array('wildart' => $wildart_name),
+                array('%s')
+            );
+            
+            // Delete wildart-specific limits
+            $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+            $deleted_limits = $wpdb->delete(
+                $limits_table,
+                array('wildart' => $wildart_name),
+                array('%s')
+            );
+            
+            // Delete wildart-specific options
+            $categories_key = 'ahgmh_categories_' . sanitize_key($wildart_name);
+            delete_option($categories_key);
+            
+            $limits_key = 'abschuss_category_limits_' . sanitize_key($wildart_name);
+            delete_option($limits_key);
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Save wildart categories
+     */
+    public function save_wildart_categories($wildart, $categories) {
+        $wildart = sanitize_text_field($wildart);
+        
+        if (empty($wildart)) {
+            throw new Exception(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
+        }
+        
+        // Sanitize categories
+        $sanitized_categories = array();
+        foreach ($categories as $category) {
+            $category = sanitize_text_field(trim($category));
+            if (!empty($category)) {
+                $sanitized_categories[] = $category;
+            }
+        }
+        
+        // Save categories to wildart-specific option
+        $categories_key = 'ahgmh_categories_' . sanitize_key($wildart);
+        update_option($categories_key, $sanitized_categories);
+        
+        return true;
+    }
+    
+    /**
+     * Save wildart meldegruppen
+     */
+    public function save_wildart_meldegruppen($wildart, $meldegruppen) {
+        global $wpdb;
+        
+        $wildart = sanitize_text_field($wildart);
+        
+        if (empty($wildart)) {
+            throw new Exception(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
+        }
+        
+        // Sanitize meldegruppen
+        $sanitized_meldegruppen = array();
+        foreach ($meldegruppen as $meldegruppe) {
+            $meldegruppe = sanitize_text_field(trim($meldegruppe));
+            if (!empty($meldegruppe)) {
+                $sanitized_meldegruppen[] = $meldegruppe;
+            }
+        }
+        
+        $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        
+        // Clear existing meldegruppen for this wildart
+        $wpdb->delete(
+            $meldegruppen_config_table,
+            array('wildart' => $wildart),
+            array('%s')
+        );
+        
+        // Insert new meldegruppen
+        foreach ($sanitized_meldegruppen as $meldegruppe) {
+            $wpdb->insert(
+                $meldegruppen_config_table,
+                array(
+                    'wildart' => $wildart,
+                    'meldegruppe' => $meldegruppe,
+                    'active' => 1,
+                    'created_at' => current_time('mysql')
+                ),
+                array('%s', '%s', '%d', '%s')
+            );
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get overview statistics for a wildart
+     */
+    public function get_wildart_overview_stats($wildart) {
+        global $wpdb;
+        
+        $wildart = sanitize_text_field($wildart);
+        $categories = get_option('ahgmh_categories_' . sanitize_key($wildart), array());
+        
+        $total_limit = 0;
+        $total_current = 0;
+        
+        foreach ($categories as $category) {
+            // Get default limits for this species
+            $limits = $this->get_meldegruppen_limits($wildart, null);
+            $limit = isset($limits[$category]) ? intval($limits[$category]) : 0;
+            
+            // Count submissions for this species and category
+            $current = $wpdb->get_var($wpdb->prepare("
+                SELECT COUNT(*) 
+                FROM {$this->table_name} 
+                WHERE game_species = %s AND field2 = %s
+            ", $wildart, $category));
+            
+            $total_limit += $limit;
+            $total_current += intval($current);
+        }
+        
+        $percentage = $total_limit > 0 ? round(($total_current / $total_limit) * 100, 1) : 0;
+        
+        $status = 'low';
+        if ($percentage >= 90) {
+            $status = 'high';
+        } elseif ($percentage >= 70) {
+            $status = 'medium';
+        }
+        
+        return array(
+            'current' => $total_current,
+            'limit' => $total_limit,
+            'percentage' => $percentage,
+            'status' => $status
+        );
+    }
+    
+    /**
+     * Initialize wildart-specific meldegruppen configuration
+     */
+    private function initialize_wildart_meldegruppen_config($wildart) {
+        global $wpdb;
+        
+        $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        
+        // Check if configuration already exists
+        $existing = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $meldegruppen_config_table WHERE wildart = %s
+        ", $wildart));
+        
+        if ($existing == 0) {
+            // Initialize with empty configuration - user will add meldegruppen later
+            // This ensures the wildart exists in the system even without meldegruppen
+            $this->save_wildart_meldegruppen($wildart, array());
+        }
+        
+        return true;
+    }
 }

@@ -15,6 +15,7 @@
         initAutoRefresh();
         initMeldegruppenConfig();
         initJagdbezirkeInterface();
+        initWildartConfig();
     }
 
     /**
@@ -2158,6 +2159,371 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
             },
             error: function() {
                 showNotification('Fehler beim Speichern der Limits.', 'error');
+            },
+            complete: function() {
+                $button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+
+    /**
+     * Initialize Wildart Configuration Interface
+     */
+    function initWildartConfig() {
+        // Wildart navigation click handler
+        $(document).on('click', '.wildart-item', function(e) {
+            // Don't trigger if delete button was clicked
+            if ($(e.target).closest('.wildart-delete').length) {
+                return;
+            }
+            
+            const wildart = $(this).data('wildart');
+            const $item = $(this);
+            
+            // Update active state
+            $('.wildart-item').removeClass('active');
+            $item.addClass('active');
+            
+            // Load wildart configuration
+            loadWildartConfig(wildart);
+        });
+        
+        // Add new wildart button handler
+        $(document).on('click', '#add-new-wildart', function(e) {
+            e.preventDefault();
+            toggleNewWildartForm(true);
+        });
+        
+        // Cancel new wildart button handler
+        $(document).on('click', '#cancel-new-wildart', function(e) {
+            e.preventDefault();
+            toggleNewWildartForm(false);
+        });
+        
+        // Save new wildart button handler
+        $(document).on('click', '#save-new-wildart', function(e) {
+            e.preventDefault();
+            saveNewWildart();
+        });
+        
+        // Delete wildart button handler
+        $(document).on('click', '.wildart-delete', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const wildart = $(this).data('wildart');
+            
+            if (confirm(`Wildart "${wildart}" wirklich löschen? Alle zugehörigen Daten gehen verloren!`)) {
+                deleteWildart(wildart);
+            }
+        });
+        
+        // Add category button handler
+        $(document).on('click', '#add-category', function(e) {
+            e.preventDefault();
+            addNewConfigItem('category');
+        });
+        
+        // Add meldegruppe button handler
+        $(document).on('click', '#add-meldegruppe', function(e) {
+            e.preventDefault();
+            addNewConfigItem('meldegruppe');
+        });
+        
+        // Remove item button handler
+        $(document).on('click', '.remove-item', function(e) {
+            e.preventDefault();
+            const $item = $(this).closest('.config-item');
+            $item.fadeOut(300, function() {
+                $(this).remove();
+            });
+        });
+        
+        // Save categories button handler
+        $(document).on('click', '.save-categories', function(e) {
+            e.preventDefault();
+            const wildart = $(this).data('wildart');
+            saveWildartCategories(wildart);
+        });
+        
+        // Save meldegruppen button handler
+        $(document).on('click', '.save-meldegruppen', function(e) {
+            e.preventDefault();
+            const wildart = $(this).data('wildart');
+            saveWildartMeldegruppen(wildart);
+        });
+        
+        // Enter key handler for new item inputs
+        $(document).on('keypress', '#new-category-input, #new-meldegruppe-input, #new-wildart-name', function(e) {
+            if (e.which === 13) { // Enter key
+                e.preventDefault();
+                
+                const inputId = $(this).attr('id');
+                if (inputId === 'new-category-input') {
+                    addNewConfigItem('category');
+                } else if (inputId === 'new-meldegruppe-input') {
+                    addNewConfigItem('meldegruppe');
+                } else if (inputId === 'new-wildart-name') {
+                    saveNewWildart();
+                }
+            }
+        });
+    }
+    
+    /**
+     * Toggle new wildart form visibility
+     */
+    function toggleNewWildartForm(show) {
+        const $form = $('#new-wildart-form');
+        const $button = $('#add-new-wildart');
+        
+        if (show) {
+            $form.slideDown(300);
+            $button.hide();
+            $('#new-wildart-name').focus();
+        } else {
+            $form.slideUp(300);
+            $button.show();
+            $('#new-wildart-name').val('');
+        }
+    }
+    
+    /**
+     * Save new wildart
+     */
+    function saveNewWildart() {
+        const wildartName = $('#new-wildart-name').val().trim();
+        const $button = $('#save-new-wildart');
+        const originalText = $button.text();
+        
+        if (!wildartName) {
+            showNotification('Bitte geben Sie einen Namen für die Wildart ein.', 'error');
+            return;
+        }
+        
+        $button.prop('disabled', true).text('Speichere...');
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_create_wildart',
+                wildart_name: wildartName,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                    // Reload page to show new wildart
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showNotification(response.data, 'error');
+                    $button.prop('disabled', false).text(originalText);
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Erstellen der Wildart.', 'error');
+                $button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+    
+    /**
+     * Delete wildart
+     */
+    function deleteWildart(wildartName) {
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_delete_wildart',
+                wildart_name: wildartName,
+                confirm_delete_data: true,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                    // Reload page to update wildart list
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showNotification(response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Löschen der Wildart.', 'error');
+            }
+        });
+    }
+    
+    /**
+     * Load wildart configuration
+     */
+    function loadWildartConfig(wildart) {
+        const $detailContent = $('#wildart-detail-content');
+        
+        // Show loading state
+        $detailContent.html('<div class="wildart-config-loading">Lade Konfiguration für ' + wildart + '...</div>');
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_load_wildart_config',
+                wildart: wildart,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    $detailContent.html(response.data.html);
+                } else {
+                    $detailContent.html('<div class="config-empty">Fehler beim Laden der Konfiguration: ' + response.data + '</div>');
+                }
+            },
+            error: function() {
+                $detailContent.html('<div class="config-empty">Fehler beim Laden der Konfiguration.</div>');
+            }
+        });
+    }
+    
+    /**
+     * Add new config item (category or meldegruppe)
+     */
+    function addNewConfigItem(type) {
+        const inputId = type === 'category' ? '#new-category-input' : '#new-meldegruppe-input';
+        const listId = type === 'category' ? '#categories-list' : '#meldegruppen-list';
+        const $input = $(inputId);
+        const $list = $(listId);
+        const value = $input.val().trim();
+        
+        if (!value) {
+            showNotification('Bitte geben Sie einen Namen ein.', 'error');
+            return;
+        }
+        
+        // Check for duplicates
+        let exists = false;
+        $list.find('.config-item input[type="text"]').each(function() {
+            if ($(this).val().toLowerCase() === value.toLowerCase()) {
+                exists = true;
+                return false;
+            }
+        });
+        
+        if (exists) {
+            showNotification('Ein Eintrag mit diesem Namen existiert bereits.', 'error');
+            return;
+        }
+        
+        // Create new item HTML
+        const itemHtml = `
+            <div class="config-item" style="display: none;">
+                <input type="text" value="${value}" class="${type}-input" data-original="${value}">
+                <button type="button" class="remove-item" data-type="${type}" data-value="${value}">
+                    <span class="dashicons dashicons-trash"></span>
+                </button>
+            </div>
+        `;
+        
+        // Add to list with animation
+        $list.append(itemHtml);
+        $list.find('.config-item:last').slideDown(300);
+        
+        // Clear input
+        $input.val('');
+    }
+    
+    /**
+     * Save wildart categories
+     */
+    function saveWildartCategories(wildart) {
+        const $button = $('.save-categories[data-wildart="' + wildart + '"]');
+        const originalText = $button.text();
+        
+        $button.prop('disabled', true).text('Speichere...');
+        
+        // Collect all categories
+        const categories = [];
+        $('#categories-list .config-item input[type="text"]').each(function() {
+            const value = $(this).val().trim();
+            if (value) {
+                categories.push(value);
+            }
+        });
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_save_wildart_categories',
+                wildart: wildart,
+                categories: categories,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                    // Update overview stats
+                    setTimeout(function() {
+                        loadWildartConfig(wildart);
+                    }, 1000);
+                } else {
+                    showNotification(response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Speichern der Kategorien.', 'error');
+            },
+            complete: function() {
+                $button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+    
+    /**
+     * Save wildart meldegruppen
+     */
+    function saveWildartMeldegruppen(wildart) {
+        const $button = $('.save-meldegruppen[data-wildart="' + wildart + '"]');
+        const originalText = $button.text();
+        
+        $button.prop('disabled', true).text('Speichere...');
+        
+        // Collect all meldegruppen
+        const meldegruppen = [];
+        $('#meldegruppen-list .config-item input[type="text"]').each(function() {
+            const value = $(this).val().trim();
+            if (value) {
+                meldegruppen.push(value);
+            }
+        });
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_save_wildart_meldegruppen',
+                wildart: wildart,
+                meldegruppen: meldegruppen,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+                    // Update overview stats
+                    setTimeout(function() {
+                        loadWildartConfig(wildart);
+                    }, 1000);
+                } else {
+                    showNotification(response.data, 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Speichern der Meldegruppen.', 'error');
             },
             complete: function() {
                 $button.prop('disabled', false).text(originalText);
