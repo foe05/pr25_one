@@ -25,9 +25,10 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_export_data', array($this, 'ajax_export_data'));
         add_action('wp_ajax_ahgmh_delete_submission', array($this, 'ajax_delete_submission'));
         add_action('wp_ajax_ahgmh_danger_action', array($this, 'ajax_danger_action'));
-        add_action('wp_ajax_ahgmh_add_jagdbezirk', array($this, 'ajax_add_jagdbezirk'));
-        add_action('wp_ajax_ahgmh_edit_jagdbezirk', array($this, 'ajax_edit_jagdbezirk'));
-        add_action('wp_ajax_ahgmh_delete_jagdbezirk', array($this, 'ajax_delete_jagdbezirk'));
+        // Jagdbezirk handlers moved to emergency file
+        // add_action('wp_ajax_ahgmh_add_jagdbezirk', array($this, 'ajax_add_jagdbezirk'));
+        // add_action('wp_ajax_ahgmh_edit_jagdbezirk', array($this, 'ajax_edit_jagdbezirk'));
+        // add_action('wp_ajax_ahgmh_delete_jagdbezirk', array($this, 'ajax_delete_jagdbezirk'));
         add_action('wp_ajax_ahgmh_add_species', array($this, 'ajax_add_species'));
         add_action('wp_ajax_ahgmh_delete_species', array($this, 'ajax_delete_species'));
         add_action('wp_ajax_ahgmh_add_category', array($this, 'ajax_add_category'));
@@ -36,26 +37,27 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_export_settings', array($this, 'ajax_export_settings'));
         add_action('wp_ajax_ahgmh_rename_table', array($this, 'ajax_rename_table'));
         add_action('wp_ajax_ahgmh_save_category_settings', array($this, 'ajax_save_category_settings'));
-        add_action('wp_ajax_ahgmh_dashboard_stats', array($this, 'ajax_dashboard_stats'));
         add_action('wp_ajax_save_export_config', array($this, 'ajax_save_export_config'));
         add_action('wp_ajax_ahgmh_toggle_wildart_specific', array($this, 'ajax_toggle_wildart_specific'));
-        add_action('wp_ajax_ahgmh_load_wildart_meldegruppen', array($this, 'ajax_load_wildart_meldegruppen'));
-        add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
-        add_action('wp_ajax_ahgmh_load_meldegruppen_limits', array($this, 'ajax_load_meldegruppen_limits'));
-        add_action('wp_ajax_ahgmh_toggle_meldegruppe_custom_limits', array($this, 'ajax_toggle_meldegruppe_custom_limits'));
-        add_action('wp_ajax_ahgmh_save_meldegruppe_limits', array($this, 'ajax_save_meldegruppe_limits'));
+        // Meldegruppen handlers moved to emergency file  
+        // add_action('wp_ajax_ahgmh_load_wildart_meldegruppen', array($this, 'ajax_load_wildart_meldegruppen'));
+        // add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
+        // add_action('wp_ajax_ahgmh_load_meldegruppen_limits', array($this, 'ajax_load_meldegruppen_limits'));
+        // add_action('wp_ajax_ahgmh_toggle_meldegruppe_custom_limits', array($this, 'ajax_toggle_meldegruppe_custom_limits'));
+        // add_action('wp_ajax_ahgmh_save_meldegruppe_limits', array($this, 'ajax_save_meldegruppe_limits'));
         add_action('wp_ajax_ahgmh_save_species_default_limits', array($this, 'ajax_save_species_default_limits'));
         add_action('wp_ajax_ahgmh_save_jagdbezirk_limits', array($this, 'ajax_save_jagdbezirk_limits'));
         add_action('wp_ajax_ahgmh_load_jagdbezirk_limits', array($this, 'ajax_load_jagdbezirk_limits'));
         add_action('wp_ajax_ahgmh_change_wildart', array($this, 'ajax_change_wildart'));
         add_action('wp_ajax_ahgmh_load_wildart_jagdbezirke', array($this, 'ajax_load_wildart_jagdbezirke'));
-        add_action('wp_ajax_ahgmh_create_wildart', array($this, 'ajax_create_wildart'));
-        add_action('wp_ajax_ahgmh_delete_wildart', array($this, 'ajax_delete_wildart'));
-        add_action('wp_ajax_ahgmh_load_wildart_config', array($this, 'ajax_load_wildart_config'));
-        add_action('wp_ajax_ahgmh_save_wildart_categories', array($this, 'ajax_save_wildart_categories'));
-        add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
-        add_action('wp_ajax_ahgmh_toggle_limit_mode', array($this, 'ajax_toggle_limit_mode'));
-        add_action('wp_ajax_ahgmh_save_limits', array($this, 'ajax_save_limits'));
+        // Master-Detail UI handlers moved to emergency file
+        // add_action('wp_ajax_ahgmh_create_wildart', array($this, 'ajax_create_wildart'));
+        // add_action('wp_ajax_ahgmh_delete_wildart', array($this, 'ajax_delete_wildart'));
+        // add_action('wp_ajax_ahgmh_load_wildart_config', array($this, 'ajax_load_wildart_config'));
+        // add_action('wp_ajax_ahgmh_save_wildart_categories', array($this, 'ajax_save_wildart_categories'));
+        // add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
+        // add_action('wp_ajax_ahgmh_toggle_limit_mode', array($this, 'ajax_toggle_limit_mode'));
+        // add_action('wp_ajax_ahgmh_save_limits', array($this, 'ajax_save_limits'));
         
         // Add WordPress dashboard widget
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
@@ -126,7 +128,7 @@ class AHGMH_Admin_Page_Modern {
             'ahgmh-admin-modern',
             AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.js',
             array('jquery'),
-            AHGMH_PLUGIN_VERSION,
+            AHGMH_PLUGIN_VERSION . '-crud-fix-' . time(),
             true
         );
         
@@ -344,21 +346,7 @@ class AHGMH_Admin_Page_Modern {
                     <span class="dashicons dashicons-database"></span>
                     <?php echo esc_html__('Datenbank', 'abschussplan-hgmh'); ?>
                 </a>
-                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=species'); ?>" 
-                   class="ahgmh-tab <?php echo $active_tab === 'species' ? 'active' : ''; ?>">
-                    <span class="dashicons dashicons-location"></span>
-                    <?php echo esc_html__('Wildarten', 'abschussplan-hgmh'); ?>
-                </a>
-                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=categories'); ?>" 
-                   class="ahgmh-tab <?php echo $active_tab === 'categories' ? 'active' : ''; ?>">
-                    <span class="dashicons dashicons-category"></span>
-                    <?php echo esc_html__('Kategorien', 'abschussplan-hgmh'); ?>
-                </a>
-                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=districts'); ?>" 
-                   class="ahgmh-tab <?php echo $active_tab === 'districts' ? 'active' : ''; ?>">
-                    <span class="dashicons dashicons-location-alt"></span>
-                    <?php echo esc_html__('Jagdbezirke', 'abschussplan-hgmh'); ?>
-                </a>
+                
                 <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=wildart-config'); ?>" 
                    class="ahgmh-tab <?php echo $active_tab === 'wildart-config' ? 'active' : ''; ?>">
                     <span class="dashicons dashicons-admin-network"></span>
@@ -376,20 +364,11 @@ class AHGMH_Admin_Page_Modern {
                 <?php
                 switch ($active_tab) {
                     case 'database':
-                        $this->render_database_settings();
-                        break;
-                    case 'species':
-                        $this->render_species_settings();
-                        break;
-                    case 'categories':
-                        $this->render_categories_settings();
-                        break;
-                    case 'districts':
-                        $this->render_districts_settings();
-                        break;
+                    $this->render_database_settings();
+                    break;
                     case 'wildart-config':
-                        $this->render_wildart_config();
-                        break;
+                    $this->render_wildart_config();
+                    break;
                     case 'export':
                         $this->render_export_settings();
                         break;
@@ -1107,15 +1086,52 @@ class AHGMH_Admin_Page_Modern {
      * AJAX handler for quick export
      */
     public function ajax_quick_export() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        AHGMH_Validation_Service::verify_ajax_request();
         
-        if (!current_user_can('manage_options')) {
-            wp_die(__('Insufficient permissions', 'abschussplan-hgmh'));
+        $species = sanitize_text_field($_POST['species'] ?? '');
+        $format = sanitize_text_field($_POST['format'] ?? 'csv');
+        
+        try {
+            $filename = AHGMH_Validation_Service::generate_secure_filename('abschuss_export', $format);
+            $upload_dir = wp_upload_dir();
+            $filepath = $upload_dir['path'] . '/' . $filename;
+            
+            // Get submissions
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'ahgmh_submissions';
+            
+            if (!empty($species)) {
+                $query = $wpdb->prepare("SELECT datum, art, kategorie, meldegruppe, anzahl FROM $table_name WHERE art = %s ORDER BY datum DESC", $species);
+            } else {
+                $query = "SELECT datum, art, kategorie, meldegruppe, anzahl FROM $table_name ORDER BY datum DESC";
+            }
+            
+            $submissions = $wpdb->get_results($query);
+            
+            $fp = fopen($filepath, 'w');
+            fputcsv($fp, ['Datum', 'Art', 'Kategorie', 'Meldegruppe', 'Anzahl']);
+            
+            foreach ($submissions as $submission) {
+                fputcsv($fp, [
+                    esc_html($submission->datum),
+                    esc_html($submission->art),
+                    esc_html($submission->kategorie),
+                    esc_html($submission->meldegruppe),
+                    absint($submission->anzahl)
+                ]);
+            }
+            fclose($fp);
+            
+            $download_url = $upload_dir['url'] . '/' . $filename;
+            
+            wp_send_json_success([
+                'download_url' => esc_url($download_url),
+                'filename' => esc_html($filename)
+            ]);
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Fehler beim Export: ' . esc_html($e->getMessage()));
         }
-        
-        // Trigger CSV export
-        $export_url = admin_url('admin-ajax.php?action=export_abschuss_csv');
-        wp_send_json_success(array('export_url' => $export_url));
     }
 
     /**
@@ -3551,6 +3567,15 @@ class AHGMH_Admin_Page_Modern {
         $categories_key = 'ahgmh_categories_' . sanitize_key($wildart);
         $categories = get_option($categories_key, array());
         
+        // If no categories exist, use defaults
+        if (empty($categories)) {
+            $categories = $this->get_default_categories($wildart);
+            // Save defaults to database
+            if (!empty($categories)) {
+                update_option($categories_key, $categories);
+            }
+        }
+        
         // Get meldegruppen for this wildart
         $meldegruppen = $database->get_meldegruppen_for_wildart($wildart);
         
@@ -3645,28 +3670,31 @@ class AHGMH_Admin_Page_Modern {
     private function render_limits_config($wildart, $categories, $meldegruppen) {
         $database = abschussplan_hgmh()->database;
         
-        // Get current limit mode
-        $current_mode = $database->get_wildart_limit_mode($wildart);
+        // Get current limit mode from options (fallback)
+        $limit_modes = get_option('ahgmh_limit_modes', []);
+        $current_mode = isset($limit_modes[$wildart]) ? $limit_modes[$wildart] : 'meldegruppen_specific';
         
-        // Get existing limits based on mode
+        // Get existing limits from options
+        $all_limits = get_option('ahgmh_wildart_limits', []);
+        $wildart_limits = isset($all_limits[$wildart]) ? $all_limits[$wildart] : [];
+        
         $meldegruppen_limits = array();
         $hegegemeinschaft_limits = array();
         
         if ($current_mode === 'meldegruppen_specific') {
             foreach ($meldegruppen as $meldegruppe) {
                 foreach ($categories as $category) {
-                    $limits = $database->get_meldegruppen_limits($wildart, $meldegruppe);
-                    $meldegruppen_limits[$meldegruppe][$category] = $limits[$category] ?? '';
+                    $meldegruppen_limits[$meldegruppe][$category] = isset($wildart_limits[$meldegruppe][$category]) ? $wildart_limits[$meldegruppe][$category] : '';
                 }
             }
         } else {
             foreach ($categories as $category) {
-                $hegegemeinschaft_limits[$category] = $database->get_hegegemeinschaft_limit($wildart, $category);
+                $hegegemeinschaft_limits[$category] = isset($wildart_limits['total'][$category]) ? $wildart_limits['total'][$category] : '';
             }
         }
         
         // Get current IST-values for status calculation
-        $ist_values = $this->get_ist_values_for_limits($wildart, $categories, $meldegruppen);
+        $ist_values = $this->get_ist_values_for_limits_fallback($wildart, $categories, $meldegruppen);
         ?>
         
         <div class="limits-config-section">
@@ -3711,10 +3739,11 @@ class AHGMH_Admin_Page_Modern {
                             <?php foreach ($meldegruppen as $gruppe): ?>
                                 <td>
                                     <input type="number" 
-                                           name="limit[<?php echo esc_attr($wildart); ?>][<?php echo esc_attr($gruppe); ?>][<?php echo esc_attr($category); ?>]" 
-                                           value="<?php echo esc_attr($meldegruppen_limits[$gruppe][$category] ?? ''); ?>"
-                                           onchange="updateGesamt('<?php echo esc_js($category); ?>')" 
-                                           class="limit-input" />
+                                    name="limit[<?php echo esc_attr($wildart); ?>][<?php echo esc_attr($gruppe); ?>][<?php echo esc_attr($category); ?>]" 
+                                    value="<?php echo esc_attr($meldegruppen_limits[$gruppe][$category] ?? ''); ?>"
+                                    data-meldegruppe="<?php echo esc_attr($gruppe); ?>"
+                                    data-kategorie="<?php echo esc_attr($category); ?>"
+                                            class="limit-input" />
                                 </td>
                             <?php endforeach; ?>
                             <td class="gesamt-cell" id="gesamt_<?php echo sanitize_title($category); ?>">
@@ -3760,7 +3789,7 @@ class AHGMH_Admin_Page_Modern {
                                 <td><?php echo esc_html($ist); ?></td>
                             <?php endforeach; ?>
                             <td><strong><?php echo esc_html($gesamt_ist); ?></strong></td>
-                            <td><?php echo $database->get_status_badge($gesamt_ist, $gesamt_soll); ?></td>
+                            <td><?php echo ahgmh_get_status_badge_fallback($gesamt_ist, $gesamt_soll); ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -3820,7 +3849,52 @@ class AHGMH_Admin_Page_Modern {
                                 <td><?php echo esc_html($ist); ?></td>
                             <?php endforeach; ?>
                             <td><strong><?php echo esc_html($gesamt_ist); ?></strong></td>
-                            <td><?php echo $database->get_status_badge($gesamt_ist, intval($hegegemeinschaft_limits[$category] ?? 0)); ?></td>
+                            <td><?php echo ahgmh_get_status_badge_fallback($gesamt_ist, intval($hegegemeinschaft_limits[$category] ?? 0)); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Hegegemeinschaft Total Limits (Simple Mode) -->
+            <div class="limits-matrix hegegemeinschaft-total" id="hegegemeinschaft-limits-<?php echo esc_attr($wildart); ?>" 
+                 style="display: <?php echo $current_mode === 'hegegemeinschaft_total' ? 'block' : 'none'; ?>">
+                <h4>🎯 <?php echo esc_html(sprintf(__('Gesamt-Limits für %s (Hegegemeinschaft)', 'abschussplan-hgmh'), $wildart)); ?></h4>
+                
+                <table class="ahgmh-limits-table">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('Gesamt-Limit', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('Aktuell (IST)', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $category): ?>
+                        <tr>
+                            <td><strong><?php echo esc_html($category); ?></strong></td>
+                            <td>
+                                <input type="number" 
+                                       name="total_limit[<?php echo esc_attr($wildart); ?>][<?php echo esc_attr($category); ?>]" 
+                                       value="<?php echo esc_attr($hegegemeinschaft_limits[$category] ?? ''); ?>"
+                                       data-kategorie="<?php echo esc_attr($category); ?>"
+                                       data-meldegruppe="total"
+                                       class="limit-input total-limit-input" 
+                                       min="0" />
+                            </td>
+                            <td>
+                                <?php 
+                                $current_total = 0;
+                                foreach ($meldegruppen as $gruppe) {
+                                    $current_total += $ist_values[$gruppe][$category] ?? 0;
+                                }
+                                echo esc_html($current_total);
+                                ?>
+                            </td>
+                            <td>
+                                <?php echo ahgmh_get_status_badge_fallback($current_total, intval($hegegemeinschaft_limits[$category] ?? 0)); ?>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -3840,15 +3914,35 @@ class AHGMH_Admin_Page_Modern {
     }
     
     /**
-     * Get IST values for limits calculation
+     * Get IST values for limits calculation (Fallback version)
      */
-    private function get_ist_values_for_limits($wildart, $categories, $meldegruppen) {
+    private function get_ist_values_for_limits_fallback($wildart, $categories, $meldegruppen) {
         $database = abschussplan_hgmh()->database;
         $ist_values = array();
         
-        foreach ($meldegruppen as $meldegruppe) {
-            foreach ($categories as $category) {
-                $ist_values[$meldegruppe][$category] = $database->count_submissions_by_species_category_meldegruppe($wildart, $category, $meldegruppe);
+        try {
+            foreach ($meldegruppen as $meldegruppe) {
+                foreach ($categories as $category) {
+                    if (method_exists($database, 'count_submissions_by_species_category_meldegruppe')) {
+                        $ist_values[$meldegruppe][$category] = $database->count_submissions_by_species_category_meldegruppe($wildart, $category, $meldegruppe);
+                    } else {
+                        // Fallback: use simple database query
+                        global $wpdb;
+                        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+                        $count = $wpdb->get_var($wpdb->prepare(
+                            "SELECT SUM(anzahl) FROM $table_name WHERE art = %s AND kategorie = %s AND meldegruppe = %s",
+                            $wildart, $category, $meldegruppe
+                        ));
+                        $ist_values[$meldegruppe][$category] = intval($count);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            // If database fails, return empty array
+            foreach ($meldegruppen as $meldegruppe) {
+                foreach ($categories as $category) {
+                    $ist_values[$meldegruppe][$category] = 0;
+                }
             }
         }
         
@@ -4180,4 +4274,6 @@ class AHGMH_Admin_Page_Modern {
             ));
         }
     }
+
+
 }

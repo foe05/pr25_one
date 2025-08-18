@@ -31,7 +31,33 @@ define('AHGMH_PLUGIN_VERSION', '2.0.0');
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
-require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page-modern.php';
+
+// Include admin-only architecture when needed
+if (is_admin()) {
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-dashboard-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
+
+    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
+
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-dashboard-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-data-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-settings-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-wildart-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
+
+    require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
+
+    // Legacy support - keep for backward compatibility
+    require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page-modern.php';
+    
+    // EMERGENCY: Load emergency AJAX handlers for missing methods
+    require_once AHGMH_PLUGIN_DIR . 'admin/ajax-handlers-emergency.php';
+}
 
 /**
  * Main plugin class
@@ -58,9 +84,14 @@ class Abschussplan_HGMH {
     public $table;
 
     /**
-     * Admin page instance
+     * Admin page instance (Legacy)
      */
     public $admin;
+    
+    /**
+     * New modular admin controller
+     */
+    public $admin_controller;
 
     /**
      * Get the singleton instance
@@ -102,8 +133,14 @@ class Abschussplan_HGMH {
         // Initialize table display
         $this->table = new AHGMH_Table_Display();
 
-        // Initialize modern admin page
-        $this->admin = new AHGMH_Admin_Page_Modern();
+        // Initialize admin controllers only in admin area
+        if (is_admin()) {
+            // TEMPORARY: Use only legacy admin to fix broken backend
+            $this->admin = new AHGMH_Admin_Page_Modern();
+            
+            // New modular controller disabled until issues resolved
+            // $this->admin_controller = new AHGMH_Admin_Controller();
+        }
     }
 
     /**
@@ -192,7 +229,7 @@ function abschussplan_hgmh() {
 }
 
 // Plugin activation hook
-register_activation_hook(__FILE__, 'ahgmh_activate_plugin');
+// Removed duplicate hook - already registered in class constructor
 
 function ahgmh_activate_plugin() {
     // Ensure database tables are created
