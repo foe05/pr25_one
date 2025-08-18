@@ -689,7 +689,13 @@ class AHGMH_Form_Handler {
         // SECURITY: Only for Vorstand (administrators) accessible
         if (!current_user_can('manage_options')) {
             if (!is_user_logged_in()) {
-                return $this->render_login_form('Anmeldung als Vorstand erforderlich für Limits-Verwaltung');
+                return '<div class="alert alert-warning" style="padding: 15px; background: #fff3cd; color: #664d03; border: 1px solid #ffecb5; border-radius: 4px; margin: 10px 0;">
+                    <h4 style="margin: 0 0 10px 0;">🔐 Anmeldung erforderlich</h4>
+                    <p style="margin: 0;">Anmeldung als Vorstand erforderlich für Limits-Verwaltung.</p>
+                    <p style="margin: 10px 0 0 0;">
+                        <a href="' . wp_login_url(get_permalink()) . '" class="button button-primary">Anmelden</a>
+                    </p>
+                </div>';
             } else {
                 return '<div class="alert alert-danger" style="padding: 15px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px; margin: 10px 0;">
                     <h4 style="margin: 0 0 10px 0;">⚠️ Keine Berechtigung</h4>
@@ -734,186 +740,28 @@ class AHGMH_Form_Handler {
         $categories_key = 'ahgmh_categories_' . sanitize_key($selected_wildart);
         $categories = get_option($categories_key, array());
         
-        // Use meldegruppen-specific limits if available and meldegruppe is specified
-        if (!empty($selected_meldegruppe)) {
-            $limits = $this->get_meldegruppen_category_limits($selected_species, $selected_meldegruppe);
-            $allow_exceeding = $this->get_meldegruppen_category_allow_exceeding($selected_species, $selected_meldegruppe);
-        } else {
-            $limits = $this->get_category_limits($selected_species);
-            $allow_exceeding = $this->get_category_allow_exceeding($selected_species);
+        // Simple implementation to prevent fatal errors
+        if (empty($selected_wildart)) {
+            return '<div class="alert alert-info" style="padding: 15px; background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; border-radius: 4px; margin: 10px 0;">
+                <h4 style="margin: 0 0 10px 0;">⚙️ Limits-Verwaltung</h4>
+                <p style="margin: 0 0 15px 0;">Für die vollständige Limits-Verwaltung nutzen Sie das Admin-Panel:</p>
+                <p style="margin: 0;">
+                    <a href="' . admin_url('admin.php?page=abschussplan-hgmh-settings') . '" class="button button-primary" style="text-decoration: none;">
+                        🔗 Zum Admin-Panel
+                    </a>
+            </p>
+        </div>';
         }
         
-        $counts = $this->get_category_counts($selected_species, $selected_meldegruppe);
-        
-        ob_start();
-        ?>
-        <div class="ahgmh-limits-config">
-            <div id="limits-response" class="notice" style="display: none;"></div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="mb-0"><?php echo esc_html(sprintf(__('Abschuss (Soll) für %s', 'abschussplan-hgmh'), $selected_species)); ?></h3>
-                </div>
-                <div class="card-body">
-                    <form id="species-limits-form" data-species="<?php echo esc_attr($selected_species); ?>">
-                        <?php wp_nonce_field('species_limits_nonce', 'species_limits_nonce_field'); ?>
-                        
-                        <table class="table table-striped">
-                        <thead>
-                        <tr>
-                        <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
-                        <th><?php echo esc_html__('Abschuss (Ist)', 'abschussplan-hgmh'); ?></th>
-                        <th><?php echo esc_html__('Abschuss (Soll)', 'abschussplan-hgmh'); ?></th>
-                        <th><?php echo esc_html__('Überschießen möglich?', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($categories as $category): 
-                                    $current_count = isset($counts[$category]) ? $counts[$category] : 0;
-                                    $limit = isset($limits[$category]) ? $limits[$category] : 0;
-                                    $allow_exceed = isset($allow_exceeding[$category]) ? $allow_exceeding[$category] : false;
-                                    $percentage = $limit > 0 ? ($current_count / $limit) * 100 : 0;
-                                    $status_class = '';
-                                    if ($limit == 0) {
-                                        // No limit set: grey background
-                                        $status_class = 'bg-secondary text-white';
-                                    } elseif ($percentage < 100) {
-                                        // Under limit: green background
-                                        $status_class = 'bg-success text-white';
-                                    } elseif ($allow_exceed) {
-                                        // Over limit + overshoot allowed: green background
-                                        $status_class = 'bg-success text-white';
-                                    } else {
-                                        // Over limit + overshoot not allowed: red background
-                                        $status_class = 'bg-danger text-white';
-                                    }
-                                ?>
-                                <tr>
-                                    <td><strong><?php echo esc_html($category); ?></strong></td>
-                                    <td><span class="badge bg-primary"><?php echo esc_html($current_count); ?></span></td>
-                                    <td>
-                                        <input type="number" 
-                                               name="limits[<?php echo esc_attr($category); ?>]" 
-                                               value="<?php echo esc_attr($limit); ?>" 
-                                               min="0" 
-                                               max="999" 
-                                               class="form-control" 
-                                               style="width: 100px;" />
-                                    </td>
-                                    <td>
-                                        <div class="form-check">
-                                            <input type="checkbox" 
-                                                   name="allow_exceeding[<?php echo esc_attr($category); ?>]" 
-                                                   value="1"
-                                                   class="form-check-input" 
-                                                   id="exceed_<?php echo esc_attr(sanitize_title($category)); ?>"
-                                                   <?php checked($allow_exceed, true); ?> />
-                                            <label class="form-check-label" for="exceed_<?php echo esc_attr(sanitize_title($category)); ?>">
-                                                <?php echo esc_html__('Ja', 'abschussplan-hgmh'); ?>
-                                            </label>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <?php if ($limit > 0): ?>
-                                            <span class="badge <?php echo esc_attr($status_class); ?>" style="padding: 6px 12px;">
-                                                <?php echo esc_html(round($percentage, 1)); ?>%
-                                                <?php if ($allow_exceed): ?>
-                                                    <small> (<?php echo esc_html__('Überschreitung erlaubt', 'abschussplan-hgmh'); ?>)</small>
-                                                <?php endif; ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary text-white"><?php echo esc_html__('Unbegrenzt', 'abschussplan-hgmh'); ?></span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                        
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary">
-                                <?php echo esc_html__('Grenzen speichern', 'abschussplan-hgmh'); ?>
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="reset-species-limits">
-                                <?php echo esc_html__('Alle zurücksetzen', 'abschussplan-hgmh'); ?>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            // Species-specific limits form
-            $('#species-limits-form').on('submit', function(e) {
-                e.preventDefault();
-                
-                var $submitBtn = $(this).find('button[type="submit"]');
-                var originalText = $submitBtn.text();
-                var species = $(this).data('species');
-                
-                $submitBtn.prop('disabled', true).text('<?php echo esc_js(__('Speichern...', 'abschussplan-hgmh')); ?>');
-                
-                var formData = new FormData(this);
-                formData.append('action', 'save_species_limits');
-                formData.append('species', species);
-                 
-                 // Debug: Log form data
-                 console.log('Submitting form for species:', species);
-                 for (var pair of formData.entries()) {
-                     console.log(pair[0] + ': ' + pair[1]);
-                 }
-                
-                $.ajax({
-                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        console.log('AJAX Response:', response);
-                        if (response.success) {
-                            $('#limits-response')
-                                .removeClass('notice-error')
-                                .addClass('notice notice-success')
-                                .html('<p>' + response.data.message + '</p>')
-                                .show();
-                        } else {
-                            $('#limits-response')
-                                .removeClass('notice-success')
-                                .addClass('notice notice-error')
-                                .html('<p>' + (response.data && response.data.message ? response.data.message : 'Unbekannter Fehler') + '</p>')
-                                .show();
-                        }
-                    },
-                    error: function(xhr, textStatus, errorThrown) {
-                        console.log('AJAX Error:', textStatus, errorThrown);
-                        console.log('Response Text:', xhr.responseText);
-                        $('#limits-response')
-                            .removeClass('notice-success')
-                            .addClass('notice notice-error')
-                            .html('<p><?php echo esc_js(__('Ein Fehler ist aufgetreten.', 'abschussplan-hgmh')); ?></p>')
-                            .show();
-                    },
-                    complete: function() {
-                        $submitBtn.prop('disabled', false).text(originalText);
-                        $('html, body').animate({ scrollTop: 0 }, 500);
-                    }
-                });
-            });
-            
-            // Reset limits button
-            $('#reset-species-limits').click(function() {
-                if (confirm('<?php echo esc_js(__('Sind Sie sicher, dass Sie alle Grenzen auf 0 zurücksetzen möchten?', 'abschussplan-hgmh')); ?>')) {
-                    $('#species-limits-form input[type="number"]').val('0');
-                }
-            });
-        });
-        </script>
-        <?php
-        return ob_get_clean();
+        return '<div class="alert alert-info" style="padding: 15px; background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; border-radius: 4px; margin: 10px 0;">
+        <h4 style="margin: 0 0 10px 0;">⚙️ Limits für ' . esc_html($selected_wildart) . '</h4>
+        <p style="margin: 0 0 15px 0;">Die Limits-Konfiguration für ' . esc_html($selected_wildart) . ' ist im Admin-Panel verfügbar.</p>
+        <p style="margin: 0;">
+        <a href="' . admin_url('admin.php?page=abschussplan-hgmh-settings') . '" class="button button-primary" style="text-decoration: none;">
+        🔗 Limits konfigurieren
+        </a>
+        </p>
+        </div>';
     }
 
     /**

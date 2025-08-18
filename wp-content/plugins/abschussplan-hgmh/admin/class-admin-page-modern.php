@@ -4074,47 +4074,6 @@ class AHGMH_Admin_Page_Modern {
     }
     
     /**
-     * AJAX handler: Save wildart meldegruppen
-     */
-    public function ajax_save_wildart_meldegruppen() {
-        // Security checks
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-
-        $wildart = sanitize_text_field($_POST['wildart'] ?? '');
-        $meldegruppen = $_POST['meldegruppen'] ?? array();
-
-        if (empty($wildart)) {
-            wp_send_json_error(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        try {
-            $database = abschussplan_hgmh()->database;
-            $sanitized_meldegruppen = array_map('sanitize_text_field', array_filter($meldegruppen));
-            $database->save_wildart_meldegruppen($wildart, $sanitized_meldegruppen);
-            
-            wp_send_json_success(array(
-                'message' => sprintf(
-                    __('Meldegruppen für %s erfolgreich gespeichert. %d Meldegruppen konfiguriert.', 'abschussplan-hgmh'),
-                    $wildart,
-                    count($sanitized_meldegruppen)
-                ),
-                'meldegruppen' => $sanitized_meldegruppen
-            ));
-        } catch (Exception $e) {
-            wp_send_json_error(sprintf(
-                __('Fehler beim Speichern der Meldegruppen: %s', 'abschussplan-hgmh'),
-                $e->getMessage()
-            ));
-        }
-    }
-    
-    /**
      * AJAX handler: Toggle limit mode for wildart
      */
     public function ajax_toggle_limit_mode() {
