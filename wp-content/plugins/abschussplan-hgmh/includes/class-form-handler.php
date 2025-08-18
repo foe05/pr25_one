@@ -175,33 +175,45 @@ class AHGMH_Form_Handler {
     /**
      * Render the summary table using shortcode
      * 
+     * @param array $atts Shortcode attributes
      * @return string HTML output of the summary table
      */
     public function render_summary($atts = array()) {
-        // Parse shortcode attributes
+        // Parse shortcode attributes - now both parameters are optional
         $atts = shortcode_atts(array(
-            'species' => 'Rotwild',
-            'meldegruppe' => ''
+            'species' => '',        // Optional - empty means all species
+            'meldegruppe' => ''     // Optional - empty means all meldegruppen
         ), $atts, 'abschuss_summary');
         
         $selected_species = sanitize_text_field($atts['species']);
         $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
         
-        // Override with URL parameter if available
-        if (empty($selected_meldegruppe) && isset($_GET['meldegruppe'])) {
-            $selected_meldegruppe = sanitize_text_field($_GET['meldegruppe']);
+        // Validate species if provided
+        $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+        $warning_message = '';
+        
+        if (!empty($selected_species) && !in_array($selected_species, $available_species)) {
+            $warning_message = sprintf(__('Warnung: Unbekannte Wildart "%s". Zeige Gesamtstatistiken.', 'abschussplan-hgmh'), $selected_species);
+            $selected_species = ''; // Reset to show all
         }
         
-        // Get dynamic categories for the selected species
-        $categories_key = 'ahgmh_categories_' . sanitize_key($selected_species);
-        $categories = get_option($categories_key, array());
+        // Get meldegruppen data for validation
+        $database = abschussplan_hgmh()->database;
+        $available_meldegruppen = $database->get_all_meldegruppen();
         
-        $limits = $this->get_category_limits($selected_species);
-        $counts = $this->get_category_counts($selected_species, $selected_meldegruppe);
-        $allow_exceeding = $this->get_category_allow_exceeding($selected_species);
+        if (!empty($selected_meldegruppe) && !in_array($selected_meldegruppe, $available_meldegruppen)) {
+            $warning_message = sprintf(__('Warnung: Unbekannte Meldegruppe "%s". Zeige Gesamtstatistiken.', 'abschussplan-hgmh'), $selected_meldegruppe);
+            $selected_meldegruppe = ''; // Reset to show all
+        }
         
-        // Get available meldegruppen for filter dropdown (wildart-specific if enabled)
-        $available_meldegruppen = $this->get_available_meldegruppen($selected_species);
+        // Get public summary data based on parameter combination
+        $summary_data = $database->get_public_summary_data($selected_species, $selected_meldegruppe);
+        
+        // Extract data for template
+        $categories = $summary_data['categories'];
+        $limits = $summary_data['limits'];
+        $counts = $summary_data['counts'];
+        $allow_exceeding = $summary_data['allow_exceeding'];
         
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/summary-template.php';

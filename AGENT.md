@@ -38,6 +38,7 @@
 - **Date Range Operations**: Custom date range deletion functionality with HTML5 datepickers
 - **Real-time Updates**: AJAX-powered table refreshing after form submissions
 - **Multi-Database**: Enhanced support for MySQL (default), SQLite, PostgreSQL
+- **Public Summary Statistics**: Flexible [abschuss_summary] shortcode with optional parameters for public access
 
 ## Security Features
 - **WordPress Standards**: Uses WP nonce verification, user capabilities
@@ -105,6 +106,8 @@ wp-content/plugins/abschussplan-hgmh/
 - **AJAX Integration**: Real-time updates without page reloads
 - **Enhanced Security**: WordPress security best practices implemented
 - **Comprehensive CRUD**: Full Create, Read, Update, Delete operations for all entities
+- **Public Access**: [abschuss_summary] shortcode supports public access without authentication
+- **Flexible Parameters**: Enhanced parameter logic for species and meldegruppe filtering
 
 ## Documentation Files
 - **README.md**: Comprehensive user and developer documentation

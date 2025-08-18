@@ -110,14 +110,22 @@ Display harvest data table with real-time updates and advanced features.
 - ✅ Real-time data synchronization
 
 ### `[abschuss_summary]`
-Show harvest summary and statistics.
+Show harvest summary and statistics with flexible parameter combinations.
 ```html
-[abschuss_summary species="Rotwild"]
+[abschuss_summary]                                           # Entire hunting community
+[abschuss_summary species="Rotwild"]                         # Only Rotwild (all groups)
+[abschuss_summary meldegruppe="Gruppe_A"]                    # Only Group_A (all species)
+[abschuss_summary species="Rotwild" meldegruppe="Gruppe_A"]  # Rotwild + Group_A
 ```
 **Parameters:**
-- `species` (required): Game species name
+- `species` (optional): Game species name - empty shows all species aggregated
+- `meldegruppe` (optional): Reporting group name - empty shows all groups aggregated
 
 **Features:**
+- ✅ **Public Access** - Available for unauthenticated users (public statistics)
+- ✅ **Flexible Parameter Logic** - All parameter combinations supported
+- ✅ **Graceful Fallback** - Invalid parameters show warnings but don't break
+- ✅ **Total Aggregation** - No parameters = entire hunting community statistics
 - ✅ Current vs. target comparison with percentages
 - ✅ Status badges: 🟢 (<90%) 🟡 (90-99%) 🔴 (≥100%)
 - ✅ Live calculation of target achievement
@@ -263,6 +271,27 @@ CREATE TABLE wp_ahgmh_jagdbezirke (
 -- ahgmh_export_include_time: Include timestamp in exports
 ```
 
+### 🔌 Database API (New in v2.0.0)
+
+**Public Summary Data Methods:**
+```php
+// Main method for flexible summary data retrieval
+get_public_summary_data($species = '', $meldegruppe = '')
+
+// Helper methods for validation and data aggregation
+get_all_meldegruppen()                              // Get available meldegruppen
+get_total_summary_data($species_list)               // Aggregate all species/groups  
+get_species_summary_data($species)                  // Species-specific data
+get_meldegruppe_summary_data($meldegruppe, $species_list)  // Group-specific data
+get_specific_summary_data($species, $meldegruppe)   // Specific combination
+```
+
+**Parameter Combinations:**
+- Empty parameters → Total hunting community statistics
+- Species only → All groups for specific species
+- Meldegruppe only → All species for specific group  
+- Both parameters → Specific species + group combination
+
 ---
 
 ## 🔧 Development
@@ -327,6 +356,8 @@ abschussplan-hgmh/
 - ✅ **Bootstrap 5.3 Integration** - Modern responsive UI framework
 - ✅ **Advanced Security** - Enhanced WordPress security integration
 - ✅ **API Documentation** - Complete parameter reference in admin interface
+- ✅ **Public Summary Statistics** - [abschuss_summary] shortcode with flexible parameters
+- ✅ **Flexible Parameter Logic** - Species and meldegruppe combinations with graceful fallback
 
 ### Version 1.5.0
 - ✅ **WordPress Plugin Architecture** - Complete WordPress integration

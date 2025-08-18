@@ -978,4 +978,236 @@ class AHGMH_Database_Handler {
         
         return $wpdb->query("DELETE FROM $table_name WHERE wildart IS NOT NULL");
     }
+
+    /**
+     * Get all meldegruppen (for public summary validation)
+     * 
+     * @return array Array of all available meldegruppen
+     */
+    public function get_all_meldegruppen() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        
+        $query = "SELECT DISTINCT meldegruppe FROM $table_name WHERE meldegruppe != '' ORDER BY meldegruppe";
+        $results = $wpdb->get_col($query);
+        
+        return $results ?: array();
+    }
+
+    /**
+     * Get public summary data based on parameter combination
+     * 
+     * @param string $species Optional species filter
+     * @param string $meldegruppe Optional meldegruppe filter
+     * @return array Summary data with categories, limits, counts, allow_exceeding
+     */
+    public function get_public_summary_data($species = '', $meldegruppe = '') {
+        $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+        
+        // Initialize data structure
+        $summary_data = array(
+            'categories' => array(),
+            'limits' => array(),
+            'counts' => array(),
+            'allow_exceeding' => array()
+        );
+        
+        if (empty($species) && empty($meldegruppe)) {
+            // Case 1: Show Hegegemeinschafts-Gesamt-Statistiken (all species and meldegruppen)
+            $summary_data = $this->get_total_summary_data($available_species);
+            
+        } elseif (!empty($species) && empty($meldegruppe)) {
+            // Case 2: Show specific species, all meldegruppen for this species
+            $summary_data = $this->get_species_summary_data($species);
+            
+        } elseif (empty($species) && !empty($meldegruppe)) {
+            // Case 3: Show specific meldegruppe, all species for this meldegruppe
+            $summary_data = $this->get_meldegruppe_summary_data($meldegruppe, $available_species);
+            
+        } else {
+            // Case 4: Show specific species + meldegruppe combination
+            $summary_data = $this->get_specific_summary_data($species, $meldegruppe);
+        }
+        
+        return $summary_data;
+    }
+
+    /**
+     * Get total summary data for all species and meldegruppen
+     * 
+     * @param array $species_list Available species
+     * @return array Summary data
+     */
+    private function get_total_summary_data($species_list) {
+        $all_categories = array();
+        $combined_limits = array();
+        $combined_counts = array();
+        $combined_allow_exceeding = array();
+        
+        foreach ($species_list as $species) {
+            $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+            $species_categories = get_option($categories_key, array());
+            
+            foreach ($species_categories as $category) {
+                if (!in_array($category, $all_categories)) {
+                    $all_categories[] = $category;
+                }
+                
+                // Get limits for this species/category
+                $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+                $species_limits = get_option($limits_key, array());
+                $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+                
+                // Accumulate limits
+                if (!isset($combined_limits[$category])) {
+                    $combined_limits[$category] = 0;
+                }
+                $combined_limits[$category] += $limit_value;
+                
+                // Get counts for this species/category
+                $category_counts = $this->get_category_counts($species);
+                $count_value = isset($category_counts[$category]) ? (int) $category_counts[$category] : 0;
+                
+                // Accumulate counts
+                if (!isset($combined_counts[$category])) {
+                    $combined_counts[$category] = 0;
+                }
+                $combined_counts[$category] += $count_value;
+                
+                // Get allow_exceeding (use OR logic - if any species allows, show as allowed)
+                $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
+                $species_exceeding = get_option($exceeding_key, array());
+                $exceeding_value = isset($species_exceeding[$category]) ? (bool) $species_exceeding[$category] : false;
+                
+                if (!isset($combined_allow_exceeding[$category])) {
+                    $combined_allow_exceeding[$category] = false;
+                }
+                $combined_allow_exceeding[$category] = $combined_allow_exceeding[$category] || $exceeding_value;
+            }
+        }
+        
+        return array(
+            'categories' => $all_categories,
+            'limits' => $combined_limits,
+            'counts' => $combined_counts,
+            'allow_exceeding' => $combined_allow_exceeding
+        );
+    }
+
+    /**
+     * Get summary data for specific species (all meldegruppen)
+     * 
+     * @param string $species Species name
+     * @return array Summary data
+     */
+    private function get_species_summary_data($species) {
+        $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+        $categories = get_option($categories_key, array());
+        
+        $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+        $limits = get_option($limits_key, array());
+        
+        $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
+        $allow_exceeding = get_option($exceeding_key, array());
+        
+        $counts = $this->get_category_counts($species);
+        
+        return array(
+            'categories' => $categories,
+            'limits' => $limits,
+            'counts' => $counts,
+            'allow_exceeding' => $allow_exceeding
+        );
+    }
+
+    /**
+     * Get summary data for specific meldegruppe (all species)
+     * 
+     * @param string $meldegruppe Meldegruppe name
+     * @param array $species_list Available species
+     * @return array Summary data
+     */
+    private function get_meldegruppe_summary_data($meldegruppe, $species_list) {
+        $all_categories = array();
+        $combined_limits = array();
+        $combined_counts = array();
+        $combined_allow_exceeding = array();
+        
+        foreach ($species_list as $species) {
+            $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+            $species_categories = get_option($categories_key, array());
+            
+            foreach ($species_categories as $category) {
+                if (!in_array($category, $all_categories)) {
+                    $all_categories[] = $category;
+                }
+                
+                // Get limits for this species/category
+                $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+                $species_limits = get_option($limits_key, array());
+                $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+                
+                // Accumulate limits
+                if (!isset($combined_limits[$category])) {
+                    $combined_limits[$category] = 0;
+                }
+                $combined_limits[$category] += $limit_value;
+                
+                // Get counts for this species/category/meldegruppe
+                $category_counts = $this->get_category_counts($species, $meldegruppe);
+                $count_value = isset($category_counts[$category]) ? (int) $category_counts[$category] : 0;
+                
+                // Accumulate counts
+                if (!isset($combined_counts[$category])) {
+                    $combined_counts[$category] = 0;
+                }
+                $combined_counts[$category] += $count_value;
+                
+                // Get allow_exceeding
+                $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
+                $species_exceeding = get_option($exceeding_key, array());
+                $exceeding_value = isset($species_exceeding[$category]) ? (bool) $species_exceeding[$category] : false;
+                
+                if (!isset($combined_allow_exceeding[$category])) {
+                    $combined_allow_exceeding[$category] = false;
+                }
+                $combined_allow_exceeding[$category] = $combined_allow_exceeding[$category] || $exceeding_value;
+            }
+        }
+        
+        return array(
+            'categories' => $all_categories,
+            'limits' => $combined_limits,
+            'counts' => $combined_counts,
+            'allow_exceeding' => $combined_allow_exceeding
+        );
+    }
+
+    /**
+     * Get summary data for specific species + meldegruppe combination
+     * 
+     * @param string $species Species name
+     * @param string $meldegruppe Meldegruppe name
+     * @return array Summary data
+     */
+    private function get_specific_summary_data($species, $meldegruppe) {
+        $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+        $categories = get_option($categories_key, array());
+        
+        $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+        $limits = get_option($limits_key, array());
+        
+        $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
+        $allow_exceeding = get_option($exceeding_key, array());
+        
+        $counts = $this->get_category_counts($species, $meldegruppe);
+        
+        return array(
+            'categories' => $categories,
+            'limits' => $limits,
+            'counts' => $counts,
+            'allow_exceeding' => $allow_exceeding
+        );
+    }
 }
