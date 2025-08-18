@@ -3678,13 +3678,13 @@ class AHGMH_Admin_Page_Modern {
                 <label>
                     <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="meldegruppen_specific" 
                            <?php checked($current_mode, 'meldegruppen_specific'); ?>
-                           onchange="toggleLimitMode('<?php echo esc_js($wildart); ?>', 'meldegruppen_specific')">
+                           class="limit-mode-radio" data-wildart="<?php echo esc_attr($wildart); ?>">
                     <?php echo esc_html__('Meldegruppen-spezifische Limits', 'abschussplan-hgmh'); ?>
                 </label>
                 <label>
                     <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="hegegemeinschaft_total" 
                            <?php checked($current_mode, 'hegegemeinschaft_total'); ?>
-                           onchange="toggleLimitMode('<?php echo esc_js($wildart); ?>', 'hegegemeinschaft_total')">
+                           class="limit-mode-radio" data-wildart="<?php echo esc_attr($wildart); ?>">
                     <?php echo esc_html__('Gesamt-Hegegemeinschaft Limits', 'abschussplan-hgmh'); ?>
                 </label>
             </div>
@@ -3829,7 +3829,7 @@ class AHGMH_Admin_Page_Modern {
             
             <!-- Save Button -->
             <div class="limits-save-section">
-                <button type="button" class="button button-primary" onclick="saveLimits('<?php echo esc_js($wildart); ?>')">
+                <button type="button" class="button button-primary save-limits-btn" data-wildart="<?php echo esc_attr($wildart); ?>">
                     <span class="dashicons dashicons-yes"></span>
                     <?php echo esc_html__('Limits speichern', 'abschussplan-hgmh'); ?>
                 </button>

@@ -2272,8 +2272,8 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
         // === LIMITS FUNCTIONALITY ===
         
         // Limit mode radio button change handler
-        $(document).on('change', 'input[name^="limit_mode_"]', function(e) {
-            const wildart = $(this).attr('name').replace('limit_mode_', '');
+        $(document).on('change', '.limit-mode-radio', function(e) {
+            const wildart = $(this).data('wildart');
             const mode = $(this).val();
             toggleLimitMode(wildart, mode);
         });
@@ -2286,10 +2286,9 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
         });
         
         // Save limits button handler
-        $(document).on('click', 'button[onclick^="saveLimits"]', function(e) {
+        $(document).on('click', '.save-limits-btn', function(e) {
             e.preventDefault();
-            const onclick = $(this).attr('onclick');
-            const wildart = onclick.match(/saveLimits\('([^']+)'\)/)[1];
+            const wildart = $(this).data('wildart');
             saveLimits(wildart);
         });
     }
@@ -2557,12 +2556,12 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
 
     /**
      * Toggle limit mode between meldegruppen-specific and hegegemeinschaft-total
-    */
+     */
     function toggleLimitMode(wildart, mode) {
-    // Show/hide appropriate matrix containers
-    const $meldegruppen_matrix = $(`#meldegruppen-limits-${wildart}`);
+        // Show/hide appropriate matrix containers
+        const $meldegruppen_matrix = $(`#meldegruppen-limits-${wildart}`);
         const $hegegemeinschaft_matrix = $(`#hegegemeinschaft-limits-${wildart}`);
-    
+        
         if (mode === 'meldegruppen_specific') {
             $meldegruppen_matrix.show();
             $hegegemeinschaft_matrix.hide();
@@ -2573,7 +2572,7 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
         
         // Send AJAX to save mode preference
         $.ajax({
-            url: ajaxurl,
+            url: ahgmh_admin.ajax_url,
             type: 'POST',
             data: {
                 action: 'ahgmh_toggle_limit_mode',
@@ -2598,7 +2597,8 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
      * Update gesamt (total) calculation for a category row
      */
     function updateGesamt(category) {
-        const categoryKey = category.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        // Use the same logic as PHP sanitize_title(): lowercase, replace non-alphanumeric with dashes
+        const categoryKey = category.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
         const $gesamtCell = $(`#gesamt_${categoryKey}`);
         
         if ($gesamtCell.length === 0) {
@@ -2682,7 +2682,7 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
         
         // Send AJAX request
         $.ajax({
-            url: ajaxurl,
+            url: ahgmh_admin.ajax_url,
             type: 'POST',
             data: formData,
             processData: false,
