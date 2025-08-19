@@ -64,7 +64,8 @@ class AHGMH_Dashboard_Controller {
             $stats = $this->dashboard_service->get_dashboard_stats();
             wp_send_json_success($stats);
         } catch (Exception $e) {
-            wp_send_json_error('Fehler beim Laden der Statistiken: ' . esc_html($e->getMessage()));
+            error_log('AHGMH Dashboard Error: ' . $e->getMessage());
+            wp_send_json_error(__('Fehler beim Laden der Statistiken. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh'));
         }
     }
     

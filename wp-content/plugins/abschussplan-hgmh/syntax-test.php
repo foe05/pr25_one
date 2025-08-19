@@ -3,6 +3,11 @@
  * Quick syntax test for the plugin files
  */
 
+// Exit if accessed directly
+if (!defined('ABSPATH') && !defined('SYNTAX_TEST_MODE')) {
+    exit;
+}
+
 // Simulate WordPress environment
 define('ABSPATH', __DIR__ . '/');
 define('WPINC', 'wp-includes');

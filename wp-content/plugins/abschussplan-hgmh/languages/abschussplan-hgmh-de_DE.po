@@ -1,0 +1,252 @@
+# German translation for Abschussplan HGMH
+# Copyright (C) 2024 foe05
+# This file is distributed under GPLv3.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Abschussplan HGMH 2.2.0\n"
+"Report-Msgid-Bugs-To: https://github.com/foe05/pr25_one\n"
+"POT-Creation-Date: 2024-08-19 12:00+0000\n"
+"PO-Revision-Date: 2024-08-19 12:00+0000\n"
+"Last-Translator: Developer <dev@example.com>\n"
+"Language-Team: German <de@li.org>\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Permission System
+msgid "Insufficient permissions"
+msgstr "Unzureichende Berechtigungen"
+
+msgid "Sicherheitsprüfung fehlgeschlagen."
+msgstr "Sicherheitsprüfung fehlgeschlagen."
+
+msgid "Unzureichende Berechtigungen."
+msgstr "Unzureichende Berechtigungen."
+
+msgid "Zugriff verweigert. Anmeldung erforderlich."
+msgstr "Zugriff verweigert. Anmeldung erforderlich."
+
+msgid "Zugriff verweigert. Nur für Vorstände."  
+msgstr "Zugriff verweigert. Nur für Vorstände."
+
+msgid "Sie sind als Obmann für %s in %s zugewiesen"
+msgstr "Sie sind als Obmann für %s in %s zugewiesen"
+
+# Master-Detail Interface
+msgid "Wildart konfigurieren"
+msgstr "Wildart konfigurieren"
+
+msgid "Wildart auswählen"
+msgstr "Wildart auswählen"
+
+msgid "Neue Wildart hinzufügen"
+msgstr "Neue Wildart hinzufügen"
+
+msgid "Wildart löschen"
+msgstr "Wildart löschen"
+
+msgid "Standard-Wildarten können nicht gelöscht werden"
+msgstr "Standard-Wildarten können nicht gelöscht werden"
+
+msgid "Meldegruppen für %s"
+msgstr "Meldegruppen für %s"
+
+msgid "Neue Meldegruppe hinzufügen"
+msgstr "Neue Meldegruppe hinzufügen"
+
+msgid "Meldegruppe bearbeiten"
+msgstr "Meldegruppe bearbeiten"
+
+msgid "Meldegruppe löschen"
+msgstr "Meldegruppe löschen"
+
+msgid "Meldegruppe umbenennen"
+msgstr "Meldegruppe umbenennen"
+
+# User Roles (German hunting terminology)
+msgid "Besucher"
+msgstr "Besucher"
+
+msgid "Obmann"
+msgstr "Obmann"
+
+msgid "Vorstand" 
+msgstr "Vorstand"
+
+# Limits System
+msgid "Limits-Modus"
+msgstr "Limits-Modus"
+
+msgid "Meldegruppen-spezifische Limits"
+msgstr "Meldegruppen-spezifische Limits"
+
+msgid "Hegegemeinschaft Total-Limits"
+msgstr "Hegegemeinschaft Total-Limits"
+
+msgid "SOLL-Werte"
+msgstr "SOLL-Werte"
+
+msgid "IST-Werte"
+msgstr "IST-Werte"
+
+msgid "Limit-Status"
+msgstr "Limit-Status"
+
+# Form Elements
+msgid "Wildart"
+msgstr "Wildart"
+
+msgid "Kategorie"  
+msgstr "Kategorie"
+
+msgid "Jagdbezirk"
+msgstr "Jagdbezirk"
+
+msgid "Datum"
+msgstr "Datum"
+
+msgid "Meldung abgeben"
+msgstr "Meldung abgeben"
+
+# Table Headers
+msgid "ID"
+msgstr "ID"
+
+msgid "Erlegung"
+msgstr "Erlegung"
+
+msgid "Fallwild"
+msgstr "Fallwild"
+
+msgid "Erstellt am"
+msgstr "Erstellt am"
+
+# Admin Interface
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Daten-Verwaltung"
+msgstr "Daten-Verwaltung"
+
+msgid "Obleute"
+msgstr "Obleute"
+
+msgid "Kategorien"
+msgstr "Kategorien"
+
+msgid "Datenbank"
+msgstr "Datenbank"
+
+msgid "Wildarten-Konfiguration"
+msgstr "Wildarten-Konfiguration"
+
+msgid "CSV Export"
+msgstr "CSV Export"
+
+# Status Messages
+msgid "Erfolgreich gespeichert"
+msgstr "Erfolgreich gespeichert"
+
+msgid "Konfiguration aktualisiert"
+msgstr "Konfiguration aktualisiert"
+
+msgid "Obmann erfolgreich zugewiesen"
+msgstr "Obmann erfolgreich zugewiesen"
+
+msgid "Zuweisung erfolgreich entfernt"
+msgstr "Zuweisung erfolgreich entfernt"
+
+msgid "Fehler beim Speichern"
+msgstr "Fehler beim Speichern"
+
+msgid "Fehler beim Export. Bitte versuchen Sie es erneut."
+msgstr "Fehler beim Export. Bitte versuchen Sie es erneut."
+
+msgid "Fehler beim Laden der Statistiken. Bitte versuchen Sie es erneut."
+msgstr "Fehler beim Laden der Statistiken. Bitte versuchen Sie es erneut."
+
+# CSV Export
+msgid "Export URL generieren"
+msgstr "Export URL generieren"
+
+msgid "Direkter Download"
+msgstr "Direkter Download"
+
+msgid "URL kopieren"
+msgstr "URL kopieren"
+
+msgid "Diese URLs sind öffentlich zugänglich ohne Anmeldung"
+msgstr "Diese URLs sind öffentlich zugänglich ohne Anmeldung"
+
+# Error Messages
+msgid "Keine Daten zum Exportieren gefunden"
+msgstr "Keine Daten zum Exportieren gefunden"
+
+msgid "Fehler beim Erstellen der Export-Datei"
+msgstr "Fehler beim Erstellen der Export-Datei"
+
+msgid "Ungültige Meldungs-ID"
+msgstr "Ungültige Meldungs-ID"
+
+msgid "Fehler beim Löschen der Meldung"
+msgstr "Fehler beim Löschen der Meldung"
+
+msgid "Fehler beim Löschen aller Meldungen"
+msgstr "Fehler beim Löschen aller Meldungen"
+
+msgid "Keine Wildart ausgewählt"
+msgstr "Keine Wildart ausgewählt"
+
+msgid "Fehler beim Löschen der Wildart-Meldungen"
+msgstr "Fehler beim Löschen der Wildart-Meldungen"
+
+msgid "Beide Datumsfelder sind erforderlich"
+msgstr "Beide Datumsfelder sind erforderlich"
+
+msgid "Ungültige Datumsformate"
+msgstr "Ungültige Datumsformate"
+
+msgid "Das \"Von\"-Datum darf nicht nach dem \"Bis\"-Datum liegen"
+msgstr "Das \"Von\"-Datum darf nicht nach dem \"Bis\"-Datum liegen"
+
+msgid "Fehler beim Löschen der Meldungen im Datumsbereich"
+msgstr "Fehler beim Löschen der Meldungen im Datumsbereich"
+
+# Permission Management
+msgid "Obmann-Verwaltung"
+msgstr "Obmann-Verwaltung"
+
+msgid "Obmann zuweisen"
+msgstr "Obmann zuweisen"
+
+msgid "Zuweisung entfernen"
+msgstr "Zuweisung entfernen"
+
+msgid "Benutzer auswählen"
+msgstr "Benutzer auswählen"
+
+msgid "Meldegruppe auswählen"
+msgstr "Meldegruppe auswählen"
+
+# Category Management
+msgid "Kategorien verwalten"
+msgstr "Kategorien verwalten"
+
+msgid "Neue Kategorie hinzufügen"
+msgstr "Neue Kategorie hinzufügen"
+
+msgid "Kategorie bearbeiten"
+msgstr "Kategorie bearbeiten"
+
+msgid "Standard-Kategorien"
+msgstr "Standard-Kategorien"
+
+# Summary Template
+msgid "Gesamtstatistik"
+msgstr "Gesamtstatistik"
+
+msgid "Keine Daten verfügbar"
+msgstr "Keine Daten verfügbar"

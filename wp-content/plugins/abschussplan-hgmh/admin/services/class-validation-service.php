@@ -20,13 +20,13 @@ class AHGMH_Validation_Service {
     public static function verify_ajax_request($action = 'ahgmh_admin_nonce', $capability = 'manage_options') {
         // Verify nonce - use 'nonce' parameter name to match JavaScript
         if (!check_ajax_referer($action, 'nonce', false)) {
-            wp_send_json_error('Security check failed');
+            wp_send_json_error(__('Sicherheitsprüfung fehlgeschlagen.', 'abschussplan-hgmh'));
             exit;
         }
         
         // Verify user capability
         if (!current_user_can($capability)) {
-            wp_send_json_error('Insufficient permissions');
+            wp_send_json_error(__('Unzureichende Berechtigungen.', 'abschussplan-hgmh'));
             exit;
         }
     }

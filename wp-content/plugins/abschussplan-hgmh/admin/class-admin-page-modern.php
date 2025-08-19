@@ -159,6 +159,18 @@ class AHGMH_Admin_Page_Modern {
                     'loading' => __('Lädt...', 'abschussplan-hgmh'),
                     'error' => __('Ein Fehler ist aufgetreten', 'abschussplan-hgmh'),
                     'success' => __('Erfolgreich gespeichert', 'abschussplan-hgmh'),
+                    'obmannAssignedSuccess' => __('Obmann erfolgreich zugewiesen!', 'abschussplan-hgmh'),
+                    'assignmentRemovedSuccess' => __('Zuweisung erfolgreich entfernt!', 'abschussplan-hgmh'),
+                    'configurationSaved' => __('Konfiguration gespeichert!', 'abschussplan-hgmh'),
+                    'errorOccurred' => __('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh'),
+                    'confirmDelete' => __('Sind Sie sicher, dass Sie diese Aktion durchführen möchten?', 'abschussplan-hgmh'),
+                    'pleaseSelectWildart' => __('Bitte wählen Sie eine Wildart aus.', 'abschussplan-hgmh'),
+                    'pleaseSelectMeldegruppe' => __('Bitte wählen Sie eine Meldegruppe aus.', 'abschussplan-hgmh'),
+                    'wildartNameEmpty' => __('Wildart-Name darf nicht leer sein.', 'abschussplan-hgmh'),
+                    'meldegruppeNameEmpty' => __('Meldegruppe-Name darf nicht leer sein.', 'abschussplan-hgmh'),
+                    'categoryNameEmpty' => __('Kategorie-Name darf nicht leer sein.', 'abschussplan-hgmh'),
+                    'limitsSaved' => __('Limits erfolgreich gespeichert!', 'abschussplan-hgmh'),
+                    'modeChanged' => __('Limit-Modus erfolgreich geändert!', 'abschussplan-hgmh'),
                 )
             )
         );
@@ -1155,7 +1167,8 @@ class AHGMH_Admin_Page_Modern {
             ]);
             
         } catch (Exception $e) {
-            wp_send_json_error('Fehler beim Export: ' . esc_html($e->getMessage()));
+            error_log('AHGMH Export Error: ' . $e->getMessage());
+            wp_send_json_error(__('Fehler beim Export. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh'));
         }
     }
 

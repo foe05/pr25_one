@@ -1,0 +1,280 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Abschussplan HGMH package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Abschussplan HGMH 2.2.0\n"
+"Report-Msgid-Bugs-To: https://github.com/foe05/pr25_one\n"
+"POT-Creation-Date: 2024-08-19 12:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: admin/class-admin-page-modern.php:2283
+#: admin/class-admin-page-modern.php:2327
+#: admin/class-admin-page-modern.php:2352
+msgid "Insufficient permissions"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2293
+msgid "Keine Daten zum Exportieren gefunden"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2309
+msgid "Fehler beim Erstellen der Export-Datei"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2333
+msgid "Ungültige Meldungs-ID"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2341
+msgid "Fehler beim Löschen der Meldung"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2363
+msgid "Fehler beim Löschen aller Meldungen"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2370
+msgid "Keine Wildart ausgewählt"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2376
+msgid "Fehler beim Löschen der Wildart-Meldungen"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2385
+msgid "Beide Datumsfelder sind erforderlich"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2393
+msgid "Ungültige Datumsformate"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2397
+msgid "Das \"Von\"-Datum darf nicht nach dem \"Bis\"-Datum liegen"
+msgstr ""
+
+#: admin/class-admin-page-modern.php:2403
+msgid "Fehler beim Löschen der Meldungen im Datumsbereich"
+msgstr ""
+
+#: admin/services/class-validation-service.php:23
+msgid "Sicherheitsprüfung fehlgeschlagen."
+msgstr ""
+
+#: admin/services/class-validation-service.php:29
+msgid "Unzureichende Berechtigungen."
+msgstr ""
+
+#: admin/controllers/class-dashboard-controller.php:67
+msgid "Fehler beim Laden der Statistiken. Bitte versuchen Sie es erneut."
+msgstr ""
+
+#: admin/class-admin-page-modern.php:1158
+msgid "Fehler beim Export. Bitte versuchen Sie es erneut."
+msgstr ""
+
+#: includes/class-permissions-service.php:45
+msgid "Zugriff verweigert. Anmeldung erforderlich."
+msgstr ""
+
+#: includes/class-permissions-service.php:52
+msgid "Zugriff verweigert. Nur für Vorstände."
+msgstr ""
+
+#: includes/class-permissions-service.php:85
+msgid "Sie sind als Obmann für %s in %s zugewiesen"
+msgstr ""
+
+#: templates/form-template.php:25
+msgid "Wildart"
+msgstr ""
+
+#: templates/form-template.php:45
+msgid "Kategorie"
+msgstr ""
+
+#: templates/form-template.php:65
+msgid "Jagdbezirk"
+msgstr ""
+
+#: templates/form-template.php:85
+msgid "Datum"
+msgstr ""
+
+#: templates/form-template.php:95
+msgid "Meldung abgeben"
+msgstr ""
+
+#: templates/table-template.php:15
+msgid "ID"
+msgstr ""
+
+#: templates/table-template.php:16
+msgid "Erlegung"
+msgstr ""
+
+#: templates/table-template.php:17
+msgid "Fallwild"
+msgstr ""
+
+#: templates/table-template.php:18
+msgid "Erstellt am"
+msgstr ""
+
+#: templates/summary-template.php:25
+msgid "Gesamtstatistik"
+msgstr ""
+
+#: templates/summary-template.php:35
+msgid "Keine Daten verfügbar"
+msgstr ""
+
+# Master-Detail Backend Interface
+msgid "Wildart konfigurieren"
+msgstr ""
+
+msgid "Wildart auswählen"
+msgstr ""
+
+msgid "Neue Wildart hinzufügen"
+msgstr ""
+
+msgid "Wildart löschen"
+msgstr ""
+
+msgid "Standard-Wildarten können nicht gelöscht werden"
+msgstr ""
+
+msgid "Meldegruppen für %s"
+msgstr ""
+
+msgid "Neue Meldegruppe hinzufügen"
+msgstr ""
+
+msgid "Meldegruppe bearbeiten"
+msgstr ""
+
+msgid "Meldegruppe löschen"
+msgstr ""
+
+msgid "Meldegruppe umbenennen"
+msgstr ""
+
+msgid "Kategorien verwalten"
+msgstr ""
+
+msgid "Neue Kategorie hinzufügen"
+msgstr ""
+
+msgid "Kategorie bearbeiten"
+msgstr ""
+
+msgid "Standard-Kategorien"
+msgstr ""
+
+# Limits System
+msgid "Limits-Modus"
+msgstr ""
+
+msgid "Meldegruppen-spezifische Limits"
+msgstr ""
+
+msgid "Hegegemeinschaft Total-Limits"
+msgstr ""
+
+msgid "SOLL-Werte"
+msgstr ""
+
+msgid "IST-Werte"
+msgstr ""
+
+msgid "Limit-Status"
+msgstr ""
+
+# User Roles
+msgid "Besucher"
+msgstr ""
+
+msgid "Obmann"
+msgstr ""
+
+msgid "Vorstand"
+msgstr ""
+
+# Permission Messages
+msgid "Obmann-Verwaltung"
+msgstr ""
+
+msgid "Obmann zuweisen"
+msgstr ""
+
+msgid "Zuweisung entfernen"
+msgstr ""
+
+msgid "Benutzer auswählen"
+msgstr ""
+
+msgid "Meldegruppe auswählen"
+msgstr ""
+
+# Admin Interface
+msgid "Dashboard"
+msgstr ""
+
+msgid "Daten-Verwaltung"
+msgstr ""
+
+msgid "Obleute"
+msgstr ""
+
+msgid "Kategorien"
+msgstr ""
+
+msgid "Datenbank"
+msgstr ""
+
+msgid "Wildarten-Konfiguration"
+msgstr ""
+
+msgid "CSV Export"
+msgstr ""
+
+# Status Messages
+msgid "Erfolgreich gespeichert"
+msgstr ""
+
+msgid "Konfiguration aktualisiert"
+msgstr ""
+
+msgid "Obmann erfolgreich zugewiesen"
+msgstr ""
+
+msgid "Zuweisung erfolgreich entfernt"
+msgstr ""
+
+msgid "Fehler beim Speichern"
+msgstr ""
+
+# CSV Export Admin
+msgid "Export URL generieren"
+msgstr ""
+
+msgid "Direkter Download"
+msgstr ""
+
+msgid "URL kopieren"
+msgstr ""
+
+msgid "Diese URLs sind öffentlich zugänglich ohne Anmeldung"
+msgstr ""
