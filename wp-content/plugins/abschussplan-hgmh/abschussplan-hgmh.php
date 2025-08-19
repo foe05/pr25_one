@@ -31,6 +31,7 @@ define('AHGMH_PLUGIN_VERSION', '2.2.0');
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {

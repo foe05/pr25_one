@@ -421,24 +421,79 @@ class AHGMH_Database_Handler {
     }
 
     /**
-     * Count submissions filtered by species
-     *
-     * @param string $species Filter by game species (optional)
-     * @return int Total count of submissions
-     */
+    * Count submissions filtered by species
+    *
+    * @param string $species Filter by game species (optional)
+    * @return int Total count of submissions
+    */
     public function count_submissions_by_species($species = '') {
-        global $wpdb;
-        
-        $query = "SELECT COUNT(*) FROM $this->table_name";
-        
-        if (!empty($species)) {
-            $query .= $wpdb->prepare(" WHERE game_species = %s", $species);
-        }
-        
-        $count = $wpdb->get_var($query);
-        
-        return (int) $count;
+    global $wpdb;
+    
+    $query = "SELECT COUNT(*) FROM $this->table_name";
+    
+    if (!empty($species)) {
+    $query .= $wpdb->prepare(" WHERE game_species = %s", $species);
     }
+    
+    $count = $wpdb->get_var($query);
+    
+    return (int) $count;
+    }
+     
+     /**
+      * Get submissions filtered by species and meldegruppe
+      *
+      * @param string $species Game species
+      * @param string $meldegruppe Meldegruppe name
+      * @param int $limit Number of results to return
+      * @param int $offset Number of results to skip
+      * @return array Array of submission records
+      */
+     public function get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit = 10, $offset = 0) {
+         global $wpdb;
+         
+         if (empty($species) || empty($meldegruppe)) {
+             return array();
+         }
+         
+         $query = "SELECT s.*, j.meldegruppe 
+                   FROM $this->table_name s 
+                   LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+                   WHERE s.game_species = %s AND j.meldegruppe = %s
+                   ORDER BY s.created_at DESC";
+         
+         if ($limit > 0) {
+             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
+         }
+         
+         $results = $wpdb->get_results($wpdb->prepare($query, $species, $meldegruppe), ARRAY_A);
+         
+         return $results ? $results : array();
+     }
+     
+     /**
+      * Count submissions filtered by species and meldegruppe
+      *
+      * @param string $species Game species
+      * @param string $meldegruppe Meldegruppe name
+      * @return int Total count of submissions
+      */
+     public function count_submissions_by_species_and_meldegruppe($species, $meldegruppe) {
+         global $wpdb;
+         
+         if (empty($species) || empty($meldegruppe)) {
+             return 0;
+         }
+         
+         $query = "SELECT COUNT(*) 
+                   FROM $this->table_name s 
+                   LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+                   WHERE s.game_species = %s AND j.meldegruppe = %s";
+         
+         $count = $wpdb->get_var($wpdb->prepare($query, $species, $meldegruppe));
+         
+         return (int) $count;
+     }
     
     /**
      * Check if WUS number already exists in database

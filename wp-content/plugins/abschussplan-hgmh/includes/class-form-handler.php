@@ -60,13 +60,23 @@ class AHGMH_Form_Handler {
         $atts = shortcode_atts(array(
             'species' => 'Rotwild'
         ), $atts, 'abschuss_form');
-        // Check if user is logged in
-        if (!is_user_logged_in()) {
-            return '<div class="alert alert-warning" role="alert">' . 
-                   '<h4>' . __('Anmeldung erforderlich', 'abschussplan-hgmh') . '</h4>' .
-                   '<p>' . __('Sie müssen angemeldet sein, um eine Abschussmeldung zu erstellen.', 'abschussplan-hgmh') . '</p>' .
-                   '<a href="' . wp_login_url(get_permalink()) . '" class="btn btn-primary">' . __('Jetzt anmelden', 'abschussplan-hgmh') . '</a>' .
-                   '</div>';
+        
+        // Check permissions with new 3-level system
+        if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_form', $atts)) {
+            $user_id = get_current_user_id();
+            
+            if (!$user_id) {
+                // Not logged in - show login form
+                return AHGMH_Permissions_Service::get_login_form('abschuss_form');
+            } else {
+                // Logged in but no permission - check if user has assignment for this wildart
+                $species = sanitize_text_field($atts['species']);
+                if (!AHGMH_Permissions_Service::is_obmann_for_wildart($user_id, $species)) {
+                    return AHGMH_Permissions_Service::get_permission_denied(
+                        'Sie sind nicht als Obmann für ' . $species . ' eingetragen.'
+                    );
+                }
+            }
         }
 
         // Enqueue form-specific scripts
@@ -120,20 +130,67 @@ class AHGMH_Form_Handler {
             'abschuss_table'
         );
         
+        // Check permissions with new 3-level system
+        if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_table', $atts)) {
+            $user_id = get_current_user_id();
+            
+            if (!$user_id) {
+                // Not logged in - show login form
+                return AHGMH_Permissions_Service::get_login_form('abschuss_table');
+            } else {
+                // Logged in but no permission
+                $species = sanitize_text_field($atts['species']);
+                if ($species && !AHGMH_Permissions_Service::is_obmann_for_wildart($user_id, $species)) {
+                    return AHGMH_Permissions_Service::get_permission_denied(
+                        'Sie sind nicht als Obmann für ' . $species . ' eingetragen.'
+                    );
+                } else if (!$species) {
+                    return AHGMH_Permissions_Service::get_permission_denied(
+                        'Sie benötigen eine Meldegruppen-Zuweisung für eine Wildart.'
+                    );
+                }
+            }
+        }
+        
         // Get current page and limit
         $page = isset($_GET['abschuss_page']) ? max(1, intval($_GET['abschuss_page'])) : intval($atts['page']);
         $limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : intval($atts['limit']);
         
-        // Get submissions data
+        // Get submissions data with permission filtering
         $database = abschussplan_hgmh()->database;
         $species = sanitize_text_field($atts['species']);
+        $user_id = get_current_user_id();
         
+        // Apply permission-based filtering
         if (!empty($species)) {
-            $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
-            $total_count = $database->count_submissions_by_species($species);
+            if (AHGMH_Permissions_Service::is_vorstand($user_id)) {
+                // Vorstand sees everything
+                $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
+                $total_count = $database->count_submissions_by_species($species);
+            } else {
+                // Obmann sees only their meldegruppe
+                $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $species);
+                $submissions = $database->get_submissions_by_species_and_meldegruppe($species, $user_meldegruppe, $limit, ($page - 1) * $limit);
+                $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $user_meldegruppe);
+            }
         } else {
-            $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
-            $total_count = $database->count_submissions();
+            if (AHGMH_Permissions_Service::is_vorstand($user_id)) {
+                // Vorstand sees everything
+                $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
+                $total_count = $database->count_submissions();
+            } else {
+                // Obmann sees only their assigned meldegruppen across all wildarten
+                $user_wildarten = AHGMH_Permissions_Service::get_user_wildarten($user_id);
+                $submissions = array();
+                $total_count = 0;
+                
+                foreach ($user_wildarten as $wildart) {
+                    $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $wildart);
+                    $wildart_submissions = $database->get_submissions_by_species_and_meldegruppe($wildart, $user_meldegruppe, $limit, ($page - 1) * $limit);
+                    $submissions = array_merge($submissions, $wildart_submissions);
+                    $total_count += $database->count_submissions_by_species_and_meldegruppe($wildart, $user_meldegruppe);
+                }
+            }
         }
         $total_pages = ceil($total_count / $limit);
         
@@ -148,9 +205,19 @@ class AHGMH_Form_Handler {
      * @return string HTML output of the admin panel
      */
     public function render_admin() {
-        // Check if user has admin capabilities
-        if (!current_user_can('manage_options')) {
-            return '<p>' . __('You do not have permission to access this page.', 'abschussplan-hgmh') . '</p>';
+        // Check permissions with new 3-level system
+        if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_admin')) {
+            $user_id = get_current_user_id();
+            
+            if (!$user_id) {
+                // Not logged in - show login form
+                return AHGMH_Permissions_Service::get_login_form('abschuss_admin');
+            } else {
+                // Logged in but not admin
+                return AHGMH_Permissions_Service::get_permission_denied(
+                    'Nur Vorstände haben Zugriff auf die Verwaltung.'
+                );
+            }
         }
         
         // Get all categories from all species
@@ -187,6 +254,27 @@ class AHGMH_Form_Handler {
         
         $selected_species = sanitize_text_field($atts['species']);
         $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
+        $user_id = get_current_user_id();
+        
+        // Apply permission-based filtering for logged-in users
+        if ($user_id && !AHGMH_Permissions_Service::is_vorstand($user_id)) {
+            // Obmann: filter to only their assigned meldegruppen
+            if (!empty($selected_species)) {
+                $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
+                if (!$user_meldegruppe) {
+                    // User is not assigned to this wildart, show nothing
+                    return '<div class="alert alert-warning">Sie sind nicht als Obmann für ' . $selected_species . ' eingetragen.</div>';
+                }
+                // Override meldegruppe parameter with user's assignment
+                $selected_meldegruppe = $user_meldegruppe;
+            } else {
+                // No specific species - limit to user's wildarten
+                $user_wildarten = AHGMH_Permissions_Service::get_user_wildarten($user_id);
+                if (empty($user_wildarten)) {
+                    return '<div class="alert alert-info">Sie haben keine Meldegruppen-Zuweisungen.</div>';
+                }
+            }
+        }
         
         // Validate species if provided
         $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
@@ -686,22 +774,18 @@ class AHGMH_Form_Handler {
             'wildart' => ''
         ), $atts, 'abschuss_limits');
         
-        // SECURITY: Only for Vorstand (administrators) accessible
-        if (!current_user_can('manage_options')) {
-            if (!is_user_logged_in()) {
-                return '<div class="alert alert-warning" style="padding: 15px; background: #fff3cd; color: #664d03; border: 1px solid #ffecb5; border-radius: 4px; margin: 10px 0;">
-                    <h4 style="margin: 0 0 10px 0;">🔐 Anmeldung erforderlich</h4>
-                    <p style="margin: 0;">Anmeldung als Vorstand erforderlich für Limits-Verwaltung.</p>
-                    <p style="margin: 10px 0 0 0;">
-                        <a href="' . wp_login_url(get_permalink()) . '" class="button button-primary">Anmelden</a>
-                    </p>
-                </div>';
+        // Check permissions with new 3-level system
+        if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_limits', $atts)) {
+            $user_id = get_current_user_id();
+            
+            if (!$user_id) {
+                // Not logged in - show login form
+                return AHGMH_Permissions_Service::get_login_form('abschuss_limits');
             } else {
-                return '<div class="alert alert-danger" style="padding: 15px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px; margin: 10px 0;">
-                    <h4 style="margin: 0 0 10px 0;">⚠️ Keine Berechtigung</h4>
-                    <p style="margin: 0;">Nur der Vorstand kann Limits für die Hegegemeinschaft verwalten.</p>
-                    <p style="margin: 5px 0 0 0;"><small>Kontaktieren Sie einen Administrator.</small></p>
-                </div>';
+                // Logged in but not admin
+                return AHGMH_Permissions_Service::get_permission_denied(
+                    'Nur der Vorstand kann Limits für die Hegegemeinschaft verwalten.'
+                );
             }
         }
         
