@@ -11,7 +11,13 @@
         initProgressAnimations();
         initAutoRefresh();
         initWildartConfig();
+        initObmannManagement();
     }
+    
+    // Initialize on document ready
+    $(document).ready(function() {
+        initAdmin();
+    });
 
     /**
      * Initialize quick actions
@@ -688,6 +694,199 @@ if ($('#ahgmh-notification-styles').length === 0) {
 }
 
     // Initialize when document is ready
+    /**
+     * Initialize Obmann Management
+     */
+    function initObmannManagement() {
+        // Check if we're on the obmann management page
+        if (!$('#obmann-assignment-form').length) {
+            return;
+        }
+        
+        // Load assignments table on page load
+        refreshObmannTable();
+        
+        // Form submission
+        $('#obmann-assignment-form').on('submit', function(e) {
+            e.preventDefault();
+            assignObmann();
+        });
+        
+        // Form reset
+        $('#obmann-assignment-form').on('reset', function() {
+            $('#meldegruppe').prop('disabled', true).html('<option value="">Erst Wildart auswählen...</option>');
+        });
+        
+        // Edit assignment buttons
+        $(document).on('click', '.edit-assignment', function() {
+            var userId = $(this).data('user-id');
+            var wildart = $(this).data('wildart');
+            var meldegruppe = $(this).data('meldegruppe');
+            
+            editAssignment(userId, wildart, meldegruppe);
+        });
+        
+        // Remove assignment buttons
+        $(document).on('click', '.remove-assignment', function() {
+            var userId = $(this).data('user-id');
+            var wildart = $(this).data('wildart');
+            
+            if (confirm('Sind Sie sicher, dass Sie diese Zuweisung entfernen möchten?')) {
+                removeAssignment(userId, wildart);
+            }
+        });
+    }
+    
+    /**
+     * Load meldegruppen for selected wildart
+     */
+    window.loadMeldegruppenForWildart = function(wildart) {
+        var $meldegruppenSelect = $('#meldegruppe');
+        
+        if (!wildart) {
+            $meldegruppenSelect.prop('disabled', true)
+                              .html('<option value="">Erst Wildart auswählen...</option>');
+            return;
+        }
+        
+        // Show loading
+        $meldegruppenSelect.prop('disabled', true)
+                          .html('<option value="">Laden...</option>');
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_get_meldegruppen_for_wildart',
+                wildart: wildart,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data.length > 0) {
+                    var options = '<option value="">Meldegruppe auswählen...</option>';
+                    
+                    response.data.forEach(function(meldegruppe) {
+                        options += '<option value="' + meldegruppe + '">' + meldegruppe + '</option>';
+                    });
+                    
+                    $meldegruppenSelect.html(options).prop('disabled', false);
+                } else {
+                    $meldegruppenSelect.html('<option value="">Keine Meldegruppen für diese Wildart gefunden</option>');
+                }
+            },
+            error: function() {
+                $meldegruppenSelect.html('<option value="">Fehler beim Laden</option>');
+                showNotification('Fehler beim Laden der Meldegruppen', 'error');
+            }
+        });
+    };
+    
+    /**
+     * Assign obmann to meldegruppe
+     */
+    function assignObmann() {
+        var formData = {
+            action: 'ahgmh_assign_obmann_meldegruppe',
+            user_id: $('#user_id').val(),
+            wildart: $('#wildart').val(),
+            meldegruppe: $('#meldegruppe').val(),
+            nonce: ahgmh_admin.nonce
+        };
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    showNotification('Obmann erfolgreich zugewiesen!', 'success');
+                    $('#obmann-assignment-form')[0].reset();
+                    $('#meldegruppe').prop('disabled', true).html('<option value="">Erst Wildart auswählen...</option>');
+                    refreshObmannTable();
+                } else {
+                    showNotification(response.data || 'Fehler beim Zuweisen', 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Zuweisen des Obmanns', 'error');
+            }
+        });
+    }
+    
+    /**
+     * Edit assignment
+     */
+    function editAssignment(userId, wildart, currentMeldegruppe) {
+        // Pre-fill the form
+        $('#user_id').val(userId);
+        $('#wildart').val(wildart).trigger('change');
+        
+        // Wait for meldegruppen to load, then select current one
+        setTimeout(function() {
+            $('#meldegruppe').val(currentMeldegruppe);
+        }, 500);
+        
+        // Scroll to form
+        $('html, body').animate({
+            scrollTop: $('#obmann-assignment-form').offset().top - 50
+        }, 500);
+    }
+    
+    /**
+     * Remove assignment
+     */
+    function removeAssignment(userId, wildart) {
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_remove_obmann_assignment',
+                user_id: userId,
+                wildart: wildart,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification('Zuweisung erfolgreich entfernt!', 'success');
+                    refreshObmannTable();
+                } else {
+                    showNotification(response.data || 'Fehler beim Entfernen', 'error');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Entfernen der Zuweisung', 'error');
+            }
+        });
+    }
+    
+    /**
+     * Refresh obmann assignments table
+     */
+    window.refreshObmannTable = function() {
+        var $container = $('#obmann-assignments-table');
+        
+        $container.html('<div class="ahgmh-loading"><span class="spinner is-active"></span> Lade Zuweisungen...</div>');
+        
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_get_obmann_assignments',
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    $container.html(response.data.html);
+                } else {
+                    $container.html('<div class="ahgmh-error">Fehler beim Laden der Zuweisungen</div>');
+                }
+            },
+            error: function() {
+                $container.html('<div class="ahgmh-error">Fehler beim Laden der Zuweisungen</div>');
+            }
+        });
+    };
+
     $(document).ready(function() {
         // Check if ahgmh_admin object is available
         if (typeof ahgmh_admin === 'undefined') {

@@ -575,6 +575,22 @@ class AHGMH_Database_Handler {
         
         return $wpdb->get_col($query);
     }
+    
+    /**
+     * Check if meldegruppe exists for specific wildart
+     *
+     * @param string $wildart Wildart name
+     * @param string $meldegruppe Meldegruppe name
+     * @return bool True if exists
+     */
+    public function meldegruppe_exists_for_wildart($wildart, $meldegruppe) {
+        if (empty($wildart) || empty($meldegruppe)) {
+            return false;
+        }
+        
+        $meldegruppen = $this->get_meldegruppen_for_wildart($wildart);
+        return in_array($meldegruppe, $meldegruppen, true);
+    }
 
     /**
      * Save meldegruppen configuration for a wildart

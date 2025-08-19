@@ -59,6 +59,13 @@ class AHGMH_Admin_Page_Modern {
         // add_action('wp_ajax_ahgmh_toggle_limit_mode', array($this, 'ajax_toggle_limit_mode'));
         // add_action('wp_ajax_ahgmh_save_limits', array($this, 'ajax_save_limits'));
         
+        // Obmann Management AJAX handlers
+        add_action('wp_ajax_ahgmh_get_meldegruppen_for_wildart', array($this, 'ajax_get_meldegruppen_for_wildart'));
+        add_action('wp_ajax_ahgmh_assign_obmann_meldegruppe', array($this, 'ajax_assign_obmann_meldegruppe'));
+        add_action('wp_ajax_ahgmh_remove_obmann_assignment', array($this, 'ajax_remove_obmann_assignment'));
+        add_action('wp_ajax_ahgmh_edit_obmann_assignment', array($this, 'ajax_edit_obmann_assignment'));
+        add_action('wp_ajax_ahgmh_get_obmann_assignments', array($this, 'ajax_get_obmann_assignments'));
+        
         // Add WordPress dashboard widget
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
     }
@@ -96,6 +103,16 @@ class AHGMH_Admin_Page_Modern {
             'manage_options',
             'abschussplan-hgmh-data',
             array($this, 'render_data_management')
+        );
+        
+        // Obmann Management (Obleute)
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Obleute verwalten', 'abschussplan-hgmh'),
+            __('👥 Obleute', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-obleute',
+            array($this, 'render_obmann_management')
         );
         
         // Settings (Einstellungen)
@@ -4273,6 +4290,335 @@ class AHGMH_Admin_Page_Modern {
                 $e->getMessage()
             ));
         }
+    }
+    
+    /**
+     * Render Obmann Management Page
+     */
+    public function render_obmann_management() {
+        ?>
+        <div class="wrap ahgmh-admin-modern">
+            <h1 class="ahgmh-page-title">
+                <span class="dashicons dashicons-groups"></span>
+                <?php echo esc_html__('Obleute verwalten', 'abschussplan-hgmh'); ?>
+            </h1>
+            
+            <div class="ahgmh-obmann-management">
+                
+                <!-- Assignment Form -->
+                <div class="ahgmh-card">
+                    <div class="ahgmh-card-header">
+                        <h2><i class="dashicons dashicons-plus-alt2"></i> Neuen Obmann zuweisen</h2>
+                    </div>
+                    <div class="ahgmh-card-content">
+                        <form id="obmann-assignment-form" class="ahgmh-form">
+                            <div class="ahgmh-form-grid">
+                                <div class="ahgmh-form-group">
+                                    <label for="user_id">WordPress User</label>
+                                    <select name="user_id" id="user_id" required>
+                                        <option value="">Benutzer auswählen...</option>
+                                        <?php
+                                        $users = get_users(array('orderby' => 'display_name'));
+                                        foreach ($users as $user) {
+                                            echo '<option value="' . esc_attr($user->ID) . '">' . 
+                                                 esc_html($user->display_name) . ' (' . esc_html($user->user_email) . ')</option>';
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                
+                                <div class="ahgmh-form-group">
+                                    <label for="wildart">Wildart</label>
+                                    <select name="wildart" id="wildart" required onchange="loadMeldegruppenForWildart(this.value)">
+                                        <option value="">Wildart auswählen...</option>
+                                        <?php
+                                        $available_wildarten = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+                                        foreach ($available_wildarten as $wildart) {
+                                            echo '<option value="' . esc_attr($wildart) . '">' . esc_html($wildart) . '</option>';
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                
+                                <div class="ahgmh-form-group">
+                                    <label for="meldegruppe">Meldegruppe</label>
+                                    <select name="meldegruppe" id="meldegruppe" required disabled>
+                                        <option value="">Erst Wildart auswählen...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="ahgmh-form-actions">
+                                <button type="submit" class="button button-primary">
+                                    <i class="dashicons dashicons-plus-alt2"></i>
+                                    Obmann zuweisen
+                                </button>
+                                <button type="reset" class="button">
+                                    Zurücksetzen
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Current Assignments Overview -->
+                <div class="ahgmh-card">
+                    <div class="ahgmh-card-header">
+                        <h2><i class="dashicons dashicons-list-view"></i> Aktuelle Obmann-Zuweisungen</h2>
+                        <button onclick="refreshObmannTable()" class="button button-secondary">
+                            <i class="dashicons dashicons-update"></i>
+                            Aktualisieren
+                        </button>
+                    </div>
+                    <div class="ahgmh-card-content">
+                        <div id="obmann-assignments-table" class="ahgmh-table-container">
+                            <!-- Table will be loaded via AJAX -->
+                            <div class="ahgmh-loading">
+                                <span class="spinner is-active"></span>
+                                Lade Zuweisungen...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * AJAX: Get Meldegruppen for specific Wildart
+     */
+    public function ajax_get_meldegruppen_for_wildart() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Keine Berechtigung');
+        }
+        
+        $wildart = sanitize_text_field($_POST['wildart']);
+        if (empty($wildart)) {
+            wp_send_json_error('Wildart ist erforderlich');
+        }
+        
+        // Get meldegruppen for this wildart from database
+        $database = abschussplan_hgmh()->database;
+        $meldegruppen = $database->get_meldegruppen_for_wildart($wildart);
+        
+        wp_send_json_success($meldegruppen);
+    }
+    
+    /**
+     * AJAX: Assign Obmann to Meldegruppe
+     */
+    public function ajax_assign_obmann_meldegruppe() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Keine Berechtigung');
+        }
+        
+        $user_id = intval($_POST['user_id']);
+        $wildart = sanitize_text_field($_POST['wildart']);
+        $meldegruppe = sanitize_text_field($_POST['meldegruppe']);
+        
+        if (!$user_id || !$wildart || !$meldegruppe) {
+            wp_send_json_error('Alle Felder sind erforderlich');
+        }
+        
+        // Validate that user exists
+        $user = get_user_by('ID', $user_id);
+        if (!$user) {
+            wp_send_json_error('Benutzer nicht gefunden');
+        }
+        
+        // Validate that meldegruppe exists for this wildart
+        $database = abschussplan_hgmh()->database;
+        if (!$database->meldegruppe_exists_for_wildart($wildart, $meldegruppe)) {
+            wp_send_json_error('Meldegruppe existiert nicht für diese Wildart');
+        }
+        
+        // Use permissions service to assign
+        if (AHGMH_Permissions_Service::assign_user_to_meldegruppe($user_id, $wildart, $meldegruppe)) {
+            wp_send_json_success('Obmann erfolgreich zugewiesen');
+        } else {
+            wp_send_json_error('Fehler beim Zuweisen des Obmanns');
+        }
+    }
+    
+    /**
+     * AJAX: Remove Obmann Assignment
+     */
+    public function ajax_remove_obmann_assignment() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Keine Berechtigung');
+        }
+        
+        $user_id = intval($_POST['user_id']);
+        $wildart = sanitize_text_field($_POST['wildart']);
+        
+        if (!$user_id || !$wildart) {
+            wp_send_json_error('User ID und Wildart sind erforderlich');
+        }
+        
+        // Use permissions service to remove assignment
+        if (AHGMH_Permissions_Service::remove_user_assignment($user_id, $wildart)) {
+            wp_send_json_success('Zuweisung erfolgreich entfernt');
+        } else {
+            wp_send_json_error('Fehler beim Entfernen der Zuweisung');
+        }
+    }
+    
+    /**
+     * AJAX: Edit Obmann Assignment
+     */
+    public function ajax_edit_obmann_assignment() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Keine Berechtigung');
+        }
+        
+        $user_id = intval($_POST['user_id']);
+        $wildart = sanitize_text_field($_POST['wildart']);
+        $new_meldegruppe = sanitize_text_field($_POST['meldegruppe']);
+        
+        if (!$user_id || !$wildart || !$new_meldegruppe) {
+            wp_send_json_error('Alle Felder sind erforderlich');
+        }
+        
+        // Validate that meldegruppe exists for this wildart
+        $database = abschussplan_hgmh()->database;
+        if (!$database->meldegruppe_exists_for_wildart($wildart, $new_meldegruppe)) {
+            wp_send_json_error('Meldegruppe existiert nicht für diese Wildart');
+        }
+        
+        // Update assignment (same as assign - overwrites existing)
+        if (AHGMH_Permissions_Service::assign_user_to_meldegruppe($user_id, $wildart, $new_meldegruppe)) {
+            wp_send_json_success('Zuweisung erfolgreich geändert');
+        } else {
+            wp_send_json_error('Fehler beim Ändern der Zuweisung');
+        }
+    }
+    
+    /**
+     * AJAX: Get all Obmann Assignments
+     */
+    public function ajax_get_obmann_assignments() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Keine Berechtigung');
+        }
+        
+        $assignments = $this->get_obmann_assignments();
+        
+        ob_start();
+        $this->render_obmann_assignments_table($assignments);
+        $html = ob_get_clean();
+        
+        wp_send_json_success(array(
+            'html' => $html,
+            'count' => count($assignments)
+        ));
+    }
+    
+    /**
+     * Get all Obmann Assignments from database
+     */
+    private function get_obmann_assignments() {
+        global $wpdb;
+        
+        $sql = "
+            SELECT 
+                u.ID as user_id,
+                u.user_login,
+                u.display_name,
+                u.user_email,
+                SUBSTRING(um.meta_key, 27) as wildart,  -- Extract wildart from 'ahgmh_assigned_meldegruppe_'
+                um.meta_value as meldegruppe,
+                um.umeta_id as assignment_id
+            FROM {$wpdb->users} u
+            INNER JOIN {$wpdb->usermeta} um ON u.ID = um.user_id
+            WHERE um.meta_key LIKE 'ahgmh_assigned_meldegruppe_%'
+            AND um.meta_value != ''
+            ORDER BY u.display_name, wildart
+        ";
+        
+        return $wpdb->get_results($sql);
+    }
+    
+    /**
+     * Render Obmann Assignments Table
+     */
+    private function render_obmann_assignments_table($assignments) {
+        if (empty($assignments)) {
+            echo '<div class="ahgmh-no-data">';
+            echo '<p>Noch keine Obmann-Zuweisungen vorhanden.</p>';
+            echo '</div>';
+            return;
+        }
+        ?>
+        
+        <table class="wp-list-table widefat fixed striped ahgmh-obmann-table">
+            <thead>
+                <tr>
+                    <th class="manage-column column-user">WordPress User</th>
+                    <th class="manage-column column-name">Name</th>
+                    <th class="manage-column column-email">E-Mail</th>
+                    <th class="manage-column column-wildart">Wildart</th>
+                    <th class="manage-column column-meldegruppe">Meldegruppe</th>
+                    <th class="manage-column column-actions">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($assignments as $assignment): ?>
+                <tr data-user-id="<?php echo esc_attr($assignment->user_id); ?>" 
+                    data-wildart="<?php echo esc_attr($assignment->wildart); ?>">
+                    <td class="column-user">
+                        <strong><?php echo esc_html($assignment->user_login); ?></strong>
+                    </td>
+                    <td class="column-name">
+                        <?php echo esc_html($assignment->display_name); ?>
+                    </td>
+                    <td class="column-email">
+                        <a href="mailto:<?php echo esc_attr($assignment->user_email); ?>">
+                            <?php echo esc_html($assignment->user_email); ?>
+                        </a>
+                    </td>
+                    <td class="column-wildart">
+                        <span class="ahgmh-badge ahgmh-badge-wildart">
+                            <?php echo esc_html($assignment->wildart); ?>
+                        </span>
+                    </td>
+                    <td class="column-meldegruppe">
+                        <span class="ahgmh-badge ahgmh-badge-meldegruppe">
+                            <?php echo esc_html($assignment->meldegruppe); ?>
+                        </span>
+                    </td>
+                    <td class="column-actions">
+                        <button type="button" class="button button-small edit-assignment" 
+                                data-user-id="<?php echo esc_attr($assignment->user_id); ?>"
+                                data-wildart="<?php echo esc_attr($assignment->wildart); ?>"
+                                data-meldegruppe="<?php echo esc_attr($assignment->meldegruppe); ?>"
+                                title="Zuweisung bearbeiten">
+                            <i class="dashicons dashicons-edit"></i>
+                        </button>
+                        <button type="button" class="button button-small button-link-delete remove-assignment" 
+                                data-user-id="<?php echo esc_attr($assignment->user_id); ?>"
+                                data-wildart="<?php echo esc_attr($assignment->wildart); ?>"
+                                title="Zuweisung entfernen">
+                            <i class="dashicons dashicons-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        
+        <?php
     }
 
 
