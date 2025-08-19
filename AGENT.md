@@ -4,7 +4,7 @@
 - **Project Name**: Abschussplan HGMH (Hunting Harvest Tracking for German Hunting Districts)
 - **Repository**: https://github.com/foe05/pr25_one
 - **Type**: WordPress Plugin for hunting submission tracking
-- **Version**: 2.0.0
+- **Version**: 2.2.0
 - **Status**: Production Ready - Fully Implemented
 - **License**: GPLv3
 - **Target Audience**: German hunting associations (Hegegemeinschaften)
@@ -102,7 +102,7 @@ wp-content/plugins/abschussplan-hgmh/
 - **Database**: Test with different database configurations
 
 ## Development Notes
-- **Version 2.0.0**: Major update with modern admin interface and enhanced functionality
+- **Version 2.2.0**: Stable release with Master-Detail Wildart Configuration, comprehensive limits management, and critical security fixes
 - **Bootstrap 5.3**: Modern responsive design framework integration with mobile-first approach
 - **Master-Detail UI**: Wildart-centric configuration with left-sidebar navigation and right-panel detail editing
 - **Responsive Design**: Sidebar collapsing on tablets (≤968px), horizontal navigation on mobile (≤600px)

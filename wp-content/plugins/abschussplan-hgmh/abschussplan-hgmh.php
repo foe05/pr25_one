@@ -3,7 +3,7 @@
  * Plugin Name: Abschussplan HGMH
  * Plugin URI: https://github.com/foe05/pr25_one
  * Description: Collect and view game shoots for registration with local hunting authorities in Germany.
- * Version: 2.0.0
+ * Version: 2.2.0
  * Author: foe05
  * Author URI: https://github.com/foe05
  * License: GPL v3 or later
@@ -11,7 +11,7 @@
  * Text Domain: abschussplan-hgmh
  * Domain Path: /languages
  * Requires at least: 5.0
- * Tested up to: 6.4
+ * Tested up to: 6.5
  * Requires PHP: 7.4
  * Network: false
  * Update URI: https://github.com/foe05/pr25_one
@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('AHGMH_PLUGIN_VERSION', '2.0.0');
+define('AHGMH_PLUGIN_VERSION', '2.2.0');
 
 // Include required files
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
