@@ -1,6 +1,6 @@
 # Abschussplan HGMH - WordPress Plugin
 
-**Version:** 2.0.0  
+**Version:** 2.2.0  
 **Status:** Production Ready  
 **Type:** WordPress Plugin for German Hunting Management
 
@@ -9,17 +9,19 @@
 The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digital management of hunting reports in German hunting districts. It provides a complete system for hunters to submit game hunting data and administrators to manage hunting limits, categories, and export data with advanced features.
 
 ### ✨ Core Features
-- ✅ **Digital Hunting Reports** - Advanced web forms with validation
-- ✅ **Comprehensive Admin Panel** - Modern tabbed interface with full CRUD operations
+- ✅ **Digital Hunting Reports** - Advanced web forms with validation and permission-based preselection
+- ✅ **3-Level Permission System** - Besucher, Obmann, Vorstand with wildart-specific assignments
+- ✅ **Comprehensive Admin Panel** - Modern tabbed interface with full CRUD operations and obmann management
 - ✅ **Master-Detail Wildart Configuration** - Intuitive wildart-specific category and meldegruppe management
 - ✅ **Flexible Limits Management** - Dual-mode system: Meldegruppen-specific vs. Hegegemeinschaft-total limits
-- ✅ **Advanced Export System** - Configurable CSV exports with custom filename patterns  
+- ✅ **Advanced Export System** - Configurable CSV exports with admin interface and public URLs
+- ✅ **Obmann Management** - Complete user assignment system with wildart-specific meldegruppe assignments
 - ✅ **Category Management** - Full CRUD for species and categories with integrated limit controls
 - ✅ **Status Tracking** - Real-time status badges (🟢 🟡 🔴 🔥) based on limit compliance
 - ✅ **Date Range Operations** - Delete submissions by custom date ranges
 - ✅ **Responsive Design** - Mobile-optimized Bootstrap 5.3 interface
 - ✅ **Multi-Database** - WordPress MySQL, SQLite, PostgreSQL support
-- ✅ **Shortcode Integration** - 5 powerful shortcodes for complete functionality
+- ✅ **Shortcode Integration** - 5 powerful shortcodes with permission-based access control
 - ✅ **Real-time Table Updates** - AJAX-powered data refreshing
 
 ---
@@ -71,46 +73,78 @@ Access CSV exports via WordPress AJAX endpoints with extensive configuration:
 10. **Erstellt am** - Creation timestamp
 
 ### ⚙️ Export Security & Access
+- **Public URLs**: CSV export URLs remain publicly accessible (no authentication required)
+- **Admin Interface**: CSV export controls only available in admin backend for Vorstand
+- **Frontend Restrictions**: No export buttons shown in frontend shortcodes
 - **WordPress AJAX**: Secure endpoint integration
-- **Nonce Verification**: CSRF protection
-- **Role-based Access**: WordPress capability checks
 - **Format**: UTF-8 CSV with proper escaping
+
+---
+
+## 👥 User Permission System
+
+### 3-Level Hierarchy
+The plugin implements a comprehensive permission system designed for German hunting districts:
+
+**🌐 Level 1: Besucher (Public Visitors)**
+- **Access**: Only `[abschuss_summary]` for public statistics
+- **Restrictions**: All other shortcodes require login
+- **CSV Export**: Public URLs remain accessible
+
+**👤 Level 2: Obmann (Group Leaders)**
+- **Access**: Wildart-specific meldegruppe assignments
+- **User Meta**: `ahgmh_assigned_meldegruppe_{wildart}` (e.g., `ahgmh_assigned_meldegruppe_Rotwild`)
+- **Data Filtering**: Automatic restriction to assigned meldegruppen
+- **Form Behavior**: Meldegruppe preselection based on assignments
+
+**⭐ Level 3: Vorstand (Board Members)**
+- **Access**: Full unrestricted access to all functions
+- **Capability**: WordPress `manage_options` required
+- **Admin Interface**: Complete configuration and user management
+- **CSV Export**: Admin interface with URL generation tools
+
+### Wildart-Specific Assignments
+- One Obmann can be assigned to different meldegruppen for different wildarten
+- Example: User A manages "Meldegruppe_Nord" for "Rotwild" and "Meldegruppe_Süd" for "Damwild"
+- Managed through WordPress admin interface: **Abschussplan → Obleute**
 
 ---
 
 ## 🎨 Shortcode Reference
 
 ### `[abschuss_form]`
-Display the harvest submission form.
+Display the harvest submission form with permission-based access control.
 ```html
 [abschuss_form species="Rotwild"]
 ```
 **Parameters:**
-- `species` (optional): Pre-select game species
+- `species` (**required**): Game species name
 
-**Features:**
-- ✅ WordPress user authentication required
-- ✅ AJAX form submission
-- ✅ Real-time validation
-- ✅ Limit-based category management
+**Permission-Based Features:**
+- 🚫 **Besucher**: Login form shown
+- ✅ **Obmann**: Form with automatic meldegruppe preselection for assigned wildart
+- ✅ **Vorstand**: Form with all meldegruppen available
+- ✅ AJAX form submission with real-time validation
+- ✅ Wildart-specific jagdbezirk filtering
 
 ### `[abschuss_table]`
-Display harvest data table with real-time updates and advanced features.
+Display harvest data table with permission-based filtering and access control.
 ```html
-[abschuss_table species="Rotwild" limit="20" page="1"]
+[abschuss_table species="Rotwild" meldegruppe="Gruppe_A" limit="20" page="1"]
 ```
 **Parameters:**
 - `species` (optional): Filter by game species
+- `meldegruppe` (optional): Filter by meldegruppe
 - `limit` (optional): Entries per page (default: 10)
 - `page` (optional): Current page (default: 1)
 
-**Features:**
-- ✅ **AJAX Auto-Refresh** - Updates after form submissions
-- ✅ **Advanced CSV Export** with current filters and custom filenames
+**Permission-Based Features:**
+- 🚫 **Besucher**: Login form shown
+- ✅ **Obmann**: Automatic filtering to assigned meldegruppe for wildart
+- ✅ **Vorstand**: All data or parameter-filtered view
 - ✅ Paginated display with navigation
 - ✅ Responsive Bootstrap table layout
-- ✅ WordPress user permissions integration
-- ✅ Real-time data synchronization
+- ❌ **No Export Buttons** in frontend (security feature)
 
 ### `[abschuss_summary]`
 Show harvest summary and statistics with flexible parameter combinations.
@@ -124,8 +158,10 @@ Show harvest summary and statistics with flexible parameter combinations.
 - `species` (optional): Game species name - empty shows all species aggregated
 - `meldegruppe` (optional): Reporting group name - empty shows all groups aggregated
 
-**Features:**
-- ✅ **Public Access** - Available for unauthenticated users (public statistics)
+**Permission-Based Features:**
+- ✅ **Besucher**: Public access to aggregated statistics
+- ✅ **Obmann**: Filtered to assigned meldegruppen per wildart
+- ✅ **Vorstand**: Full access to all data or parameter-filtered view
 - ✅ **Flexible Parameter Logic** - All parameter combinations supported
 - ✅ **Graceful Fallback** - Invalid parameters show warnings but don't break
 - ✅ **Total Aggregation** - No parameters = entire hunting community statistics
@@ -134,19 +170,23 @@ Show harvest summary and statistics with flexible parameter combinations.
 - ✅ Live calculation of target achievement
 
 ### `[abschuss_admin]`
-Comprehensive admin configuration panel with modern tabbed interface (requires `manage_options` capability).
+Comprehensive admin configuration panel with modern tabbed interface.
 ```html
 [abschuss_admin]
 ```
 
+**Permission-Based Access:**
+- 🚫 **Besucher + Obmann**: Login form or permission denied message
+- ✅ **Vorstand**: Full admin interface access
+
 **Features:**
-- ✅ **Modern Tabbed Interface** - Dashboard, Data Management, Categories, Database, CSV Export
+- ✅ **Modern Tabbed Interface** - Dashboard, Data Management, Obleute, Categories, Database, CSV Export
+- ✅ **Obmann Management** - User assignment system for wildart-specific meldegruppen
 - ✅ **Full CRUD Operations** - Create, Read, Update, Delete for all entities
 - ✅ **Real-time Statistics** - Live dashboard with current usage metrics
 - ✅ **Advanced Database Management** - Multi-database support with connection testing
 - ✅ **Category & Species Management** - Complete administrative control
 - ✅ **Date Range Operations** - Delete submissions by custom date ranges
-- ✅ **Export Configuration** - Filename patterns and parameter documentation
 
 ### `[abschuss_limits]` ⚠️ **Admin-Only**
 Comprehensive limits management interface with dual-mode support.
@@ -157,10 +197,9 @@ Comprehensive limits management interface with dual-mode support.
 **Parameters:**
 - `wildart` (optional): Specific wildart name. If empty, redirects to admin panel.
 
-**Access Control:**
-- ⚠️ **Administrator Only** (`manage_options` capability required)
-- 🔒 Non-admins see permission error with contact information
-- 🔗 Automatic redirect to login if not authenticated
+**Permission-Based Access:**
+- 🚫 **Besucher + Obmann**: Login form or permission denied message
+- ✅ **Vorstand**: Full limits management interface
 
 **Dual-Mode System:**
 

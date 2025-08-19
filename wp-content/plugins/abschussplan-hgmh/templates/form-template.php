@@ -98,11 +98,19 @@ if (!defined('ABSPATH')) {
                 <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'abschussplan-hgmh'); ?></option>
                 
                 <?php 
-                // Get active Jagdbezirke from database (ungueltig = 0)
+                // Get active Jagdbezirke from database with permission filtering
                 $database = abschussplan_hgmh()->database;
                 $jagdbezirke = $database->get_active_jagdbezirke();
                 
-
+                // Filter Jagdbezirke based on user permissions
+                $user_id = get_current_user_id();
+                if (!AHGMH_Permissions_Service::is_vorstand($user_id)) {
+                    // Obmann: Only show jagdbezirke from their assigned meldegruppe
+                    $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
+                    $jagdbezirke = array_filter($jagdbezirke, function($jagdbezirk) use ($user_meldegruppe) {
+                        return $jagdbezirk['meldegruppe'] === $user_meldegruppe;
+                    });
+                }
                 
                 foreach ($jagdbezirke as $jagdbezirk) : ?>
                     <option value="<?php echo esc_attr($jagdbezirk['jagdbezirk']); ?>">

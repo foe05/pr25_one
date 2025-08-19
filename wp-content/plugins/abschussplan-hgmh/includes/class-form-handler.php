@@ -56,10 +56,15 @@ class AHGMH_Form_Handler {
     * @return string HTML output of the form
      */
     public function render_form($atts = array()) {
-        // Parse shortcode attributes
+        // Parse shortcode attributes with species as required parameter
         $atts = shortcode_atts(array(
-            'species' => 'Rotwild'
+            'species' => ''
         ), $atts, 'abschuss_form');
+        
+        // Parameter validation - species is required
+        if (empty($atts['species'])) {
+            return '<div class="alert alert-warning">Parameter "species" ist erforderlich für [abschuss_form]. Beispiel: [abschuss_form species="Rotwild"]</div>';
+        }
         
         // Check permissions with new 3-level system
         if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_form', $atts)) {
@@ -94,7 +99,23 @@ class AHGMH_Form_Handler {
         
         // Validate selected species
         if (!in_array($selected_species, $available_species)) {
-            $selected_species = !empty($available_species) ? $available_species[0] : 'Rotwild';
+            return '<div class="alert alert-danger">Unbekannte Wildart "' . esc_html($selected_species) . '". Verfügbare Wildarten: ' . implode(', ', $available_species) . '</div>';
+        }
+        
+        // Get user information for meldegruppe logic
+        $user_id = get_current_user_id();
+        $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
+        
+        // Determine available meldegruppen based on user permissions
+        if (AHGMH_Permissions_Service::is_vorstand($user_id)) {
+            // Vorstand: All meldegruppen for this wildart
+            $database = abschussplan_hgmh()->database;
+            $available_meldegruppen = $database->get_meldegruppen_for_wildart($selected_species);
+            $preselected_meldegruppe = null;
+        } else {
+            // Obmann: Only assigned meldegruppe
+            $available_meldegruppen = array($user_meldegruppe);
+            $preselected_meldegruppe = $user_meldegruppe;
         }
         
         // Get limits to check if any category has reached its limit
@@ -125,6 +146,7 @@ class AHGMH_Form_Handler {
                 'limit' => 10,
                 'page' => 1,
                 'species' => '',
+                'meldegruppe' => ''
             ),
             $atts,
             'abschuss_table'
@@ -159,27 +181,33 @@ class AHGMH_Form_Handler {
         // Get submissions data with permission filtering
         $database = abschussplan_hgmh()->database;
         $species = sanitize_text_field($atts['species']);
+        $meldegruppe = sanitize_text_field($atts['meldegruppe']);
         $user_id = get_current_user_id();
         
-        // Apply permission-based filtering
-        if (!empty($species)) {
-            if (AHGMH_Permissions_Service::is_vorstand($user_id)) {
-                // Vorstand sees everything
+        // Apply permission-based filtering with parameter override logic
+        if (AHGMH_Permissions_Service::is_vorstand($user_id)) {
+            // Vorstand: Can use all parameters freely
+            if (!empty($species) && !empty($meldegruppe)) {
+                // Both species and meldegruppe specified
+                $submissions = $database->get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit, ($page - 1) * $limit);
+                $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $meldegruppe);
+            } else if (!empty($species)) {
+                // Only species specified
                 $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
                 $total_count = $database->count_submissions_by_species($species);
             } else {
-                // Obmann sees only their meldegruppe
+                // No filters - all submissions
+                $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
+                $total_count = $database->count_submissions();
+            }
+        } else {
+            // Obmann: Automatic filtering to user's meldegruppen
+            if (!empty($species)) {
                 $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $species);
                 $submissions = $database->get_submissions_by_species_and_meldegruppe($species, $user_meldegruppe, $limit, ($page - 1) * $limit);
                 $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $user_meldegruppe);
-            }
-        } else {
-            if (AHGMH_Permissions_Service::is_vorstand($user_id)) {
-                // Vorstand sees everything
-                $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
-                $total_count = $database->count_submissions();
             } else {
-                // Obmann sees only their assigned meldegruppen across all wildarten
+                // No species specified - show all user's wildarten
                 $user_wildarten = AHGMH_Permissions_Service::get_user_wildarten($user_id);
                 $submissions = array();
                 $total_count = 0;
@@ -192,7 +220,11 @@ class AHGMH_Form_Handler {
                 }
             }
         }
+        
         $total_pages = ceil($total_count / $limit);
+        
+        // Pass show_export_button = false to template (NO export buttons in frontend)
+        $show_export_button = false;
         
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/table-template.php';

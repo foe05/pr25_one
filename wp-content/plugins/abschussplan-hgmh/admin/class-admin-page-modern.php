@@ -320,6 +320,11 @@ class AHGMH_Admin_Page_Modern {
                     <span class="dashicons dashicons-chart-bar"></span>
                     <?php echo esc_html__('Auswertungen', 'abschussplan-hgmh'); ?>
                 </a>
+                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-data&tab=export'); ?>" 
+                   class="ahgmh-tab <?php echo $active_tab === 'export' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-download"></span>
+                    <?php echo esc_html__('CSV Export', 'abschussplan-hgmh'); ?>
+                </a>
             </nav>
 
             <!-- Tab Content -->
@@ -334,6 +339,9 @@ class AHGMH_Admin_Page_Modern {
                         break;
                     case 'analysis':
                         $this->render_data_analysis();
+                        break;
+                    case 'export':
+                        $this->render_admin_csv_export();
                         break;
                     default:
                         $this->render_data_overview();
@@ -4618,6 +4626,137 @@ class AHGMH_Admin_Page_Modern {
             </tbody>
         </table>
         
+        <?php
+    }
+    
+    /**
+     * Render Admin CSV Export Interface
+     */
+    private function render_admin_csv_export() {
+        ?>
+        <div class="ahgmh-card">
+            <div class="ahgmh-card-header">
+                <h2><i class="dashicons dashicons-download"></i> CSV Export (Admin-Bereich)</h2>
+                <p class="description">Hier können Sie gezielt CSV-Exports erstellen und herunterladen.</p>
+            </div>
+            <div class="ahgmh-card-content">
+                
+                <!-- Export Form -->
+                <form id="admin-csv-export-form" class="ahgmh-export-form">
+                    <div class="ahgmh-form-grid">
+                        <div class="ahgmh-form-group">
+                            <label for="export_species">Wildart</label>
+                            <select name="export_species" id="export_species">
+                                <option value="">Alle Wildarten</option>
+                                <?php
+                                $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
+                                foreach ($available_species as $species) {
+                                    echo '<option value="' . esc_attr($species) . '">' . esc_html($species) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        
+                        <div class="ahgmh-form-group">
+                            <label for="export_meldegruppe">Meldegruppe</label>
+                            <select name="export_meldegruppe" id="export_meldegruppe">
+                                <option value="">Alle Meldegruppen</option>
+                                <?php
+                                $database = abschussplan_hgmh()->database;
+                                $all_meldegruppen = $database->get_all_meldegruppen();
+                                foreach ($all_meldegruppen as $meldegruppe) {
+                                    echo '<option value="' . esc_attr($meldegruppe) . '">' . esc_html($meldegruppe) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        
+                        <div class="ahgmh-form-group">
+                            <label for="export_from">Von Datum</label>
+                            <input type="date" name="export_from" id="export_from" class="regular-text">
+                        </div>
+                        
+                        <div class="ahgmh-form-group">
+                            <label for="export_to">Bis Datum</label>
+                            <input type="date" name="export_to" id="export_to" class="regular-text">
+                        </div>
+                    </div>
+                    
+                    <div class="ahgmh-form-actions">
+                        <button type="button" onclick="generateExportURL()" class="button button-secondary">
+                            <i class="dashicons dashicons-admin-links"></i>
+                            Export URL generieren
+                        </button>
+                        <button type="button" onclick="downloadCSVDirect()" class="button button-primary">
+                            <i class="dashicons dashicons-download"></i>
+                            Direkter Download
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Generated URLs Display -->
+                <div class="ahgmh-export-urls" id="export-urls-section" style="display: none;">
+                    <h3>Generierte Export-URLs</h3>
+                    <div class="ahgmh-url-display">
+                        <label>CSV Export URL:</label>
+                        <div class="ahgmh-url-container">
+                            <input type="text" id="generated-csv-url" readonly class="regular-text code">
+                            <button type="button" onclick="copyToClipboard('generated-csv-url')" class="button">
+                                <i class="dashicons dashicons-admin-page"></i>
+                                Kopieren
+                            </button>
+                        </div>
+                    </div>
+                    <p class="description">
+                        Diese URLs sind <strong>öffentlich zugänglich</strong> ohne Anmeldung. 
+                        Sie können direkt an Personen weitergegeben werden, die Zugriff auf die Daten benötigen.
+                    </p>
+                </div>
+                
+            </div>
+        </div>
+        
+        <script>
+        function generateExportURL() {
+            var baseUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
+            var params = new URLSearchParams();
+            params.append('action', 'export_abschuss_csv');
+            
+            var species = document.getElementById('export_species').value;
+            var meldegruppe = document.getElementById('export_meldegruppe').value;
+            var from = document.getElementById('export_from').value;
+            var to = document.getElementById('export_to').value;
+            
+            if (species) params.append('species', species);
+            if (meldegruppe) params.append('meldegruppe', meldegruppe);
+            if (from) params.append('from', from);
+            if (to) params.append('to', to);
+            
+            var fullUrl = baseUrl + '?' + params.toString();
+            
+            document.getElementById('generated-csv-url').value = fullUrl;
+            document.getElementById('export-urls-section').style.display = 'block';
+        }
+        
+        function downloadCSVDirect() {
+            generateExportURL();
+            var url = document.getElementById('generated-csv-url').value;
+            window.open(url, '_blank');
+        }
+        
+        function copyToClipboard(elementId) {
+            var element = document.getElementById(elementId);
+            element.select();
+            document.execCommand('copy');
+            
+            // Show notification
+            if (typeof showNotification === 'function') {
+                showNotification('URL in Zwischenablage kopiert!', 'success');
+            } else {
+                alert('URL in Zwischenablage kopiert!');
+            }
+        }
+        </script>
         <?php
     }
 

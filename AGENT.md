@@ -24,17 +24,20 @@
 - **Error Logging**: Enable `WP_DEBUG` in wp-config.php
 
 ## Plugin Architecture
-- **Shortcodes**: 5 main shortcodes (`[abschuss_form]`, `[abschuss_table]`, `[abschuss_admin]`, `[abschuss_summary]`, `[abschuss_limits]` - admin-only)
-- **AJAX Handlers**: Form submission, admin config, CSV export, limits management via WordPress AJAX
+- **Shortcodes**: 5 main shortcodes with 3-level permission system (`[abschuss_form]`, `[abschuss_table]`, `[abschuss_admin]`, `[abschuss_summary]`, `[abschuss_limits]`)
+- **Permission System**: 3-level hierarchy (Besucher, Obmann, Vorstand) with wildart-specific meldegruppe assignments
+- **AJAX Handlers**: Form submission, admin config, CSV export, limits management, obmann management via WordPress AJAX
 - **Database Tables**: `wp_ahgmh_submissions`, `wp_ahgmh_jagdbezirke`, `wp_ahgmh_meldegruppen_config`, `wp_ahgmh_meldegruppen_limits`
-- **User Integration**: WordPress user authentication and capabilities
+- **User Integration**: WordPress user authentication with wildart-specific user meta keys
 
 ## Core Functionality
-- **Form Submission**: Hunting harvest data entry with advanced validation
+- **Form Submission**: Hunting harvest data entry with advanced validation and permission-based meldegruppe preselection
 - **Data Management**: Complete CRUD operations for harvest records with real-time updates
-- **CSV Export**: Advanced WordPress AJAX-based exports with configurable filename patterns
-- **Admin Interface**: Modern tabbed interface (Dashboard, Data Management, Categories, Database, Wildarten-Konfiguration, CSV Export)
+- **CSV Export**: Advanced WordPress AJAX-based exports with configurable filename patterns (public URLs)
+- **Admin Interface**: Modern tabbed interface (Dashboard, Data Management, Obleute, Categories, Database, Wildarten-Konfiguration, CSV Export)
 - **Master-Detail Wildart Configuration**: Intuitive left-sidebar wildart navigation with right-panel detail editing including comprehensive limits management
+- **Obmann Management**: Complete user assignment system with wildart-specific meldegruppe assignments
+- **Permission System**: 3-level hierarchy with automatic data filtering based on user assignments
 - **Category Management**: Full CRUD for species and categories with integrated limit controls and inline editing
 - **Date Range Operations**: Custom date range deletion functionality with HTML5 datepickers
 - **Real-time Updates**: AJAX-powered table refreshing after form submissions
@@ -45,7 +48,9 @@
 - **WordPress Standards**: Uses WP nonce verification, user capabilities
 - **Input Sanitization**: WordPress sanitization functions
 - **SQL Protection**: $wpdb prepared statements
-- **Role-Based Access**: Admin features require `manage_options` capability
+- **3-Level Permission System**: Besucher (public), Obmann (meldegruppe-specific), Vorstand (full admin)
+- **Wildart-Specific Access Control**: User meta keys for fine-grained permissions
+- **Validation Service**: Centralized security checks for all operations
 
 ## File Structure
 ```
@@ -54,7 +59,8 @@ wp-content/plugins/abschussplan-hgmh/
 ├── includes/ (core classes)
 │   ├── class-database-handler.php
 │   ├── class-form-handler.php
-│   └── class-table-display.php
+│   ├── class-table-display.php
+│   └── class-permissions-service.php
 ├── templates/ (frontend templates)
 │   ├── form-template.php
 │   ├── table-template.php
@@ -152,6 +158,49 @@ The plugin implements a comprehensive dual-mode limits system that allows Hegege
 - **[abschuss_limits]**: Admin-only shortcode for frontend limits management
 - **[abschuss_summary]**: Automatically considers active limit mode for status calculation
 - **Parameter Support**: `[abschuss_limits wildart="Rotwild"]` for specific wildart limits
+
+## Permission System Architecture
+
+### 3-Level Hierarchy
+The plugin implements a comprehensive permission system with three distinct user levels:
+
+**1. Besucher (Visitors - No WordPress Login)**
+- Access: `[abschuss_summary]` only (public statistics)
+- Restrictions: All other shortcodes show login prompts
+- CSV Export: Public URLs remain accessible without authentication
+
+**2. Obmann (Group Leaders - WordPress Users)**
+- Access: Wildart-specific meldegruppe assignments
+- User Meta Keys: `ahgmh_assigned_meldegruppe_{wildart}` (e.g., `ahgmh_assigned_meldegruppe_Rotwild`)
+- Data Filtering: Automatic restriction to assigned meldegruppen per wildart
+- Form Behavior: Meldegruppe preselection based on assignments
+- Table Filtering: See only their assigned meldegruppe data
+
+**3. Vorstand (Board Members - WordPress Admins)**
+- Access: Full unrestricted access to all functions
+- Capability: `manage_options` required
+- Admin Interface: Complete Master-Detail configuration interface
+- User Management: Can assign/remove Obmann meldegruppe assignments
+- CSV Export: Admin interface with URL generation tools
+
+### Wildart-Specific Assignments
+- One Obmann can be assigned to different meldegruppen for different wildarten
+- Example: User A is Obmann for "Meldegruppe_Nord" in "Rotwild" and "Meldegruppe_Süd" in "Damwild"
+- Database: WordPress user meta system with dynamic meta keys
+- Validation: Ensures meldegruppe exists for the specified wildart before assignment
+
+### Permission Matrix
+| User Level | [abschuss_summary] | [abschuss_form] | [abschuss_table] | [abschuss_admin] | [abschuss_limits] |
+|------------|-------------------|-----------------|------------------|------------------|-------------------|
+| Besucher   | ✅ Public access  | ❌ Login required| ❌ Login required| ❌ Login required| ❌ Login required |
+| Obmann     | ✅ Filtered data  | ✅ Meldegruppe preselected | ✅ Filtered to assigned meldegruppe | ❌ Admin only | ❌ Admin only |
+| Vorstand   | ✅ All data       | ✅ All meldegruppen | ✅ All data or parameter-filtered | ✅ Full access | ✅ Full access |
+
+### CSV Export Security Model
+- **Frontend Shortcodes**: NO export buttons for Besucher/Obmann
+- **Admin Backend**: CSV export interface only for Vorstand
+- **Direct URLs**: Remain publicly accessible (existing functionality preserved)
+- **URL Parameters**: Continue to work for filtering (species, meldegruppe, date ranges)
 
 ### Database Schema
 ```sql
