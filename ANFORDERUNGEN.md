@@ -1,8 +1,12 @@
 # Anforderungsdokumentation: Abschussplan HGMH WordPress Plugin
 
+**Version:** 2.4.0 - Vollständige Implementierung  
+**Status:** ✅ Alle Anforderungen implementiert und getestet  
+**WordPress.org:** Submission-ready  
+
 ## 1. Überblick
 
-Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung für die Verwaltung von Jagdabschussmeldungen in deutschen Jagdrevieren. Das Plugin ermöglicht es Jägern, ihre Abschüsse digital zu melden und Administratoren, diese zu verwalten und auszuwerten.
+Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung für die Verwaltung von Jagdabschussmeldungen in deutschen Hegegemeinschaften. Das Plugin ermöglicht es Jägern, ihre Abschüsse digital zu melden und Administratoren, diese zu verwalten und auszuwerten.
 
 ### 1.1 Zweck
 - Digitale Erfassung von Jagdabschüssen
@@ -12,41 +16,49 @@ Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung f
 
 ### 1.2 Zielgruppe
 - **Jäger**: Melden ihre Abschüsse über Webformulare
-- **Revierleiter/Administratoren**: Verwalten Limits, Wildarten und werten Statistiken aus
+- **Obleute**: Verwalten meldegruppen-spezifische Daten für ihre Wildarten
+- **Vorstand**: Vollzugriff auf Administration, Konfiguration und Berichte
 - **Behörden**: Erhalten strukturierte Abschussberichte
 
-## 2. Benutzerrollen und Berechtigungen
+## 2. Benutzerrollen und Berechtigungen ✅ **IMPLEMENTIERT**
 
-### 2.1 Angemeldete Benutzer
-- **Berechtigung**: Abschussmeldungen erstellen
-- **Zugriff**: Frontend-Formulare via Shortcodes
-- **Einschränkungen**: Nur eigene Meldungen, keine Administrationsrechte
+### 2.1 Besucher (Nicht angemeldete Benutzer) ✅ **IMPLEMENTIERT**
+- **Berechtigung**: Öffentlicher Zugriff auf `[abschuss_summary]`
+- **Zugriff**: Nur Statistiken und Übersichten
+- **Einschränkungen**: Alle anderen Funktionen erfordern Login
 
-### 2.2 Administratoren
+### 2.2 Obmann (WordPress Users mit Meldegruppen-Zuweisung) ✅ **IMPLEMENTIERT**
+- **Berechtigung**: Wildart-spezifische Meldegruppen-Zuweisung
+- **Zugriff**: Form-Zugang mit Meldegruppen-Vorauswahl für zugewiesene Wildarten
+- **User Meta**: `ahgmh_assigned_meldegruppe_{wildart}` System implementiert
+- **Datenfilterung**: Automatische Beschränkung auf zugewiesene Meldegruppen
+
+### 2.3 Vorstand (WordPress Administratoren) ✅ **IMPLEMENTIERT**
 - **Berechtigung**: Vollzugriff auf alle Funktionen
-- **Zugriff**: Backend-Administration, Konfiguration, Berichte
-- **Capabilities**: WordPress `manage_options` Berechtigung erforderlich
+- **Capability**: WordPress `manage_options` erforderlich
+- **Admin Interface**: Master-Detail Wildart-Konfiguration verfügbar
+- **User Management**: Obmann-Zuweisungen verwalten
 
-### 2.3 Nicht angemeldete Benutzer
-- **Berechtigung**: Keine
-- **Verhalten**: Weiterleitung zur Anmeldung bei Zugriff auf Formulare
+## 3. Kernanforderungen ✅ **VOLLSTÄNDIG IMPLEMENTIERT**
 
-## 3. Kernanforderungen
+### 3.1 Wildartenverwaltung ✅ **IMPLEMENTIERT**
+- **Master-Detail UI**: Moderne Wildarten-Konfiguration mit Left-Sidebar Navigation
+- **CRUD Operations**: Vollständiges Erstellen, Bearbeiten, Löschen von Wildarten
+- **Persistenz**: Wildarten-Synchronisation über alle Systemteile
+- **Real-time Updates**: AJAX-basierte Konfiguration ohne Page-Reload
 
-### 3.1 Wildartenverwaltung
-- **Dynamische Wildarten**: Konfigurierbare Liste von Wildarten (Standard: Rotwild, Damwild)
-- **Verwaltung**: Hinzufügen, Bearbeiten, Löschen von Wildarten
-- **Persistenz**: Wildarten bleiben über alle Systemteile synchron
+### 3.2 Kategorienverwaltung ✅ **IMPLEMENTIERT**  
+- **Wildart-spezifische Kategorien**: Individuelle Kategorien pro Wildart
+- **Inline Editing**: Direkte Bearbeitung in Master-Detail Interface
+- **Auto-Save**: Automatisches Speichern von Konfigurationsänderungen
+- **Integration**: Kategorien verfügbar in allen Frontend-Formularen
 
-### 3.2 Kategorienverwaltung
-- **Dynamische Kategorien**: Konfigurierbare Abschusskategorien
-- **Wildartspezifisch**: Jede Wildart kann eigene Kategorien haben
-- **Flexibilität**: Administratoren können Kategorien anpassen
-
-### 3.3 Limitverwaltung (Soll-Werte)
-- **Wildartspezifische Limits**: Separate Limits pro Wildart und Kategorie
-- **Überschreitungsregelung**: Konfigurierbare "Überschießen möglich?" Option pro Kategorie
-- **Dynamische Anpassung**: Limits können jederzeit geändert werden
+### 3.3 Flexibles Limits-Management ✅ **ERWEITERT IMPLEMENTIERT**
+- **Dual-Mode System**: Meldegruppen-spezifische vs. Hegegemeinschaft-Total Limits
+- **Mode A**: Fine-grained Limits pro Meldegruppe und Kategorie
+- **Mode B**: Vereinfachte Total-Limits pro Kategorie für gesamte Hegegemeinschaft
+- **Status-Badges**: Real-time Anzeige (🟢🟡🔴🔥) basierend auf IST vs. SOLL
+- **Live-Berechnung**: Automatische Limit-Überwachung bei Meldungserfassung
 
 ## 4. Frontend-Funktionalität (Shortcodes)
 

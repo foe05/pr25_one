@@ -1,4 +1,4 @@
-# Internationalization (i18n) Plan - Abschussplan HGMH v2.2.0
+# Internationalization (i18n) Plan - Abschussplan HGMH v2.4.0
 # Master-Detail Backend & Hegegemeinschafts-Terminologie
 
 ## OVERVIEW

@@ -1,5 +1,5 @@
 # Database Performance Optimization - Hegegemeinschafts-Verwaltung
-# Abschussplan HGMH v2.2.0
+# Abschussplan HGMH v2.4.0
 
 ## PERFORMANCE TARGETS
 

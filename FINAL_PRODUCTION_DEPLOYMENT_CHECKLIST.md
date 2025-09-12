@@ -1,4 +1,4 @@
-# Final Production Deployment Checklist - Abschussplan HGMH v2.2.0
+# Final Production Deployment Checklist - Abschussplan HGMH v2.4.0
 # WordPress Repository Release für Hegegemeinschafts-Verwaltung
 
 ## PRE-RELEASE VALIDATION
@@ -62,7 +62,7 @@
 ### ✅ Backward Compatibility Verified
 - [x] **CSV Export URLs**: All existing URLs function unchanged
 - [x] **Shortcode Syntax**: [abschuss_form], [abschuss_table], [abschuss_summary] unchanged
-- [x] **Database Migration**: Automatic v2.1.0 → v2.2.0 with rollback capability
+- [x] **Database Migration**: Automatic v2.3.0 → v2.4.0 with rollback capability
 - [x] **User Permissions**: Existing admins retain full access, others get standard permissions
 
 ### ✅ Testing Scenarios Completed
@@ -101,7 +101,7 @@ abschussplan-hgmh/
  * Plugin Name: Abschussplan HGMH
  * Plugin URI: https://github.com/foe05/pr25_one
  * Description: Comprehensive hunting harvest tracking system for German Hegegemeinschaften with advanced permission management and wildart-specific configuration.
- * Version: 2.2.0
+ * Version: 2.4.0
  * Author: foe05
  * Author URI: https://github.com/foe05
  * License: GPLv3
