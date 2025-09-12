@@ -402,7 +402,7 @@ class AHGMH_Form_Handler {
             }
         }
         
-        // Validate field5 (Jagdbezirk) - required field
+        // Validate field5 (Meldegruppe) - required field
         if (empty($field5)) {
             $errors['field5'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
@@ -414,7 +414,7 @@ class AHGMH_Form_Handler {
 
             
             if (!in_array($field5, $valid_jagdbezirke)) {
-                $errors['field5'] = __('Bitte wählen Sie einen gültigen Jagdbezirk aus.', 'abschussplan-hgmh');
+                $errors['field5'] = __('Bitte wählen Sie eine gültige Meldegruppe aus.', 'abschussplan-hgmh');
             }
         }
         

@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) {
                         <tr>
                             <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
                             <th><?php echo esc_html__('Abschuss (Ist)', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('Abschuss (Soll)', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('Abschuss (Plan)', 'abschussplan-hgmh'); ?></th>
                             <th><?php echo esc_html__('Frei', 'abschussplan-hgmh'); ?></th>
                             <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
                         </tr>

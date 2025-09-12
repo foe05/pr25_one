@@ -1014,79 +1014,17 @@ class AHGMH_Admin_Page_Modern {
     }
 
     /**
-     * Render species settings tab
+     * Render species settings tab - DEPRECATED - Use Wildarten-Konfiguration tab instead
+     * This tab is kept for backward compatibility but hidden from navigation
      */
     private function render_species_settings() {
-        $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
         ?>
         <div class="ahgmh-panel">
-            <h2><?php echo esc_html__('Wildarten verwalten', 'abschussplan-hgmh'); ?></h2>
-            
-            <!-- Add New Species -->
-            <div class="ahgmh-settings-section">
-                <h3><?php echo esc_html__('Neue Wildart hinzufügen', 'abschussplan-hgmh'); ?></h3>
-                <form id="ahgmh-add-species-form" class="ahgmh-form">
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row">
-                                <label for="new_species"><?php echo esc_html__('Wildart Name', 'abschussplan-hgmh'); ?></label>
-                            </th>
-                            <td>
-                                <input type="text" id="new_species" name="species_name" class="regular-text" required>
-                                <p class="description"><?php echo esc_html__('Name der Wildart (z.B. "Muffelwild")', 'abschussplan-hgmh'); ?></p>
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <p class="submit">
-                        <button type="submit" class="button button-primary">
-                            <span class="dashicons dashicons-plus-alt"></span>
-                            <?php echo esc_html__('Wildart hinzufügen', 'abschussplan-hgmh'); ?>
-                        </button>
-                    </p>
-                </form>
-            </div>
-
-            <!-- Existing Species -->
-            <div class="ahgmh-settings-section">
-                <h3><?php echo esc_html__('Bestehende Wildarten', 'abschussplan-hgmh'); ?></h3>
-                
-                <?php if (empty($species_list)): ?>
-                    <p><?php echo esc_html__('Keine Wildarten gefunden. Fügen Sie die erste Wildart hinzu.', 'abschussplan-hgmh'); ?></p>
-                <?php else: ?>
-                    <table class="wp-list-table widefat fixed striped">
-                        <thead>
-                            <tr>
-                                <th scope="col"><?php echo esc_html__('Wildart', 'abschussplan-hgmh'); ?></th>
-                                <th scope="col"><?php echo esc_html__('Meldungen', 'abschussplan-hgmh'); ?></th>
-                                <th scope="col"><?php echo esc_html__('Aktionen', 'abschussplan-hgmh'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $database = abschussplan_hgmh()->database;
-                            foreach ($species_list as $index => $species): 
-                                $submission_count = $database->count_submissions_by_species($species);
-                            ?>
-                                <tr>
-                                    <td><strong><?php echo esc_html($species); ?></strong></td>
-                                    <td><?php echo esc_html($submission_count); ?> <?php echo esc_html__('Meldungen', 'abschussplan-hgmh'); ?></td>
-                                    <td>
-                                        <?php if (count($species_list) > 1): ?>
-                                            <button class="button button-small button-link-delete ahgmh-delete-species" 
-                                                    data-species="<?php echo esc_attr($species); ?>"
-                                                    data-index="<?php echo esc_attr($index); ?>">
-                                                <?php echo esc_html__('Entfernen', 'abschussplan-hgmh'); ?>
-                                            </button>
-                                        <?php else: ?>
-                                            <span class="description"><?php echo esc_html__('Mindestens eine Wildart erforderlich', 'abschussplan-hgmh'); ?></span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
+            <h2><?php echo esc_html__('Wildarten verwalten (Legacy)', 'abschussplan-hgmh'); ?></h2>
+            <div class="notice notice-info">
+                <p><strong><?php echo esc_html__('Hinweis:', 'abschussplan-hgmh'); ?></strong> 
+                <?php echo esc_html__('Diese Funktion wurde in die neue "Wildarten-Konfiguration" verschoben. Wechseln Sie zum Tab "Wildarten-Konfiguration" für die vollständige Wildarten-Verwaltung.', 'abschussplan-hgmh'); ?>
+                </p>
             </div>
         </div>
         <?php

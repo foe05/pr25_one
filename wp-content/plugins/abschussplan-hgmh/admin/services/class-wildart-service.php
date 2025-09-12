@@ -108,24 +108,53 @@ class AHGMH_Wildart_Service {
     public function get_meldegruppen($wildart) {
         $meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
         
-        if (isset($meldegruppen[$wildart])) {
+        if (isset($meldegruppen[$wildart]) && !empty($meldegruppen[$wildart])) {
             return AHGMH_Validation_Service::sanitize_text_array($meldegruppen[$wildart]);
         }
         
-        // Return default meldegruppen
-        return ['Gruppe 1', 'Gruppe 2', 'Gruppe 3'];
+        // Return default meldegruppen if none configured
+        return ['Gruppe_A', 'Gruppe_B', 'Gruppe_C'];
     }
     
     /**
      * Save meldegruppen for wildart
      */
     public function save_meldegruppen($wildart, $meldegruppen) {
+        // Validate and sanitize input
         $meldegruppen = AHGMH_Validation_Service::sanitize_text_array($meldegruppen);
         
-        $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
-        $wildart_meldegruppen[$wildart] = $meldegruppen;
+        // Remove empty entries
+        $meldegruppen = array_filter($meldegruppen, function($item) {
+            return !empty(trim($item));
+        });
         
-        update_option('ahgmh_wildart_meldegruppen', $wildart_meldegruppen);
+        // Get current configuration
+        $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        $wildart_meldegruppen[$wildart] = array_values($meldegruppen);
+        
+        // Save to database
+        $result = update_option('ahgmh_wildart_meldegruppen', $wildart_meldegruppen);
+        
+        // Also update the global meldegruppen list for backwards compatibility
+        $this->update_global_meldegruppen_list();
+        
+        return $result;
+    }
+    
+    /**
+     * Update global meldegruppen list from all wildarten
+     */
+    private function update_global_meldegruppen_list() {
+        $all_meldegruppen = [];
+        $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        
+        foreach ($wildart_meldegruppen as $wildart => $meldegruppen) {
+            $all_meldegruppen = array_merge($all_meldegruppen, $meldegruppen);
+        }
+        
+        // Remove duplicates and update global list
+        $all_meldegruppen = array_unique($all_meldegruppen);
+        update_option('ahgmh_meldegruppen', $all_meldegruppen);
     }
     
     /**

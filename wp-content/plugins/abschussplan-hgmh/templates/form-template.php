@@ -93,7 +93,7 @@ if (!defined('ABSPATH')) {
         </div>
         
         <div class="mb-3">
-            <label for="field5" class="form-label"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></label>
+            <label for="field5" class="form-label"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></label>
             <select class="form-select" id="field5" name="field5" required>
                 <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'abschussplan-hgmh'); ?></option>
                 

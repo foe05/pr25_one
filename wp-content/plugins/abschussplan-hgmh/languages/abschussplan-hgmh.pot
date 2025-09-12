@@ -108,6 +108,14 @@ msgstr ""
 msgid "Jagdbezirk"
 msgstr ""
 
+#: templates/form-template.php:96
+msgid "Meldegruppe"
+msgstr ""
+
+#: includes/class-form-handler.php:416
+msgid "Bitte wählen Sie eine gültige Meldegruppe aus."
+msgstr ""
+
 #: templates/form-template.php:85
 msgid "Datum"
 msgstr ""

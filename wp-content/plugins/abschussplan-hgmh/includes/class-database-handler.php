@@ -1129,10 +1129,14 @@ class AHGMH_Database_Handler {
                     $all_categories[] = $category;
                 }
                 
-                // Get limits for this species/category
-                $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
-                $species_limits = get_option($limits_key, array());
-                $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+                // Get limits for this species/category - use Hegegemeinschaft total limits
+                $limit_value = $this->get_hegegemeinschaft_limit($species, $category);
+                if ($limit_value === 0) {
+                    // Fallback to old system if no hegegemeinschaft limits configured
+                    $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+                    $species_limits = get_option($limits_key, array());
+                    $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+                }
                 
                 // Accumulate limits
                 if (!isset($combined_limits[$category])) {
@@ -1218,10 +1222,8 @@ class AHGMH_Database_Handler {
                     $all_categories[] = $category;
                 }
                 
-                // Get limits for this species/category
-                $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
-                $species_limits = get_option($limits_key, array());
-                $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+                // Get limits using new limits system - meldegruppe-specific or fallback
+                $limit_value = $this->get_applicable_limit($species, $meldegruppe, $category);
                 
                 // Accumulate limits
                 if (!isset($combined_limits[$category])) {
@@ -1657,5 +1659,43 @@ class AHGMH_Database_Handler {
                 AND field2 = %s 
                 AND field4 = %s
         ", sanitize_text_field($species), sanitize_text_field($category), sanitize_text_field($meldegruppe)));
+    }
+    
+    /**
+     * Get applicable limit for species/meldegruppe/category combination
+     * Implements fallback logic: meldegruppe-specific > hegegemeinschaft total > old system
+     * 
+     * @param string $species Species name
+     * @param string $meldegruppe Meldegruppe name (can be null for total limits)
+     * @param string $category Category name
+     * @return int
+     */
+    public function get_applicable_limit($species, $meldegruppe, $category) {
+        global $wpdb;
+        
+        if (!empty($meldegruppe)) {
+            // Try to get meldegruppe-specific limit from config table
+            $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+            $limit_value = $wpdb->get_var($wpdb->prepare("
+                SELECT limit_value FROM $meldegruppen_config_table 
+                WHERE wildart = %s AND meldegruppe = %s AND kategorie = %s 
+                  AND limit_value IS NOT NULL AND limit_mode = 'meldegruppen_specific'
+            ", sanitize_text_field($species), sanitize_text_field($meldegruppe), sanitize_text_field($category)));
+            
+            if ($limit_value !== null) {
+                return intval($limit_value);
+            }
+        }
+        
+        // Fallback to hegegemeinschaft total limit
+        $hegegemeinschaft_limit = $this->get_hegegemeinschaft_limit($species, $category);
+        if ($hegegemeinschaft_limit > 0) {
+            return $hegegemeinschaft_limit;
+        }
+        
+        // Final fallback to old WordPress options system
+        $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+        $species_limits = get_option($limits_key, array());
+        return isset($species_limits[$category]) ? intval($species_limits[$category]) : 0;
     }
 }

@@ -105,6 +105,12 @@ msgstr "Kategorie"
 msgid "Jagdbezirk"
 msgstr "Jagdbezirk"
 
+msgid "Meldegruppe"
+msgstr "Meldegruppe"
+
+msgid "Bitte wählen Sie eine gültige Meldegruppe aus."
+msgstr "Bitte wählen Sie eine gültige Meldegruppe aus."
+
 msgid "Datum"
 msgstr "Datum"
 

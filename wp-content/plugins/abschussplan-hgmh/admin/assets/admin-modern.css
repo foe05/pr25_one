@@ -815,6 +815,42 @@
     transform: scale(1.2);
 }
 
+/* Validation styles for limit inputs */
+.limit-input.validation-error {
+    border-color: #dc3232 !important;
+    box-shadow: 0 0 2px rgba(220, 50, 50, 0.6);
+}
+
+.limit-validation-notice {
+    margin: 15px 0;
+    animation: fadeInOut 3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-10px); }
+    10%, 90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Enhanced limit status badges */
+.limit-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    background: #e8f5e8;
+    color: #2e7d32;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.limit-status-badge .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
 /* Mobile responsive modal */
 @media (max-width: 782px) {
     .ahgmh-modal-content {
@@ -836,6 +872,38 @@
     .limits-config-table {
         overflow-x: auto;
     }
+}
+
+/* === Obmann Edit Mode === */
+.ahgmh-edit-notice {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    font-weight: 500;
+    position: relative;
+}
+
+.ahgmh-edit-notice::before {
+    content: "\f464";
+    font-family: dashicons;
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+#obmann-assignment-form.edit-mode {
+    border: 2px solid #2271b1;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+#obmann-assignment-form.edit-mode .form-table {
+    background: white;
+    border-radius: 6px;
+    margin: 15px;
+    padding: 20px;
 }
 
 /* === Master-Detail Interface === */

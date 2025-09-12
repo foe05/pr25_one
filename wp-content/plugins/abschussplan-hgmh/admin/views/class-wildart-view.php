@@ -185,45 +185,142 @@ class AHGMH_Wildart_View {
         $limits = $config['limits'] ?? [];
         $mode = $config['limit_mode'] ?? 'meldegruppen_specific';
         
-        if (empty($categories) || empty($meldegruppen)) {
-            echo '<p class="notice notice-warning">' . esc_html__('Bitte konfigurieren Sie zuerst Kategorien und Meldegruppen für diese Wildart.', 'abschussplan-hgmh') . '</p>';
+        if (empty($categories)) {
+            echo '<p class="notice notice-warning">' . esc_html__('Bitte konfigurieren Sie zuerst Kategorien für diese Wildart.', 'abschussplan-hgmh') . '</p>';
+            return;
+        }
+        
+        if (empty($meldegruppen)) {
+            echo '<p class="notice notice-warning">' . esc_html__('Bitte konfigurieren Sie zuerst Meldegruppen für diese Wildart.', 'abschussplan-hgmh') . '</p>';
             return;
         }
         
         ?>
         <div class="limits-table-container">
-            <table class="widefat striped limits-table">
-                <thead>
-                    <tr>
-                        <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
-                        <?php foreach ($meldegruppen as $meldegruppe): ?>
-                            <th><?php echo esc_html($meldegruppe); ?></th>
-                        <?php endforeach; ?>
-                        <th><?php echo esc_html__('Gesamt', 'abschussplan-hgmh'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($categories as $category): ?>
+            <?php if ($mode === 'meldegruppen_specific'): ?>
+                <!-- Meldegruppen-spezifische Limits Tabelle -->
+                <h4><?php echo esc_html__('Abschuss-Limits (Meldegruppen-spezifisch)', 'abschussplan-hgmh'); ?></h4>
+                <table class="widefat striped limits-table">
+                    <thead>
                         <tr>
-                            <td><strong><?php echo esc_html($category); ?></strong></td>
+                            <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
                             <?php foreach ($meldegruppen as $meldegruppe): ?>
+                                <th><?php echo esc_html($meldegruppe); ?></th>
+                            <?php endforeach; ?>
+                            <th><?php echo esc_html__('Gesamt', 'abschussplan-hgmh'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $category): ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($category); ?></strong></td>
+                                <?php foreach ($meldegruppen as $meldegruppe): ?>
+                                    <td>
+                                        <input type="number" 
+                                               class="limit-input small-text limit-validation" 
+                                               data-meldegruppe="<?php echo esc_attr($meldegruppe); ?>" 
+                                               data-kategorie="<?php echo esc_attr($category); ?>"
+                                               value="<?php echo esc_attr($limits[$meldegruppe][$category] ?? '0'); ?>" 
+                                               min="0" 
+                                               step="1"
+                                               title="<?php echo esc_attr__('Nur positive Zahlen erlaubt', 'abschussplan-hgmh'); ?>" />
+                                    </td>
+                                <?php endforeach; ?>
+                                <td>
+                                    <span id="gesamt-<?php echo esc_attr(strtolower(str_replace([' ', '(', ')'], ['-', '', ''], $category))); ?>" class="gesamt-value">0</span>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+            <?php else: ?>
+                <!-- Hegegemeinschaft-Gesamt-Limits Tabelle -->
+                <h4><?php echo esc_html__('Abschuss-Limits (Hegegemeinschaft-Gesamt)', 'abschussplan-hgmh'); ?></h4>
+                <table class="widefat striped limits-table">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('Gesamt-Limit', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categories as $category): ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($category); ?></strong></td>
                                 <td>
                                     <input type="number" 
-                                           class="limit-input small-text" 
-                                           data-meldegruppe="<?php echo esc_attr($meldegruppe); ?>" 
+                                           class="limit-input regular-text limit-validation" 
+                                           data-meldegruppe="gesamt" 
                                            data-kategorie="<?php echo esc_attr($category); ?>"
-                                           value="<?php echo esc_attr($limits[$meldegruppe][$category] ?? '0'); ?>" 
-                                           min="0" />
+                                           value="<?php echo esc_attr($limits['gesamt'][$category] ?? '0'); ?>" 
+                                           min="0" 
+                                           step="1"
+                                           title="<?php echo esc_attr__('Nur positive Zahlen erlaubt', 'abschussplan-hgmh'); ?>" />
                                 </td>
-                            <?php endforeach; ?>
-                            <td>
-                                <span id="gesamt-<?php echo esc_attr(strtolower(str_replace([' ', '(', ')'], ['-', '', ''], $category))); ?>" class="gesamt-value">0</span>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                                <td>
+                                    <span class="limit-status-badge">
+                                        <span class="dashicons dashicons-yes-alt"></span>
+                                        <?php echo esc_html__('Aktiv', 'abschussplan-hgmh'); ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            // Validate negative values on input
+            $(document).on('input', '.limit-validation', function() {
+                var value = parseInt($(this).val());
+                if (isNaN(value) || value < 0) {
+                    $(this).val('0');
+                    $(this).css('border-color', '#dc3232');
+                    showLimitValidationError('Negative Werte sind nicht erlaubt. Wert wurde auf 0 gesetzt.');
+                } else {
+                    $(this).css('border-color', '');
+                }
+                
+                // Update totals for meldegruppen_specific mode
+                updateGesamtTotals();
+            });
+            
+            function showLimitValidationError(message) {
+                if ($('.limit-validation-notice').length === 0) {
+                    $('<div class="notice notice-error limit-validation-notice"><p>' + message + '</p></div>')
+                        .insertBefore('.limits-table-container')
+                        .delay(3000)
+                        .fadeOut(function() { $(this).remove(); });
+                }
+            }
+            
+            function updateGesamtTotals() {
+                var totals = {};
+                $('.limit-input').each(function() {
+                    if ($(this).data('meldegruppe') === 'gesamt') return; // Skip total mode inputs
+                    
+                    var kategorie = $(this).data('kategorie');
+                    var value = parseInt($(this).val()) || 0;
+                    
+                    if (!totals[kategorie]) totals[kategorie] = 0;
+                    totals[kategorie] += value;
+                });
+                
+                // Update gesamt displays
+                for (var kategorie in totals) {
+                    var gesamtId = 'gesamt-' + kategorie.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                    $('#' + gesamtId).text(totals[kategorie]);
+                }
+            }
+            
+            // Initialize totals
+            updateGesamtTotals();
+        });
+        </script>
         <?php
     }
 }
