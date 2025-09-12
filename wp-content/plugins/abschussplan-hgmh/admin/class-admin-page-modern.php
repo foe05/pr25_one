@@ -20,7 +20,6 @@ class AHGMH_Admin_Page_Modern {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
-        add_action('wp_ajax_ahgmh_dashboard_stats', array($this, 'ajax_dashboard_stats'));
         add_action('wp_ajax_ahgmh_quick_export', array($this, 'ajax_quick_export'));
         add_action('wp_ajax_ahgmh_export_data', array($this, 'ajax_export_data'));
         add_action('wp_ajax_ahgmh_delete_submission', array($this, 'ajax_delete_submission'));
