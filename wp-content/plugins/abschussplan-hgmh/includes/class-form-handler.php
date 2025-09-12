@@ -102,21 +102,7 @@ class AHGMH_Form_Handler {
             return '<div class="alert alert-danger">Unbekannte Wildart "' . esc_html($selected_species) . '". Verfügbare Wildarten: ' . implode(', ', $available_species) . '</div>';
         }
         
-        // Get user information for meldegruppe logic
-        $user_id = get_current_user_id();
-        $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
-        
-        // Determine available meldegruppen based on user permissions
-        if (AHGMH_Permissions_Service::is_vorstand($user_id)) {
-            // Vorstand: All meldegruppen for this wildart
-            $database = abschussplan_hgmh()->database;
-            $available_meldegruppen = $database->get_meldegruppen_for_wildart($selected_species);
-            $preselected_meldegruppe = null;
-        } else {
-            // Obmann: Only assigned meldegruppe
-            $available_meldegruppen = array($user_meldegruppe);
-            $preselected_meldegruppe = $user_meldegruppe;
-        }
+        // Meldegruppe logic is now handled directly in the form template
         
         // Get limits to check if any category has reached its limit
         $limits = $this->get_category_limits($selected_species);
@@ -406,14 +392,11 @@ class AHGMH_Form_Handler {
         if (empty($field5)) {
             $errors['field5'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
-            // Validate that the selected Jagdbezirk exists and is active
+            // Validate that the selected Meldegruppe exists in the current wildart configuration
             $database = abschussplan_hgmh()->database;
-            $active_jagdbezirke = $database->get_active_jagdbezirke();
-            $valid_jagdbezirke = array_column($active_jagdbezirke, 'jagdbezirk');
+            $valid_meldegruppen = $database->get_meldegruppen_for_wildart($game_species);
             
-
-            
-            if (!in_array($field5, $valid_jagdbezirke)) {
+            if (!in_array($field5, $valid_meldegruppen)) {
                 $errors['field5'] = __('Bitte wählen Sie eine gültige Meldegruppe aus.', 'abschussplan-hgmh');
             }
         }
@@ -1339,7 +1322,7 @@ class AHGMH_Form_Handler {
             }
             
             fclose($output);
-            exit;
+            wp_die();
             
         } catch (Exception $e) {
             // Log error and return JSON error response

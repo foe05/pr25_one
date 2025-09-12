@@ -20,14 +20,16 @@ class AHGMH_Validation_Service {
     public static function verify_ajax_request($action = 'ahgmh_admin_nonce', $capability = 'manage_options') {
         // Verify nonce - use 'nonce' parameter name to match JavaScript
         if (!check_ajax_referer($action, 'nonce', false)) {
-            wp_send_json_error(__('Sicherheitsprüfung fehlgeschlagen.', 'abschussplan-hgmh'));
-            exit;
+            wp_send_json_error(array(
+                'message' => __('Sicherheitsprüfung fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
         }
         
         // Verify user capability
         if (!current_user_can($capability)) {
-            wp_send_json_error(__('Unzureichende Berechtigungen.', 'abschussplan-hgmh'));
-            exit;
+            wp_send_json_error(array(
+                'message' => __('Unzureichende Berechtigungen.', 'abschussplan-hgmh')
+            ));
         }
     }
     
@@ -53,8 +55,9 @@ class AHGMH_Validation_Service {
         if (isset($data['name'])) {
             $sanitized['name'] = sanitize_text_field($data['name']);
             if (empty($sanitized['name'])) {
-                wp_send_json_error('Wildart name cannot be empty');
-                exit;
+                wp_send_json_error(array(
+                    'message' => __('Wildart-Name darf nicht leer sein', 'abschussplan-hgmh')
+                ));
             }
         }
         

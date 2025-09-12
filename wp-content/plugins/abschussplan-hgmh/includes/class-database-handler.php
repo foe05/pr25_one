@@ -1184,8 +1184,18 @@ class AHGMH_Database_Handler {
         $categories_key = 'ahgmh_categories_' . sanitize_key($species);
         $categories = get_option($categories_key, array());
         
-        $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
-        $limits = get_option($limits_key, array());
+        // Use new limits system - show hegegemeinschaft total limits for species-only view
+        $limits = array();
+        foreach ($categories as $category) {
+            $limit_value = $this->get_hegegemeinschaft_limit($species, $category);
+            if ($limit_value === 0) {
+                // Fallback to old system if no hegegemeinschaft limits configured
+                $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+                $species_limits = get_option($limits_key, array());
+                $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+            }
+            $limits[$category] = $limit_value;
+        }
         
         $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
         $allow_exceeding = get_option($exceeding_key, array());
@@ -1272,8 +1282,11 @@ class AHGMH_Database_Handler {
         $categories_key = 'ahgmh_categories_' . sanitize_key($species);
         $categories = get_option($categories_key, array());
         
-        $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
-        $limits = get_option($limits_key, array());
+        // Use new limits system with get_applicable_limit for meldegruppe-specific limits
+        $limits = array();
+        foreach ($categories as $category) {
+            $limits[$category] = $this->get_applicable_limit($species, $meldegruppe, $category);
+        }
         
         $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
         $allow_exceeding = get_option($exceeding_key, array());

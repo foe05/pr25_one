@@ -25,9 +25,7 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_delete_submission', array($this, 'ajax_delete_submission'));
         add_action('wp_ajax_ahgmh_danger_action', array($this, 'ajax_danger_action'));
         // Jagdbezirk handlers moved to emergency file
-        // add_action('wp_ajax_ahgmh_add_jagdbezirk', array($this, 'ajax_add_jagdbezirk'));
-        // add_action('wp_ajax_ahgmh_edit_jagdbezirk', array($this, 'ajax_edit_jagdbezirk'));
-        // add_action('wp_ajax_ahgmh_delete_jagdbezirk', array($this, 'ajax_delete_jagdbezirk'));
+        // Legacy handlers - these are now handled by AHGMH_Wildart_Controller
         add_action('wp_ajax_ahgmh_add_species', array($this, 'ajax_add_species'));
         add_action('wp_ajax_ahgmh_delete_species', array($this, 'ajax_delete_species'));
         add_action('wp_ajax_ahgmh_add_category', array($this, 'ajax_add_category'));
@@ -38,25 +36,11 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_save_category_settings', array($this, 'ajax_save_category_settings'));
         add_action('wp_ajax_save_export_config', array($this, 'ajax_save_export_config'));
         add_action('wp_ajax_ahgmh_toggle_wildart_specific', array($this, 'ajax_toggle_wildart_specific'));
-        // Meldegruppen handlers moved to emergency file  
-        // add_action('wp_ajax_ahgmh_load_wildart_meldegruppen', array($this, 'ajax_load_wildart_meldegruppen'));
-        // add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
-        // add_action('wp_ajax_ahgmh_load_meldegruppen_limits', array($this, 'ajax_load_meldegruppen_limits'));
-        // add_action('wp_ajax_ahgmh_toggle_meldegruppe_custom_limits', array($this, 'ajax_toggle_meldegruppe_custom_limits'));
-        // add_action('wp_ajax_ahgmh_save_meldegruppe_limits', array($this, 'ajax_save_meldegruppe_limits'));
         add_action('wp_ajax_ahgmh_save_species_default_limits', array($this, 'ajax_save_species_default_limits'));
         add_action('wp_ajax_ahgmh_save_jagdbezirk_limits', array($this, 'ajax_save_jagdbezirk_limits'));
         add_action('wp_ajax_ahgmh_load_jagdbezirk_limits', array($this, 'ajax_load_jagdbezirk_limits'));
         add_action('wp_ajax_ahgmh_change_wildart', array($this, 'ajax_change_wildart'));
         add_action('wp_ajax_ahgmh_load_wildart_jagdbezirke', array($this, 'ajax_load_wildart_jagdbezirke'));
-        // Master-Detail UI handlers moved to emergency file
-        // add_action('wp_ajax_ahgmh_create_wildart', array($this, 'ajax_create_wildart'));
-        // add_action('wp_ajax_ahgmh_delete_wildart', array($this, 'ajax_delete_wildart'));
-        // add_action('wp_ajax_ahgmh_load_wildart_config', array($this, 'ajax_load_wildart_config'));
-        // add_action('wp_ajax_ahgmh_save_wildart_categories', array($this, 'ajax_save_wildart_categories'));
-        // add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
-        // add_action('wp_ajax_ahgmh_toggle_limit_mode', array($this, 'ajax_toggle_limit_mode'));
-        // add_action('wp_ajax_ahgmh_save_limits', array($this, 'ajax_save_limits'));
         
         // Obmann Management AJAX handlers
         add_action('wp_ajax_ahgmh_get_meldegruppen_for_wildart', array($this, 'ajax_get_meldegruppen_for_wildart'));
@@ -3771,82 +3755,27 @@ class AHGMH_Admin_Page_Modern {
                 </table>
             </div>
             
-            <!-- Hegegemeinschaft Total Limits -->
+            <!-- Hegegemeinschaft Total Limits (Simplified Mode - no complex breakdown) -->
             <div class="limits-matrix hegegemeinschaft-total" id="hegegemeinschaft-limits-<?php echo esc_attr($wildart); ?>" 
                  style="display: <?php echo $current_mode === 'hegegemeinschaft_total' ? 'block' : 'none'; ?>">
-                <h4>📋 <?php echo esc_html(sprintf(__('Abschuss-Limits für %s (Gesamt-Hegegemeinschaft)', 'abschussplan-hgmh'), $wildart)); ?></h4>
-                
-                <table class="ahgmh-limits-table">
-                    <thead>
-                        <tr>
-                            <th><?php echo esc_html__('HEGEGEMEINSCHAFTS-LIMITS', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('SOLL', 'abschussplan-hgmh'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($categories as $category): ?>
-                        <tr>
-                            <td><strong><?php echo esc_html($category); ?></strong></td>
-                            <td>
-                                <input type="number" 
-                                       name="hegegemeinschaft_limit[<?php echo esc_attr($wildart); ?>][<?php echo esc_attr($category); ?>]" 
-                                       value="<?php echo esc_attr($hegegemeinschaft_limits[$category] ?? ''); ?>" 
-                                       class="hegegemeinschaft-limit-input" />
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                
-                <!-- IST-WERTE nach Meldegruppen (Read-only Aufschlüsselung) -->
-                <h4><?php echo esc_html__('IST-WERTE nach Meldegruppen (Aufschlüsselung):', 'abschussplan-hgmh'); ?></h4>
-                <table class="ahgmh-ist-breakdown-table">
-                    <thead>
-                        <tr>
-                            <th><?php echo esc_html__('KATEGORIE', 'abschussplan-hgmh'); ?></th>
-                            <?php foreach ($meldegruppen as $gruppe): ?>
-                                <th><?php echo esc_html($gruppe); ?></th>
-                            <?php endforeach; ?>
-                            <th><?php echo esc_html__('GESAMT-IST', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('STATUS', 'abschussplan-hgmh'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($categories as $category): ?>
-                        <tr>
-                            <td><strong><?php echo esc_html($category); ?></strong></td>
-                            <?php 
-                            $gesamt_ist = 0;
-                            foreach ($meldegruppen as $gruppe): 
-                                $ist = $ist_values[$gruppe][$category] ?? 0;
-                                $gesamt_ist += $ist;
-                            ?>
-                                <td><?php echo esc_html($ist); ?></td>
-                            <?php endforeach; ?>
-                            <td><strong><?php echo esc_html($gesamt_ist); ?></strong></td>
-                            <td><?php echo ahgmh_get_status_badge_fallback($gesamt_ist, intval($hegegemeinschaft_limits[$category] ?? 0)); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Hegegemeinschaft Total Limits (Simple Mode) -->
-            <div class="limits-matrix hegegemeinschaft-total" id="hegegemeinschaft-limits-<?php echo esc_attr($wildart); ?>" 
-                 style="display: <?php echo $current_mode === 'hegegemeinschaft_total' ? 'block' : 'none'; ?>">
-                <h4>🎯 <?php echo esc_html(sprintf(__('Gesamt-Limits für %s (Hegegemeinschaft)', 'abschussplan-hgmh'), $wildart)); ?></h4>
+                <h4>🎯 <?php echo esc_html(sprintf(__('Abschuss-Limits für %s (Gesamt-Hegegemeinschaft)', 'abschussplan-hgmh'), $wildart)); ?></h4>
                 
                 <table class="ahgmh-limits-table">
                     <thead>
                         <tr>
                             <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('Gesamt-Limit', 'abschussplan-hgmh'); ?></th>
+                            <th><?php echo esc_html__('Gesamt-Limit (SOLL)', 'abschussplan-hgmh'); ?></th>
                             <th><?php echo esc_html__('Aktuell (IST)', 'abschussplan-hgmh'); ?></th>
                             <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($categories as $category): ?>
+                        <?php foreach ($categories as $category): 
+                            $current_total = 0;
+                            foreach ($meldegruppen as $gruppe) {
+                                $current_total += $ist_values[$gruppe][$category] ?? 0;
+                            }
+                        ?>
                         <tr>
                             <td><strong><?php echo esc_html($category); ?></strong></td>
                             <td>
@@ -3856,20 +3785,11 @@ class AHGMH_Admin_Page_Modern {
                                        data-kategorie="<?php echo esc_attr($category); ?>"
                                        data-meldegruppe="total"
                                        class="limit-input total-limit-input" 
-                                       min="0" />
+                                       min="0" 
+                                       placeholder="0" />
                             </td>
-                            <td>
-                                <?php 
-                                $current_total = 0;
-                                foreach ($meldegruppen as $gruppe) {
-                                    $current_total += $ist_values[$gruppe][$category] ?? 0;
-                                }
-                                echo esc_html($current_total);
-                                ?>
-                            </td>
-                            <td>
-                                <?php echo ahgmh_get_status_badge_fallback($current_total, intval($hegegemeinschaft_limits[$category] ?? 0)); ?>
-                            </td>
+                            <td><strong><?php echo esc_html($current_total); ?></strong></td>
+                            <td><?php echo ahgmh_get_status_badge_fallback($current_total, intval($hegegemeinschaft_limits[$category] ?? 0)); ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -4373,7 +4293,7 @@ class AHGMH_Admin_Page_Modern {
         check_ajax_referer('ahgmh_admin_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
-            wp_send_json_error('Keine Berechtigung');
+            wp_send_json_error(__('Keine Berechtigung', 'abschussplan-hgmh'));
         }
         
         $user_id = intval($_POST['user_id']);
@@ -4381,26 +4301,43 @@ class AHGMH_Admin_Page_Modern {
         $meldegruppe = sanitize_text_field($_POST['meldegruppe']);
         
         if (!$user_id || !$wildart || !$meldegruppe) {
-            wp_send_json_error('Alle Felder sind erforderlich');
+            wp_send_json_error(__('Alle Felder sind erforderlich', 'abschussplan-hgmh'));
         }
         
         // Validate that user exists
         $user = get_user_by('ID', $user_id);
         if (!$user) {
-            wp_send_json_error('Benutzer nicht gefunden');
+            wp_send_json_error(__('Benutzer nicht gefunden', 'abschussplan-hgmh'));
         }
         
         // Validate that meldegruppe exists for this wildart
         $database = abschussplan_hgmh()->database;
         if (!$database->meldegruppe_exists_for_wildart($wildart, $meldegruppe)) {
-            wp_send_json_error('Meldegruppe existiert nicht für diese Wildart');
+            wp_send_json_error(__('Meldegruppe existiert nicht für diese Wildart', 'abschussplan-hgmh'));
         }
         
-        // Use permissions service to assign
-        if (AHGMH_Permissions_Service::assign_user_to_meldegruppe($user_id, $wildart, $meldegruppe)) {
-            wp_send_json_success('Obmann erfolgreich zugewiesen');
-        } else {
-            wp_send_json_error('Fehler beim Zuweisen des Obmanns');
+        try {
+            // Use permissions service to assign
+            if (AHGMH_Permissions_Service::assign_user_to_meldegruppe($user_id, $wildart, $meldegruppe)) {
+                wp_send_json_success(array(
+                    'message' => sprintf(
+                        __('Obmann %s erfolgreich der Meldegruppe %s (%s) zugewiesen', 'abschussplan-hgmh'),
+                        $user->display_name,
+                        $meldegruppe,
+                        $wildart
+                    ),
+                    'user_id' => $user_id,
+                    'wildart' => $wildart,
+                    'meldegruppe' => $meldegruppe
+                ));
+            } else {
+                wp_send_json_error(__('Fehler beim Zuweisen des Obmanns', 'abschussplan-hgmh'));
+            }
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Zuweisen: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
         }
     }
     
@@ -4411,21 +4348,40 @@ class AHGMH_Admin_Page_Modern {
         check_ajax_referer('ahgmh_admin_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
-            wp_send_json_error('Keine Berechtigung');
+            wp_send_json_error(__('Keine Berechtigung', 'abschussplan-hgmh'));
         }
         
         $user_id = intval($_POST['user_id']);
         $wildart = sanitize_text_field($_POST['wildart']);
         
         if (!$user_id || !$wildart) {
-            wp_send_json_error('User ID und Wildart sind erforderlich');
+            wp_send_json_error(__('User ID und Wildart sind erforderlich', 'abschussplan-hgmh'));
         }
         
-        // Use permissions service to remove assignment
-        if (AHGMH_Permissions_Service::remove_user_assignment($user_id, $wildart)) {
-            wp_send_json_success('Zuweisung erfolgreich entfernt');
-        } else {
-            wp_send_json_error('Fehler beim Entfernen der Zuweisung');
+        // Get user info for success message
+        $user = get_user_by('ID', $user_id);
+        $user_name = $user ? $user->display_name : 'User ID ' . $user_id;
+        
+        try {
+            // Use permissions service to remove assignment
+            if (AHGMH_Permissions_Service::remove_user_assignment($user_id, $wildart)) {
+                wp_send_json_success(array(
+                    'message' => sprintf(
+                        __('Zuweisung für %s (%s) erfolgreich entfernt', 'abschussplan-hgmh'),
+                        $user_name,
+                        $wildart
+                    ),
+                    'user_id' => $user_id,
+                    'wildart' => $wildart
+                ));
+            } else {
+                wp_send_json_error(__('Fehler beim Entfernen der Zuweisung', 'abschussplan-hgmh'));
+            }
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Entfernen: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
         }
     }
     

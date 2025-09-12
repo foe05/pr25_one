@@ -78,7 +78,8 @@
 
                     showNotification('CSV Export erfolgreich!', 'success');
                 } else {
-                    showNotification('Fehler beim CSV Export: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                    var errorMsg = response.data && response.data.message ? response.data.message : (response.data || 'Unbekannter Fehler');
+                    showNotification('Fehler beim CSV Export: ' + errorMsg, 'error');
                 }
             },
             error: function () {
@@ -245,9 +246,10 @@
             saveLimits(wildart);
         });
 
-        // Update totals when individual limits change
-        $(document).on('input', '.limit-input', function () {
+        // Update totals when individual limits change + validate
+        $(document).on('input', '.limit-input, .hegegemeinschaft-limit-input', function () {
             updateGesamt();
+            validateLimitInputs();
         });
 
         // Category CRUD handlers
@@ -487,9 +489,19 @@
     }
 
     /**
-     * Toggle limit mode
+     * Toggle limit mode and update display
      */
     function toggleLimitMode(wildart, mode) {
+        // Immediately update display based on mode
+        if (mode === 'meldegruppen_specific') {
+            $('#meldegruppen-limits-' + wildart).show();
+            $('#hegegemeinschaft-limits-' + wildart).hide();
+        } else {
+            $('#meldegruppen-limits-' + wildart).hide();
+            $('#hegegemeinschaft-limits-' + wildart).show();
+        }
+        
+        // Save mode to database
         $.ajax({
             url: ahgmh_admin.ajax_url,
             type: 'POST',
@@ -541,33 +553,55 @@
     }
 
     /**
-     * Save limits with validation
+     * Validate all limit inputs in real-time
      */
-    function saveLimits(wildart) {
-        var limits = {};
+    function validateLimitInputs() {
         var hasNegativeValues = false;
+        var negativeFields = [];
         
-        // Validate all inputs before saving
-        $('.limit-input').each(function() {
-            var value = parseInt($(this).val()) || 0;
+        $('.limit-input, .hegegemeinschaft-limit-input').each(function() {
+            var $input = $(this);
+            var value = parseInt($input.val()) || 0;
+            
             if (value < 0) {
                 hasNegativeValues = true;
-                $(this).val('0'); // Auto-correct negative values
-                $(this).css('border-color', '#dc3232');
+                negativeFields.push($input);
+                $input.addClass('error-field');
+                $input.css('border-color', '#dc3232');
             } else {
-                $(this).css('border-color', '');
+                $input.removeClass('error-field');
+                $input.css('border-color', '');
             }
         });
         
-        if (hasNegativeValues) {
-            showNotification('Negative Werte wurden automatisch auf 0 gesetzt.', 'warning');
-            return; // Stop saving and let user review
+        return { hasNegativeValues: hasNegativeValues, negativeFields: negativeFields };
+    }
+
+    /**
+     * Save limits with enhanced validation
+     */
+    function saveLimits(wildart) {
+        var limits = {};
+        
+        // Validate all inputs first
+        var validation = validateLimitInputs();
+        
+        if (validation.hasNegativeValues) {
+            var fieldCount = validation.negativeFields.length;
+            showNotification('Fehler: ' + fieldCount + ' Feld(er) enthalten negative Werte. Bitte korrigieren Sie diese vor dem Speichern.', 'error');
+            
+            // Focus on first negative field
+            if (validation.negativeFields.length > 0) {
+                validation.negativeFields[0].focus();
+            }
+            return false; // Stop saving
         }
 
-        $('.limit-input').each(function () {
-            var meldegruppe = $(this).data('meldegruppe');
-            var kategorie = $(this).data('kategorie');
-            var value = Math.max(0, parseInt($(this).val()) || 0); // Ensure non-negative
+        $('.limit-input, .hegegemeinschaft-limit-input').each(function () {
+            var $input = $(this);
+            var meldegruppe = $input.data('meldegruppe') || 'gesamt';
+            var kategorie = $input.data('kategorie');
+            var value = Math.max(0, parseInt($input.val()) || 0); // Ensure non-negative
 
             // Handle both meldegruppen-specific and total limits
             if (!limits[meldegruppe]) {
@@ -595,6 +629,8 @@
             success: function (response) {
                 if (response.success) {
                     showNotification('Limits erfolgreich gespeichert!', 'success');
+                    // Clear any error styling
+                    $('.limit-input, .hegegemeinschaft-limit-input').removeClass('error-field').css('border-color', '');
                 } else {
                     showNotification('Fehler beim Speichern der Limits: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
@@ -606,6 +642,8 @@
                 $btn.prop('disabled', false).text(originalText);
             }
         });
+        
+        return true;
     }
 
     /**
@@ -639,7 +677,7 @@
         }, 300);
     }
 
-    // Add CSS for notifications
+    // Add CSS for notifications and animations
     var notificationCSS = `
 <style>
 .ahgmh-notifications {
@@ -702,6 +740,31 @@
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
     border-top: 5px solid #333;
+}
+
+.ahgmh-spinning {
+    animation: ahgmh-spin 1s linear infinite;
+}
+
+@keyframes ahgmh-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.ahgmh-edit-notice {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 20px;
+    color: #856404;
+    font-size: 14px;
+}
+
+.ahgmh-form.edit-mode {
+    border-left: 4px solid #0073aa;
+    padding-left: 16px;
+    background: #f8f9fa;
 }
 </style>
 `;
@@ -810,6 +873,14 @@
      * Assign obmann to meldegruppe
      */
     function assignObmann() {
+        var $form = $('#obmann-assignment-form');
+        var $submitBtn = $form.find('button[type="submit"]');
+        var originalBtnText = $submitBtn.text();
+        var isEditMode = $form.hasClass('edit-mode');
+        
+        // Disable submit button during processing
+        $submitBtn.prop('disabled', true).text(isEditMode ? 'Aktualisiere...' : 'Speichere...');
+
         var formData = {
             action: 'ahgmh_assign_obmann_meldegruppe',
             user_id: $('#user_id').val(),
@@ -824,16 +895,32 @@
             data: formData,
             success: function (response) {
                 if (response.success) {
-                    showNotification('Obmann erfolgreich zugewiesen!', 'success');
+                    var message = isEditMode ? 'Zuweisung erfolgreich aktualisiert!' : 'Obmann erfolgreich zugewiesen!';
+                    showNotification(message, 'success');
+                    
+                    // Reset form and clear edit mode
                     $('#obmann-assignment-form')[0].reset();
                     $('#meldegruppe').prop('disabled', true).html('<option value="">Erst Wildart auswählen...</option>');
+                    clearEditMode();
+                    
+                    // Refresh table
                     refreshObmannTable();
                 } else {
-                    showNotification(response.data || 'Fehler beim Zuweisen', 'error');
+                    var errorMsg = response.data && response.data.message ? response.data.message : (response.data || 'Fehler beim Speichern der Zuweisung');
+                    showNotification(errorMsg, 'error');
                 }
             },
             error: function () {
-                showNotification('Fehler beim Zuweisen des Obmanns', 'error');
+                showNotification('Netzwerkfehler beim Speichern der Zuweisung', 'error');
+            },
+            complete: function () {
+                // Re-enable submit button
+                $submitBtn.prop('disabled', false);
+                if (!$form.hasClass('edit-mode')) {
+                    $submitBtn.text('Obmann zuweisen');
+                } else {
+                    $submitBtn.text('Zuweisung aktualisieren');
+                }
             }
         });
     }
@@ -842,35 +929,38 @@
      * Edit assignment
      */
     function editAssignment(userId, wildart, currentMeldegruppe) {
-        if (confirm('Möchten Sie diese Zuweisung bearbeiten?\n\nUser: ' + $('#obmann-assignments-table').find('tr[data-user-id="' + userId + '"][data-wildart="' + wildart + '"]').find('.column-user strong').text() + '\nWildart: ' + wildart + '\nAktuelle Meldegruppe: ' + currentMeldegruppe)) {
-
-            // Show loading state
+        var userName = $('#obmann-assignments-table').find('tr[data-user-id="' + userId + '"][data-wildart="' + wildart + '"]').find('.column-user strong').text();
+        
+        if (confirm('Möchten Sie diese Zuweisung bearbeiten?\n\nUser: ' + userName + '\nWildart: ' + wildart + '\nAktuelle Meldegruppe: ' + currentMeldegruppe)) {
+            
             var $form = $('#obmann-assignment-form');
             var $submitBtn = $form.find('button[type="submit"]');
-            var originalBtnText = $submitBtn.text();
-
-            $submitBtn.prop('disabled', true).text('Bearbeite...');
-
+            
+            // Clear edit mode first
+            clearEditMode();
+            
             // Pre-fill the form
             $('#user_id').val(userId);
-            $('#wildart').val(wildart).trigger('change');
-
-            // Wait for meldegruppen to load, then select current one and show edit dialog
+            $('#wildart').val(wildart);
+            
+            // Load meldegruppen for selected wildart
+            loadMeldegruppenForWildart(wildart);
+            
+            // Wait for meldegruppen to load, then set current selection
             setTimeout(function () {
                 $('#meldegruppe').val(currentMeldegruppe);
-
-                // Add visual indicator that we're in edit mode
+                
+                // Set form to edit mode
                 $form.addClass('edit-mode');
-                $form.prepend('<div class="ahgmh-edit-notice">Bearbeitungsmodus: Ändern Sie die Meldegruppe und klicken Sie auf "Speichern"</div>');
-
+                $form.prepend('<div class="ahgmh-edit-notice"><strong>Bearbeitungsmodus:</strong> Ändern Sie die Meldegruppe und klicken Sie auf "Zuweisung aktualisieren"</div>');
+                $submitBtn.text('Zuweisung aktualisieren');
+                
                 // Scroll to form
                 $('html, body').animate({
                     scrollTop: $form.offset().top - 50
-                }, 500);
-
-                // Re-enable submit button
-                $submitBtn.prop('disabled', false).text('Zuweisung speichern');
-            }, 500);
+                }, 300);
+                
+            }, 800); // Increased timeout to ensure meldegruppen are loaded
         }
     }
 
@@ -878,6 +968,15 @@
      * Remove assignment
      */
     function removeAssignment(userId, wildart) {
+        // Find the button that was clicked to show loading state
+        var $button = $('.remove-assignment[data-user-id="' + userId + '"][data-wildart="' + wildart + '"]');
+        var $buttonIcon = $button.find('i');
+        var originalClass = $buttonIcon.attr('class');
+        
+        // Show loading state
+        $button.prop('disabled', true);
+        $buttonIcon.attr('class', 'dashicons dashicons-update-alt ahgmh-spinning');
+        
         $.ajax({
             url: ahgmh_admin.ajax_url,
             type: 'POST',
@@ -890,13 +989,32 @@
             success: function (response) {
                 if (response.success) {
                     showNotification('Zuweisung erfolgreich entfernt!', 'success');
+                    
+                    // Clear edit mode if we're editing this assignment
+                    var $form = $('#obmann-assignment-form');
+                    if ($form.hasClass('edit-mode') && $('#user_id').val() == userId && $('#wildart').val() == wildart) {
+                        clearEditMode();
+                        $form[0].reset();
+                        $('#meldegruppe').prop('disabled', true).html('<option value="">Erst Wildart auswählen...</option>');
+                    }
+                    
+                    // Refresh table
                     refreshObmannTable();
                 } else {
-                    showNotification(response.data || 'Fehler beim Entfernen', 'error');
+                    var errorMsg = response.data && response.data.message ? response.data.message : (response.data || 'Fehler beim Entfernen der Zuweisung');
+                    showNotification(errorMsg, 'error');
+                    
+                    // Restore button state on error
+                    $button.prop('disabled', false);
+                    $buttonIcon.attr('class', originalClass);
                 }
             },
             error: function () {
-                showNotification('Fehler beim Entfernen der Zuweisung', 'error');
+                showNotification('Netzwerkfehler beim Entfernen der Zuweisung', 'error');
+                
+                // Restore button state on error
+                $button.prop('disabled', false);
+                $buttonIcon.attr('class', originalClass);
             }
         });
     }
@@ -908,7 +1026,7 @@
         var $form = $('#obmann-assignment-form');
         $form.removeClass('edit-mode');
         $form.find('.ahgmh-edit-notice').remove();
-        $form.find('button[type="submit"]').text('Zuweisung erstellen');
+        $form.find('button[type="submit"]').text('Obmann zuweisen');
     }
 
     /**

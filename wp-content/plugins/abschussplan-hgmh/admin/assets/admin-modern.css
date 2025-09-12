@@ -1513,6 +1513,7 @@
     border-radius: 4px;
     font-size: 13px;
     text-align: center;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .limit-input:focus,
@@ -1520,6 +1521,19 @@
     border-color: #2271b1;
     box-shadow: 0 0 0 1px #2271b1;
     outline: none;
+}
+
+/* Error state for negative values */
+.limit-input.error-field,
+.hegegemeinschaft-limit-input.error-field {
+    border-color: #dc3232 !important;
+    box-shadow: 0 0 0 1px #dc3232 !important;
+    background-color: #fef7f7;
+}
+
+.error-field:focus {
+    border-color: #dc3232 !important;
+    box-shadow: 0 0 0 2px rgba(220, 50, 50, 0.2) !important;
 }
 
 /* Gesamt Cells */
@@ -1595,6 +1609,38 @@
 
 .limits-save-status.error {
     color: #721c24;
+}
+
+/* Limit mode visibility management */
+.limits-matrix {
+    transition: opacity 0.3s ease, height 0.3s ease;
+}
+
+.limits-matrix[style*="display: none"] {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* Visual feedback for mode switching */
+.limit-mode-selector {
+    border-left: 4px solid #2271b1;
+    background: #f8f9fa;
+}
+
+.limit-mode-selector label {
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.limit-mode-selector label:hover {
+    background: rgba(34, 113, 177, 0.1);
+}
+
+.limit-mode-selector input:checked + label {
+    background: #2271b1;
+    color: white;
 }
 
 /* IST-Werte Tables Styling */

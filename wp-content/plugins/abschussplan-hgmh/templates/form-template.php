@@ -98,26 +98,22 @@ if (!defined('ABSPATH')) {
                 <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'abschussplan-hgmh'); ?></option>
                 
                 <?php 
-                // Get active Jagdbezirke from database with permission filtering
+                // Get meldegruppen from database with permission filtering
                 $database = abschussplan_hgmh()->database;
-                $jagdbezirke = $database->get_active_jagdbezirke();
-                
-                // Filter Jagdbezirke based on user permissions
                 $user_id = get_current_user_id();
+                
                 if (!AHGMH_Permissions_Service::is_vorstand($user_id)) {
-                    // Obmann: Only show jagdbezirke from their assigned meldegruppe
+                    // Obmann: Only show their assigned meldegruppe for this wildart
                     $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
-                    $jagdbezirke = array_filter($jagdbezirke, function($jagdbezirk) use ($user_meldegruppe) {
-                        return $jagdbezirk['meldegruppe'] === $user_meldegruppe;
-                    });
+                    $meldegruppen = $user_meldegruppe ? array($user_meldegruppe) : array();
+                } else {
+                    // Vorstand: Show all meldegruppen configured for this wildart
+                    $meldegruppen = $database->get_meldegruppen_for_wildart($selected_species);
                 }
                 
-                foreach ($jagdbezirke as $jagdbezirk) : ?>
-                    <option value="<?php echo esc_attr($jagdbezirk['jagdbezirk']); ?>">
-                        <?php echo esc_html($jagdbezirk['jagdbezirk']); ?>
-                        <?php if (!empty($jagdbezirk['meldegruppe'])) : ?>
-                            (<?php echo esc_html($jagdbezirk['meldegruppe']); ?>)
-                        <?php endif; ?>
+                foreach ($meldegruppen as $meldegruppe) : ?>
+                    <option value="<?php echo esc_attr($meldegruppe); ?>">
+                        <?php echo esc_html($meldegruppe); ?>
                     </option>
                 <?php endforeach; ?>
                 

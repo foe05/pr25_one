@@ -122,7 +122,9 @@ class AHGMH_Wildart_Controller {
             }
             
             $this->wildart_service->save_categories($wildart, $categories);
-            wp_send_json_success();
+            wp_send_json_success(array(
+                'message' => __('Kategorien erfolgreich gespeichert', 'abschussplan-hgmh')
+            ));
             
         } catch (Exception $e) {
             wp_send_json_error('Fehler beim Speichern: ' . esc_html($e->getMessage()));
@@ -145,7 +147,9 @@ class AHGMH_Wildart_Controller {
             }
             
             $this->wildart_service->save_meldegruppen($wildart, $meldegruppen);
-            wp_send_json_success();
+            wp_send_json_success(array(
+                'message' => __('Meldegruppen erfolgreich gespeichert', 'abschussplan-hgmh')
+            ));
             
         } catch (Exception $e) {
             wp_send_json_error('Fehler beim Speichern: ' . esc_html($e->getMessage()));
@@ -168,7 +172,9 @@ class AHGMH_Wildart_Controller {
             }
             
             $this->wildart_service->set_limit_mode($wildart, $mode);
-            wp_send_json_success();
+            wp_send_json_success(array(
+                'message' => __('Limit-Modus erfolgreich geändert', 'abschussplan-hgmh')
+            ));
             
         } catch (Exception $e) {
             wp_send_json_error('Fehler beim Ändern des Modus: ' . esc_html($e->getMessage()));
@@ -193,7 +199,9 @@ class AHGMH_Wildart_Controller {
             $validated_limits = AHGMH_Validation_Service::validate_wildart_data(['limits' => $limits]);
             $this->wildart_service->save_limits($wildart, $validated_limits['limits']);
             
-            wp_send_json_success();
+            wp_send_json_success(array(
+                'message' => __('Limits erfolgreich gespeichert', 'abschussplan-hgmh')
+            ));
             
         } catch (Exception $e) {
             wp_send_json_error('Fehler beim Speichern der Limits: ' . esc_html($e->getMessage()));

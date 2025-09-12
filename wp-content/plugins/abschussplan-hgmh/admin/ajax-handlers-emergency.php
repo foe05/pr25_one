@@ -253,14 +253,37 @@ function ahgmh_emergency_load_wildart_meldegruppen() {
         return;
     }
     
-    // Get meldegruppen for this wildart
+    // Get meldegruppen for this wildart - use database first, fallback to saved options
     $database = abschussplan_hgmh()->database;
+    $meldegruppen = [];
+    
+    // Try database method first
     if (method_exists($database, 'get_meldegruppen_for_wildart')) {
         $meldegruppen = $database->get_meldegruppen_for_wildart($wildart);
-    } else {
-        // Fallback: get from options
+    }
+    
+    // Fallback: get from saved options for this wildart
+    if (empty($meldegruppen)) {
         $meldegruppen_key = 'ahgmh_meldegruppen_' . sanitize_key($wildart);
-        $meldegruppen = get_option($meldegruppen_key, ['Gruppe 1', 'Gruppe 2', 'Gruppe 3']);
+        $meldegruppen = get_option($meldegruppen_key, []);
+        
+        // If still empty, use database table directly
+        if (empty($meldegruppen)) {
+            global $wpdb;
+            $table_config = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+            
+            $results = $wpdb->get_col($wpdb->prepare(
+                "SELECT DISTINCT meldegruppe FROM {$table_config} WHERE wildart = %s ORDER BY meldegruppe",
+                $wildart
+            ));
+            
+            if (!empty($results)) {
+                $meldegruppen = $results;
+            } else {
+                // Last fallback: standard groups only if no custom groups exist
+                $meldegruppen = ['Gruppe_A', 'Gruppe_B'];
+            }
+        }
     }
     
     wp_send_json_success(['meldegruppen' => $meldegruppen]);
