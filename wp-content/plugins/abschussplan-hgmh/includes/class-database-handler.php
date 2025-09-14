@@ -355,16 +355,17 @@ class AHGMH_Database_Handler {
      * Get submission counts per category
      *
      * @param string $species Filter by game species (optional)
-     * @param string $meldegruppe Filter by meldegruppe (optional)
+     * @param string $meldegruppe Filter by meldegruppe (optional - legacy, maintained for compatibility)
+     * @param string $jagdbezirk Filter by jagdbezirk (optional - direct filtering)
      * @return array Array with category counts
      */
-    public function get_category_counts($species = '', $meldegruppe = '') {
+    public function get_category_counts($species = '', $meldegruppe = '', $jagdbezirk = '') {
         global $wpdb;
         
         $query = "SELECT s.field2 as category, COUNT(*) as count 
                   FROM $this->table_name s";
         
-        // Add JOIN if meldegruppe filter is needed
+        // Add JOIN only if meldegruppe filter is needed (legacy compatibility)
         if (!empty($meldegruppe)) {
             $query .= " LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
         }
@@ -377,6 +378,11 @@ class AHGMH_Database_Handler {
         
         if (!empty($meldegruppe)) {
             $query .= $wpdb->prepare(" AND j.meldegruppe = %s", $meldegruppe);
+        }
+        
+        // Direct jagdbezirk filtering (no JOIN needed)
+        if (!empty($jagdbezirk)) {
+            $query .= $wpdb->prepare(" AND s.field5 = %s", $jagdbezirk);
         }
         
         $query .= " GROUP BY s.field2";
@@ -1077,7 +1083,7 @@ class AHGMH_Database_Handler {
      * @param string $meldegruppe Optional meldegruppe filter
      * @return array Summary data with categories, limits, counts, allow_exceeding
      */
-    public function get_public_summary_data($species = '', $meldegruppe = '') {
+    public function get_public_summary_data($species = '', $jagdbezirk = '') {
         $available_species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
         
         // Initialize data structure
@@ -1088,21 +1094,21 @@ class AHGMH_Database_Handler {
             'allow_exceeding' => array()
         );
         
-        if (empty($species) && empty($meldegruppe)) {
-            // Case 1: Show Hegegemeinschafts-Gesamt-Statistiken (all species and meldegruppen)
+        if (empty($species) && empty($jagdbezirk)) {
+            // Case 1: Show Hegegemeinschafts-Gesamt-Statistiken (all species and jagdbezirke)
             $summary_data = $this->get_total_summary_data($available_species);
             
-        } elseif (!empty($species) && empty($meldegruppe)) {
-            // Case 2: Show specific species, all meldegruppen for this species
+        } elseif (!empty($species) && empty($jagdbezirk)) {
+            // Case 2: Show specific species, all jagdbezirke for this species
             $summary_data = $this->get_species_summary_data($species);
             
-        } elseif (empty($species) && !empty($meldegruppe)) {
-            // Case 3: Show specific meldegruppe, all species for this meldegruppe
-            $summary_data = $this->get_meldegruppe_summary_data($meldegruppe, $available_species);
+        } elseif (empty($species) && !empty($jagdbezirk)) {
+            // Case 3: Show specific jagdbezirk, all species for this jagdbezirk
+            $summary_data = $this->get_jagdbezirk_summary_data($jagdbezirk, $available_species);
             
         } else {
-            // Case 4: Show specific species + meldegruppe combination
-            $summary_data = $this->get_specific_summary_data($species, $meldegruppe);
+            // Case 4: Show specific species + jagdbezirk combination
+            $summary_data = $this->get_specific_summary_data($species, $jagdbezirk);
         }
         
         return $summary_data;
@@ -1211,13 +1217,13 @@ class AHGMH_Database_Handler {
     }
 
     /**
-     * Get summary data for specific meldegruppe (all species)
+     * Get summary data for specific jagdbezirk (all species)
      * 
-     * @param string $meldegruppe Meldegruppe name
+     * @param string $jagdbezirk Jagdbezirk name
      * @param array $species_list Available species
      * @return array Summary data
      */
-    private function get_meldegruppe_summary_data($meldegruppe, $species_list) {
+    private function get_jagdbezirk_summary_data($jagdbezirk, $species_list) {
         $all_categories = array();
         $combined_limits = array();
         $combined_counts = array();
@@ -1232,20 +1238,27 @@ class AHGMH_Database_Handler {
                     $all_categories[] = $category;
                 }
                 
-                // Get limits using new limits system - meldegruppe-specific or fallback
-                $limit_value = $this->get_applicable_limit($species, $meldegruppe, $category);
-                
-                // Accumulate limits
-                if (!isset($combined_limits[$category])) {
-                    $combined_limits[$category] = 0;
+                // For jagdbezirk filtering, we use hegegemeinschaft totals as limits since 
+                // jagdbezirk is more specific than meldegruppe
+                $limit_value = $this->get_hegegemeinschaft_limit($species, $category);
+                if ($limit_value === 0) {
+                    // Fallback to old system if no hegegemeinschaft limits configured
+                    $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+                    $species_limits = get_option($limits_key, array());
+                    $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
                 }
-                $combined_limits[$category] += $limit_value;
                 
-                // Get counts for this species/category/meldegruppe
-                $category_counts = $this->get_category_counts($species, $meldegruppe);
+                // For jagdbezirk view, we don't accumulate limits across species
+                // Show the actual limit for each category
+                if (!isset($combined_limits[$category])) {
+                    $combined_limits[$category] = $limit_value;
+                }
+                
+                // Get counts for this species/category/jagdbezirk (direct filtering)
+                $category_counts = $this->get_category_counts($species, '', $jagdbezirk);
                 $count_value = isset($category_counts[$category]) ? (int) $category_counts[$category] : 0;
                 
-                // Accumulate counts
+                // Accumulate counts across species for this jagdbezirk
                 if (!isset($combined_counts[$category])) {
                     $combined_counts[$category] = 0;
                 }
@@ -1272,26 +1285,34 @@ class AHGMH_Database_Handler {
     }
 
     /**
-     * Get summary data for specific species + meldegruppe combination
+     * Get summary data for specific species + jagdbezirk combination
      * 
      * @param string $species Species name
-     * @param string $meldegruppe Meldegruppe name
+     * @param string $jagdbezirk Jagdbezirk name
      * @return array Summary data
      */
-    private function get_specific_summary_data($species, $meldegruppe) {
+    private function get_specific_summary_data($species, $jagdbezirk) {
         $categories_key = 'ahgmh_categories_' . sanitize_key($species);
         $categories = get_option($categories_key, array());
         
-        // Use new limits system with get_applicable_limit for meldegruppe-specific limits
+        // For species + jagdbezirk combination, use hegegemeinschaft limits as reference
         $limits = array();
         foreach ($categories as $category) {
-            $limits[$category] = $this->get_applicable_limit($species, $meldegruppe, $category);
+            $limit_value = $this->get_hegegemeinschaft_limit($species, $category);
+            if ($limit_value === 0) {
+                // Fallback to old system if no hegegemeinschaft limits configured
+                $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+                $species_limits = get_option($limits_key, array());
+                $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+            }
+            $limits[$category] = $limit_value;
         }
         
         $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
         $allow_exceeding = get_option($exceeding_key, array());
         
-        $counts = $this->get_category_counts($species, $meldegruppe);
+        // Get counts for specific species + jagdbezirk (direct filtering)
+        $counts = $this->get_category_counts($species, '', $jagdbezirk);
         
         return array(
             'categories' => $categories,

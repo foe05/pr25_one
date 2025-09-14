@@ -59,8 +59,26 @@ function ahgmh_uninstall_cleanup() {
         }
     }
     
+    // Remove all Obmann assignments (user meta keys)
+    $obmann_meta_keys = $wpdb->get_results(
+        "SELECT DISTINCT meta_key FROM {$wpdb->usermeta} 
+         WHERE meta_key LIKE 'ahgmh_assigned_meldegruppe_%'"
+    );
+    
+    $deleted_meta_count = 0;
+    foreach ($obmann_meta_keys as $meta) {
+        $deleted = $wpdb->delete(
+            $wpdb->usermeta,
+            array('meta_key' => $meta->meta_key),
+            array('%s')
+        );
+        if ($deleted) {
+            $deleted_meta_count += $deleted;
+        }
+    }
+    
     // Log cleanup results (optional - for debugging)
-    error_log("Abschussplan HGMH Plugin: Uninstall cleanup completed. Removed " . count($plugin_options) . " standard options and " . $deleted_options_count . " species-specific options.");
+    error_log("Abschussplan HGMH Plugin: Uninstall cleanup completed. Removed " . count($plugin_options) . " standard options, " . $deleted_options_count . " species-specific options, and " . $deleted_meta_count . " Obmann assignments.");
     
     // Clear any cached data
     wp_cache_flush();

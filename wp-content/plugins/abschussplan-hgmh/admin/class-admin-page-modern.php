@@ -48,6 +48,7 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_remove_obmann_assignment', array($this, 'ajax_remove_obmann_assignment'));
         add_action('wp_ajax_ahgmh_edit_obmann_assignment', array($this, 'ajax_edit_obmann_assignment'));
         add_action('wp_ajax_ahgmh_get_obmann_assignments', array($this, 'ajax_get_obmann_assignments'));
+        add_action('wp_ajax_ahgmh_reset_all_assignments', array($this, 'ajax_reset_all_assignments'));
         
         // Add WordPress dashboard widget
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
@@ -4247,6 +4248,10 @@ class AHGMH_Admin_Page_Modern {
                             <i class="dashicons dashicons-update"></i>
                             Aktualisieren
                         </button>
+                        <button onclick="resetAllAssignments()" class="button button-secondary ahgmh-danger-btn" style="margin-left: 10px;">
+                            <i class="dashicons dashicons-trash"></i>
+                            Alle Zuweisungen entfernen
+                        </button>
                     </div>
                     <div class="ahgmh-card-content">
                         <div id="obmann-assignments-table" class="ahgmh-table-container">
@@ -4317,6 +4322,32 @@ class AHGMH_Admin_Page_Modern {
         }
         
         try {
+            // Check if assignment already exists (check all possible key formats)
+            // Clean wildart parameter (remove leading underscore if present)
+            $clean_wildart = ltrim($wildart, '_');
+            
+            $possible_keys = array(
+                'ahgmh_assigned_meldegruppe_' . sanitize_key($wildart),     // new format with original wildart
+                'ahgmh_assigned_meldegruppe_' . sanitize_key($clean_wildart), // new format with cleaned wildart
+                'ahgmh_assigned_meldegruppe_' . $wildart,                   // legacy format 1: exact as received
+                'ahgmh_assigned_meldegruppe_' . $clean_wildart,             // legacy format 2: cleaned
+                'ahgmh_assigned_meldegruppe_' . ucfirst($wildart),          // legacy format 3: capitalized original
+                'ahgmh_assigned_meldegruppe_' . ucfirst($clean_wildart)     // legacy format 4: capitalized cleaned
+            );
+            
+            foreach (array_unique($possible_keys) as $key) {
+                $existing_assignment = get_user_meta($user_id, $key, true);
+                if (!empty($existing_assignment) && $existing_assignment === $meldegruppe) {
+                    wp_send_json_error(sprintf(
+                        __('Obmann %s ist bereits der Meldegruppe %s (%s) zugewiesen', 'abschussplan-hgmh'),
+                        $user->display_name,
+                        $meldegruppe,
+                        $wildart
+                    ));
+                    return;
+                }
+            }
+            
             // Use permissions service to assign
             if (AHGMH_Permissions_Service::assign_user_to_meldegruppe($user_id, $wildart, $meldegruppe)) {
                 wp_send_json_success(array(
@@ -4345,9 +4376,14 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Remove Obmann Assignment
      */
     public function ajax_remove_obmann_assignment() {
+        // Debug logging
+        error_log('AHGMH DEBUG: ajax_remove_obmann_assignment called');
+        error_log('AHGMH DEBUG: POST data: ' . print_r($_POST, true));
+        
         check_ajax_referer('ahgmh_admin_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
+            error_log('AHGMH DEBUG: User lacks manage_options capability');
             wp_send_json_error(__('Keine Berechtigung', 'abschussplan-hgmh'));
         }
         
@@ -4380,6 +4416,62 @@ class AHGMH_Admin_Page_Modern {
         } catch (Exception $e) {
             wp_send_json_error(sprintf(
                 __('Fehler beim Entfernen: %s', 'abschussplan-hgmh'),
+                $e->getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * AJAX: Reset All Assignments
+     */
+    public function ajax_reset_all_assignments() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Keine Berechtigung', 'abschussplan-hgmh'));
+        }
+        
+        global $wpdb;
+        
+        try {
+            // Get count of assignments to be removed
+            $count = $wpdb->get_var(
+                "SELECT COUNT(*) FROM {$wpdb->usermeta} 
+                 WHERE meta_key LIKE 'ahgmh_assigned_meldegruppe_%'"
+            );
+            
+            if ($count == 0) {
+                wp_send_json_error(__('Keine Obmann-Zuweisungen zum Entfernen gefunden', 'abschussplan-hgmh'));
+                return;
+            }
+            
+            // Remove all obmann assignments
+            $deleted = $wpdb->delete(
+                $wpdb->usermeta,
+                array('meta_key' => array('LIKE' => 'ahgmh_assigned_meldegruppe_%')),
+                array('%s')
+            );
+            
+            // Alternative approach using SQL query
+            $deleted = $wpdb->query(
+                "DELETE FROM {$wpdb->usermeta} 
+                 WHERE meta_key LIKE 'ahgmh_assigned_meldegruppe_%'"
+            );
+            
+            if ($deleted !== false) {
+                wp_send_json_success(array(
+                    'message' => sprintf(
+                        __('Alle Obmann-Zuweisungen erfolgreich entfernt (%d Einträge)', 'abschussplan-hgmh'),
+                        $deleted
+                    ),
+                    'deleted_count' => $deleted
+                ));
+            } else {
+                wp_send_json_error(__('Fehler beim Entfernen der Zuweisungen', 'abschussplan-hgmh'));
+            }
+        } catch (Exception $e) {
+            wp_send_json_error(sprintf(
+                __('Fehler beim Zurücksetzen: %s', 'abschussplan-hgmh'),
                 $e->getMessage()
             ));
         }
@@ -4490,7 +4582,8 @@ class AHGMH_Admin_Page_Modern {
             <tbody>
                 <?php foreach ($assignments as $assignment): ?>
                 <tr data-user-id="<?php echo esc_attr($assignment->user_id); ?>" 
-                    data-wildart="<?php echo esc_attr($assignment->wildart); ?>">
+                    data-wildart="<?php echo esc_attr($assignment->wildart); ?>"
+                    data-wildart-display="<?php echo esc_attr(ucfirst(str_replace('_', '', $assignment->wildart))); ?>">
                     <td class="column-user">
                         <strong><?php echo esc_html($assignment->user_login); ?></strong>
                     </td>
@@ -4504,7 +4597,7 @@ class AHGMH_Admin_Page_Modern {
                     </td>
                     <td class="column-wildart">
                         <span class="ahgmh-badge ahgmh-badge-wildart">
-                            <?php echo esc_html($assignment->wildart); ?>
+                            <?php echo esc_html(ucfirst(str_replace('_', '', $assignment->wildart))); ?>
                         </span>
                     </td>
                     <td class="column-meldegruppe">

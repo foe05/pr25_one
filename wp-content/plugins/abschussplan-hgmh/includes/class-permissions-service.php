@@ -99,8 +99,27 @@ class AHGMH_Permissions_Service {
             return false;
         }
         
+        // Clean up any existing assignments for this wildart to prevent duplicates
+        // Clean wildart parameter (remove leading underscore if present)
+        $clean_wildart = ltrim($wildart, '_');
+        
+        $possible_keys = array(
+            self::get_wildart_meta_key($wildart),                    // new format with original wildart
+            self::get_wildart_meta_key($clean_wildart),              // new format with cleaned wildart
+            'ahgmh_assigned_meldegruppe_' . $wildart,                // legacy format 1: exact as received
+            'ahgmh_assigned_meldegruppe_' . $clean_wildart,          // legacy format 2: cleaned
+            'ahgmh_assigned_meldegruppe_' . ucfirst($wildart),       // legacy format 3: capitalized original
+            'ahgmh_assigned_meldegruppe_' . ucfirst($clean_wildart)  // legacy format 4: capitalized cleaned
+        );
+        
+        // Remove all possible key variants first
+        foreach (array_unique($possible_keys) as $key) {
+            delete_user_meta($user_id, $key);
+        }
+        
+        // Add the new canonical assignment (using add_user_meta with unique=true for race condition safety)
         $meta_key = self::get_wildart_meta_key($wildart);
-        return update_user_meta($user_id, $meta_key, sanitize_text_field($meldegruppe));
+        return add_user_meta($user_id, $meta_key, sanitize_text_field($meldegruppe), true);
     }
     
     /**
@@ -120,8 +139,38 @@ class AHGMH_Permissions_Service {
             return false;
         }
         
-        $meta_key = self::get_wildart_meta_key($wildart);
-        return delete_user_meta($user_id, $meta_key);
+        // Handle both new and legacy meta key formats for backward compatibility
+        // Clean wildart parameter (remove leading underscore if present)
+        $clean_wildart = ltrim($wildart, '_');
+        
+        $possible_keys = array(
+            self::get_wildart_meta_key($wildart),                    // new format with original wildart
+            self::get_wildart_meta_key($clean_wildart),              // new format with cleaned wildart
+            'ahgmh_assigned_meldegruppe_' . $wildart,                // legacy format 1: exact as received
+            'ahgmh_assigned_meldegruppe_' . $clean_wildart,          // legacy format 2: cleaned
+            'ahgmh_assigned_meldegruppe_' . ucfirst($wildart),       // legacy format 3: capitalized original
+            'ahgmh_assigned_meldegruppe_' . ucfirst($clean_wildart)  // legacy format 4: capitalized cleaned
+        );
+        
+        error_log('AHGMH DEBUG: remove_user_assignment called for user_id=' . $user_id . ', wildart=' . $wildart);
+        error_log('AHGMH DEBUG: Trying keys: ' . print_r($possible_keys, true));
+        
+        $deleted = false;
+        foreach (array_unique($possible_keys) as $key) {
+            // Check if key exists first
+            $existing_value = get_user_meta($user_id, $key, true);
+            error_log('AHGMH DEBUG: Key "' . $key . '" has value: "' . $existing_value . '"');
+            
+            // Try to delete each possible key variant
+            $result = delete_user_meta($user_id, $key);
+            error_log('AHGMH DEBUG: delete_user_meta for key "' . $key . '" returned: ' . var_export($result, true));
+            if ($result !== false) {
+                $deleted = true;
+            }
+        }
+        
+        error_log('AHGMH DEBUG: Final result: ' . ($deleted ? 'success' : 'failed'));
+        return $deleted;
     }
     
     /**

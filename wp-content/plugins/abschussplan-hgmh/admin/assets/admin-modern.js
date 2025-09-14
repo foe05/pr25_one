@@ -805,8 +805,8 @@
             clearEditMode();
         });
 
-        // Edit assignment buttons
-        $(document).on('click', '.edit-assignment', function () {
+        // Edit assignment buttons (unbind first to prevent duplicates)
+        $(document).off('click', '.edit-assignment').on('click', '.edit-assignment', function () {
             var userId = $(this).data('user-id');
             var wildart = $(this).data('wildart');
             var meldegruppe = $(this).data('meldegruppe');
@@ -814,11 +814,13 @@
             editAssignment(userId, wildart, meldegruppe);
         });
 
-        // Remove assignment buttons
-        $(document).on('click', '.remove-assignment', function () {
+        // Remove assignment buttons (unbind first to prevent duplicates)
+        $(document).off('click', '.remove-assignment').on('click', '.remove-assignment', function () {
             var userId = $(this).data('user-id');
             var wildart = $(this).data('wildart');
 
+            console.log('AHGMH DEBUG: Remove button clicked for userId=' + userId + ', wildart=' + wildart);
+            
             if (confirm('Sind Sie sicher, dass Sie diese Zuweisung entfernen möchten?')) {
                 removeAssignment(userId, wildart);
             }
@@ -929,9 +931,13 @@
      * Edit assignment
      */
     function editAssignment(userId, wildart, currentMeldegruppe) {
-        var userName = $('#obmann-assignments-table').find('tr[data-user-id="' + userId + '"][data-wildart="' + wildart + '"]').find('.column-user strong').text();
-        
-        if (confirm('Möchten Sie diese Zuweisung bearbeiten?\n\nUser: ' + userName + '\nWildart: ' + wildart + '\nAktuelle Meldegruppe: ' + currentMeldegruppe)) {
+    var userName = $('#obmann-assignments-table').find('tr[data-user-id="' + userId + '"][data-wildart="' + wildart + '"]').find('.column-user strong').text();
+    
+    // Get formatted wildart display from data attribute
+    var $row = $('#obmann-assignments-table').find('tr[data-user-id="' + userId + '"][data-wildart="' + wildart + '"]');
+    var displayWildart = $row.data('wildart-display') || wildart.charAt(0).toUpperCase() + wildart.slice(1).replace(/_/g, '');
+    
+        if (confirm('Möchten Sie diese Zuweisung bearbeiten?\n\nUser: ' + userName + '\nWildart: ' + displayWildart + '\nAktuelle Meldegruppe: ' + currentMeldegruppe)) {
             
             var $form = $('#obmann-assignment-form');
             var $submitBtn = $form.find('button[type="submit"]');
@@ -968,14 +974,20 @@
      * Remove assignment
      */
     function removeAssignment(userId, wildart) {
-        // Find the button that was clicked to show loading state
-        var $button = $('.remove-assignment[data-user-id="' + userId + '"][data-wildart="' + wildart + '"]');
-        var $buttonIcon = $button.find('i');
-        var originalClass = $buttonIcon.attr('class');
-        
-        // Show loading state
+    console.log('AHGMH DEBUG: removeAssignment called with userId=' + userId + ', wildart=' + wildart);
+    
+    // Find the button that was clicked to show loading state
+    var $button = $('.remove-assignment[data-user-id="' + userId + '"][data-wildart="' + wildart + '"]');
+    console.log('AHGMH DEBUG: Found button:', $button.length > 0 ? 'yes' : 'no');
+    
+    var $buttonIcon = $button.find('i');
+    var originalClass = $buttonIcon.attr('class');
+    
+    // Show loading state
         $button.prop('disabled', true);
         $buttonIcon.attr('class', 'dashicons dashicons-update-alt ahgmh-spinning');
+        
+        console.log('AHGMH DEBUG: About to send AJAX request');
         
         $.ajax({
             url: ahgmh_admin.ajax_url,
@@ -987,6 +999,7 @@
                 nonce: ahgmh_admin.nonce
             },
             success: function (response) {
+                console.log('AHGMH DEBUG: AJAX success response:', response);
                 if (response.success) {
                     showNotification('Zuweisung erfolgreich entfernt!', 'success');
                     
@@ -1009,7 +1022,8 @@
                     $buttonIcon.attr('class', originalClass);
                 }
             },
-            error: function () {
+            error: function (xhr, status, error) {
+                console.log('AHGMH DEBUG: AJAX error:', xhr, status, error);
                 showNotification('Netzwerkfehler beim Entfernen der Zuweisung', 'error');
                 
                 // Restore button state on error
@@ -1068,5 +1082,39 @@
 
         initAdmin();
     });
+    
+    /**
+     * Reset all assignments
+     */
+    function resetAllAssignments() {
+        if (confirm('WARNUNG: Sind Sie sicher, dass Sie ALLE Obmann-Zuweisungen entfernen möchten?\n\nDiese Aktion kann nicht rückgängig gemacht werden.')) {
+            $.ajax({
+                url: ahgmh_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ahgmh_reset_all_assignments',
+                    nonce: ahgmh_admin.nonce
+                },
+                success: function (response) {
+                    if (response.success) {
+                        showNotification(response.data.message, 'success');
+                        // Clear form and refresh table
+                        $('#obmann-assignment-form')[0].reset();
+                        $('#meldegruppe').prop('disabled', true).html('<option value="">Erst Wildart auswählen...</option>');
+                        clearEditMode();
+                        refreshObmannTable();
+                    } else {
+                        showNotification(response.data.message || 'Fehler beim Zurücksetzen aller Zuweisungen', 'error');
+                    }
+                },
+                error: function () {
+                    showNotification('Netzwerkfehler beim Zurücksetzen', 'error');
+                }
+            });
+        }
+    }
+    
+    // Make resetAllAssignments globally available
+    window.resetAllAssignments = resetAllAssignments;
 
 })(jQuery);

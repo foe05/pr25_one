@@ -267,24 +267,24 @@ class AHGMH_Form_Handler {
         // Parse shortcode attributes - now both parameters are optional
         $atts = shortcode_atts(array(
             'species' => '',        // Optional - empty means all species
-            'meldegruppe' => ''     // Optional - empty means all meldegruppen
+            'jagdbezirk' => ''      // Optional - empty means all jagdbezirke
         ), $atts, 'abschuss_summary');
         
         $selected_species = sanitize_text_field($atts['species']);
-        $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
+        $selected_jagdbezirk = sanitize_text_field($atts['jagdbezirk']);
         $user_id = get_current_user_id();
         
         // Apply permission-based filtering for logged-in users
         if ($user_id && !AHGMH_Permissions_Service::is_vorstand($user_id)) {
-            // Obmann: filter to only their assigned meldegruppen
+            // Obmann: filter to only their assigned meldegruppen/jagdbezirke
             if (!empty($selected_species)) {
                 $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
                 if (!$user_meldegruppe) {
                     // User is not assigned to this wildart, show nothing
                     return '<div class="alert alert-warning">Sie sind nicht als Obmann für ' . $selected_species . ' eingetragen.</div>';
                 }
-                // Override meldegruppe parameter with user's assignment
-                $selected_meldegruppe = $user_meldegruppe;
+                // For Obmann users, we need to get their assigned jagdbezirke instead of overriding jagdbezirk parameter
+                // This will be handled in the database layer
             } else {
                 // No specific species - limit to user's wildarten
                 $user_wildarten = AHGMH_Permissions_Service::get_user_wildarten($user_id);
@@ -303,17 +303,14 @@ class AHGMH_Form_Handler {
             $selected_species = ''; // Reset to show all
         }
         
-        // Get meldegruppen data for validation
+        // Get database instance
         $database = abschussplan_hgmh()->database;
-        $available_meldegruppen = $database->get_all_meldegruppen();
         
-        if (!empty($selected_meldegruppe) && !in_array($selected_meldegruppe, $available_meldegruppen)) {
-            $warning_message = sprintf(__('Warnung: Unbekannte Meldegruppe "%s". Zeige Gesamtstatistiken.', 'abschussplan-hgmh'), $selected_meldegruppe);
-            $selected_meldegruppe = ''; // Reset to show all
-        }
+        // Simple validation: jagdbezirk parameter is used directly without complex validation
+        // as requested - no special validation needed for Umlaute or spaces
         
         // Get public summary data based on parameter combination
-        $summary_data = $database->get_public_summary_data($selected_species, $selected_meldegruppe);
+        $summary_data = $database->get_public_summary_data($selected_species, $selected_jagdbezirk);
         
         // Extract data for template
         $categories = $summary_data['categories'];
