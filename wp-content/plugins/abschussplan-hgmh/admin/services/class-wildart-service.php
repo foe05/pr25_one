@@ -162,7 +162,22 @@ class AHGMH_Wildart_Service {
      */
     public function get_limit_mode($wildart) {
         $modes = get_option('ahgmh_limit_modes', []);
-        return isset($modes[$wildart]) ? $modes[$wildart] : 'meldegruppen_specific';
+        $original_mode = isset($modes[$wildart]) ? $modes[$wildart] : null; // NULL = never explicitly set
+        
+        // Migration: Convert old 'meldegruppen_specific' to 'jagdbezirk_specific'
+        if ($original_mode === 'meldegruppen_specific') {
+            $modes[$wildart] = 'jagdbezirk_specific';
+            update_option('ahgmh_limit_modes', $modes);
+            return 'jagdbezirk_specific';
+        } else if ($original_mode === null) {
+            // Never explicitly set - intelligent detection
+            $all_limits = get_option('ahgmh_wildart_limits', []);
+            $has_specific_limits = isset($all_limits[$wildart]) && !empty($all_limits[$wildart]);
+            
+            return $has_specific_limits ? 'jagdbezirk_specific' : 'hegegemeinschaft_total';
+        }
+        
+        return $original_mode;
     }
     
     /**

@@ -3645,9 +3645,38 @@ class AHGMH_Admin_Page_Modern {
     private function render_limits_config($wildart, $categories, $meldegruppen) {
         $database = abschussplan_hgmh()->database;
         
-        // Get current limit mode from options (fallback)
+        // Get current limit mode from options (with migration)
         $limit_modes = get_option('ahgmh_limit_modes', []);
-        $current_mode = isset($limit_modes[$wildart]) ? $limit_modes[$wildart] : 'meldegruppen_specific';
+        $original_mode = isset($limit_modes[$wildart]) ? $limit_modes[$wildart] : null; // NULL = never explicitly set
+        
+        // Migration: Convert old 'meldegruppen_specific' to 'jagdbezirk_specific'
+        if ($original_mode === 'meldegruppen_specific') {
+            $limit_modes[$wildart] = 'jagdbezirk_specific';
+            update_option('ahgmh_limit_modes', $limit_modes);
+            $current_mode = 'jagdbezirk_specific';
+        } else if ($original_mode === null) {
+            // Never explicitly set - intelligent detection based on configured limits
+            $all_limits = get_option('ahgmh_wildart_limits', []);
+            $has_specific_limits = isset($all_limits[$wildart]) && !empty($all_limits[$wildart]);
+            
+            if ($has_specific_limits) {
+                // Has specific limits configured - must be jagdbezirk_specific
+                $current_mode = 'jagdbezirk_specific';
+                echo "<!-- SMART-DEFAULT: Detected specific limits, defaulting to jagdbezirk_specific -->";
+            } else {
+                // No specific limits - use hegegemeinschaft_total as default
+                $current_mode = 'hegegemeinschaft_total';
+                echo "<!-- SMART-DEFAULT: No specific limits found, defaulting to hegegemeinschaft_total -->";
+            }
+            // DON'T save to database yet - let user explicitly choose
+        } else {
+            // Explicitly set value - respect user choice
+            $current_mode = $original_mode;
+            echo "<!-- USER-SET: Using explicitly set mode: $original_mode -->";
+        }
+        
+        // Temporary debug - visible on page
+        echo "<!-- DEBUG: Wildart=$wildart, Original=$original_mode, Current=$current_mode -->";
         
         // Get existing limits from options
         $all_limits = get_option('ahgmh_wildart_limits', []);
