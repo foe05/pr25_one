@@ -2503,18 +2503,18 @@ document.head.insertAdjacentHTML('beforeend', notificationCSS);
     }
 
     /**
-     * Toggle limit mode between meldegruppen-specific and hegegemeinschaft-total
+     * Toggle limit mode between jagdbezirk-specific and hegegemeinschaft-total
      */
     function toggleLimitMode(wildart, mode) {
         // Show/hide appropriate matrix containers
-        var $meldegruppen_matrix = $('#meldegruppen-limits-' + wildart);
+        var $jagdbezirk_matrix = $('#jagdbezirk-limits-' + wildart);
         var $hegegemeinschaft_matrix = $('#hegegemeinschaft-limits-' + wildart);
         
-        if (mode === 'meldegruppen_specific') {
-            $meldegruppen_matrix.show();
+        if (mode === 'jagdbezirk_specific') {
+            $jagdbezirk_matrix.show();
             $hegegemeinschaft_matrix.hide();
         } else {
-            $meldegruppen_matrix.hide();
+            $jagdbezirk_matrix.hide();
             $hegegemeinschaft_matrix.show();
         }
         

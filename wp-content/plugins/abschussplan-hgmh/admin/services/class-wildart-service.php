@@ -169,7 +169,7 @@ class AHGMH_Wildart_Service {
      * Set limit mode for wildart
      */
     public function set_limit_mode($wildart, $mode) {
-        if (!in_array($mode, ['meldegruppen_specific', 'hegegemeinschaft_total'])) {
+        if (!in_array($mode, ['jagdbezirk_specific', 'hegegemeinschaft_total'])) {
             throw new Exception('Ungültiger Limit-Modus');
         }
         

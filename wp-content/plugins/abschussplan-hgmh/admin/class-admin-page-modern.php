@@ -567,9 +567,24 @@ class AHGMH_Admin_Page_Modern {
                 'attributes' => __('limit: Anzahl Einträge, species: Wildart filtern, page: Seitennummer', 'abschussplan-hgmh')
             ),
             array(
+                'code' => '[abschuss_summary]',
+                'description' => __('Zeigt eine Zusammenfassung aller Abschusszahlen an', 'abschussplan-hgmh'),
+                'attributes' => __('Keine Parameter - zeigt Gesamtstatistiken', 'abschussplan-hgmh')
+            ),
+            array(
                 'code' => '[abschuss_summary species="Rotwild"]',
-                'description' => __('Zeigt eine Zusammenfassung der Abschusszahlen an', 'abschussplan-hgmh'),
-                'attributes' => __('species: Wildart für Zusammenfassung', 'abschussplan-hgmh')
+                'description' => __('Zeigt eine Zusammenfassung für eine bestimmte Wildart an', 'abschussplan-hgmh'),
+                'attributes' => __('species: Wildart (Rotwild, Damwild, etc.)', 'abschussplan-hgmh')
+            ),
+            array(
+                'code' => '[abschuss_summary jagdbezirk="Revier_Nord"]',
+                'description' => __('Zeigt eine Zusammenfassung für einen bestimmten Jagdbezirk an', 'abschussplan-hgmh'),
+                'attributes' => __('jagdbezirk: Name des Jagdbezirks (Leerzeichen und Umlaute erlaubt)', 'abschussplan-hgmh')
+            ),
+            array(
+                'code' => '[abschuss_summary species="Rotwild" jagdbezirk="Revier_Nord"]',
+                'description' => __('Zeigt eine Zusammenfassung für Wildart + Jagdbezirk Kombination an', 'abschussplan-hgmh'),
+                'attributes' => __('Kombinierbare Filter: species und jagdbezirk können gemeinsam verwendet werden', 'abschussplan-hgmh')
             ),
             array(
                 'code' => '[abschuss_limits species="Rotwild"]',
@@ -3664,10 +3679,10 @@ class AHGMH_Admin_Page_Modern {
             <div class="limit-mode-selector">
                 <h4><?php echo esc_html__('Limit-Modus:', 'abschussplan-hgmh'); ?></h4>
                 <label>
-                    <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="meldegruppen_specific" 
-                           <?php checked($current_mode, 'meldegruppen_specific'); ?>
+                    <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="jagdbezirk_specific" 
+                           <?php checked($current_mode, 'jagdbezirk_specific'); ?>
                            class="limit-mode-radio" data-wildart="<?php echo esc_attr($wildart); ?>">
-                    <?php echo esc_html__('Meldegruppen-spezifische Limits', 'abschussplan-hgmh'); ?>
+                    <?php echo esc_html__('Jagdbezirk-spezifische Limits', 'abschussplan-hgmh'); ?>
                 </label>
                 <label>
                     <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="hegegemeinschaft_total" 
@@ -3677,10 +3692,10 @@ class AHGMH_Admin_Page_Modern {
                 </label>
             </div>
             
-            <!-- Meldegruppen-specific Limits Matrix -->
-            <div class="limits-matrix meldegruppen-specific" id="meldegruppen-limits-<?php echo esc_attr($wildart); ?>" 
-                 style="display: <?php echo $current_mode === 'meldegruppen_specific' ? 'block' : 'none'; ?>">
-                <h4>📋 <?php echo esc_html(sprintf(__('Abschuss-Limits für %s (Meldegruppen-spezifisch)', 'abschussplan-hgmh'), $wildart)); ?></h4>
+            <!-- Jagdbezirk-specific Limits Matrix -->
+            <div class="limits-matrix jagdbezirk-specific" id="jagdbezirk-limits-<?php echo esc_attr($wildart); ?>" 
+                 style="display: <?php echo $current_mode === 'jagdbezirk_specific' ? 'block' : 'none'; ?>">
+                <h4>📋 <?php echo esc_html(sprintf(__('Abschuss-Limits für %s (Jagdbezirk-spezifisch)', 'abschussplan-hgmh'), $wildart)); ?></h4>
                 
                 <table class="ahgmh-limits-table">
                     <thead>

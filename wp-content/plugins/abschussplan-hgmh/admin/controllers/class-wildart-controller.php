@@ -166,7 +166,7 @@ class AHGMH_Wildart_Controller {
             $wildart = sanitize_text_field($_POST['wildart'] ?? '');
             $mode = sanitize_text_field($_POST['mode'] ?? '');
             
-            if (empty($wildart) || !in_array($mode, ['meldegruppen_specific', 'hegegemeinschaft_total'])) {
+            if (empty($wildart) || !in_array($mode, ['jagdbezirk_specific', 'hegegemeinschaft_total'])) {
                 wp_send_json_error('Ungültige Parameter');
                 return;
             }

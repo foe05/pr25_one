@@ -1113,6 +1113,26 @@ class AHGMH_Database_Handler {
         
         return $summary_data;
     }
+    
+    /**
+     * Get the limit mode for a specific species
+     *
+     * @param string $species Species name
+     * @return string 'jagdbezirk_specific' or 'hegegemeinschaft_total'
+     */
+    private function get_limit_mode($species) {
+        $limit_modes = get_option('ahgmh_limit_modes', array());
+        $current_mode = isset($limit_modes[$species]) ? $limit_modes[$species] : 'hegegemeinschaft_total';
+        
+        // Migration: Convert old 'meldegruppen_specific' to 'jagdbezirk_specific'
+        if ($current_mode === 'meldegruppen_specific') {
+            $limit_modes[$species] = 'jagdbezirk_specific';
+            update_option('ahgmh_limit_modes', $limit_modes);
+            return 'jagdbezirk_specific';
+        }
+        
+        return $current_mode;
+    }
 
     /**
      * Get total summary data for all species and meldegruppen
@@ -1135,10 +1155,17 @@ class AHGMH_Database_Handler {
                     $all_categories[] = $category;
                 }
                 
-                // Get limits for this species/category - use Hegegemeinschaft total limits
-                $limit_value = $this->get_hegegemeinschaft_limit($species, $category);
-                if ($limit_value === 0) {
-                    // Fallback to old system if no hegegemeinschaft limits configured
+                // Get the limit mode for this species
+                $limit_mode = $this->get_limit_mode($species);
+                
+                if ($limit_mode === 'hegegemeinschaft_total') {
+                    // Mode 1: Use Hegegemeinschaft total limits
+                    $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+                    $species_limits = get_option($limits_key, array());
+                    $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+                } else {
+                    // Mode 2: Jagdbezirk-spezifische Limits - Summe aller jagdbezirk-spezifischen Limits
+                    // TODO: For now use species limits, later implement sum of all jagdbezirk-specific limits
                     $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
                     $species_limits = get_option($limits_key, array());
                     $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
@@ -1190,16 +1217,13 @@ class AHGMH_Database_Handler {
         $categories_key = 'ahgmh_categories_' . sanitize_key($species);
         $categories = get_option($categories_key, array());
         
-        // Use new limits system - show hegegemeinschaft total limits for species-only view
+        // Use the existing limits system for species-only view  
         $limits = array();
         foreach ($categories as $category) {
-            $limit_value = $this->get_hegegemeinschaft_limit($species, $category);
-            if ($limit_value === 0) {
-                // Fallback to old system if no hegegemeinschaft limits configured
-                $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
-                $species_limits = get_option($limits_key, array());
-                $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
-            }
+            // Get limits from the standard category limits option
+            $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
+            $species_limits = get_option($limits_key, array());
+            $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
             $limits[$category] = $limit_value;
         }
         
@@ -1233,23 +1257,30 @@ class AHGMH_Database_Handler {
             $categories_key = 'ahgmh_categories_' . sanitize_key($species);
             $species_categories = get_option($categories_key, array());
             
+            // Get the limit mode for this species
+            $limit_mode = $this->get_limit_mode($species);
+            
             foreach ($species_categories as $category) {
                 if (!in_array($category, $all_categories)) {
                     $all_categories[] = $category;
                 }
                 
-                // For jagdbezirk filtering, we use hegegemeinschaft totals as limits since 
-                // jagdbezirk is more specific than meldegruppe
-                $limit_value = $this->get_hegegemeinschaft_limit($species, $category);
-                if ($limit_value === 0) {
-                    // Fallback to old system if no hegegemeinschaft limits configured
+                // Determine limits based on mode
+                $limit_value = 0;
+                if ($limit_mode === 'hegegemeinschaft_total') {
+                    // Mode 1: Gesamt-Hegegemeinschaft Limits
+                    // Jagdbezirk-gefilterte Tabellen zeigen KEINE Limits (= 0)
+                    $limit_value = 0;
+                } else {
+                    // Mode 2: Jagdbezirk-spezifische Limits  
+                    // Zeige jagdbezirk-spezifische Limits (TODO: implement jagdbezirk-specific storage)
+                    // Temporary fallback to species limits until jagdbezirk-specific storage is implemented
                     $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
                     $species_limits = get_option($limits_key, array());
                     $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
                 }
                 
                 // For jagdbezirk view, we don't accumulate limits across species
-                // Show the actual limit for each category
                 if (!isset($combined_limits[$category])) {
                     $combined_limits[$category] = $limit_value;
                 }
@@ -1295,17 +1326,25 @@ class AHGMH_Database_Handler {
         $categories_key = 'ahgmh_categories_' . sanitize_key($species);
         $categories = get_option($categories_key, array());
         
-        // For species + jagdbezirk combination, use hegegemeinschaft limits as reference
+        // Get the limit mode for this species
+        $limit_mode = $this->get_limit_mode($species);
+        
+        // Determine limits based on mode
         $limits = array();
         foreach ($categories as $category) {
-            $limit_value = $this->get_hegegemeinschaft_limit($species, $category);
-            if ($limit_value === 0) {
-                // Fallback to old system if no hegegemeinschaft limits configured
+            if ($limit_mode === 'hegegemeinschaft_total') {
+                // Mode 1: Gesamt-Hegegemeinschaft Limits
+                // Species + Jagdbezirk combination zeigt KEINE Limits
+                $limits[$category] = 0;
+            } else {
+                // Mode 2: Jagdbezirk-spezifische Limits
+                // Zeige jagdbezirk-spezifische Limits (TODO: implement jagdbezirk-specific storage)
+                // Temporary fallback to species limits until jagdbezirk-specific storage is implemented
                 $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
                 $species_limits = get_option($limits_key, array());
                 $limit_value = isset($species_limits[$category]) ? (int) $species_limits[$category] : 0;
+                $limits[$category] = $limit_value;
             }
-            $limits[$category] = $limit_value;
         }
         
         $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);

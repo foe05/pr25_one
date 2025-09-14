@@ -493,11 +493,11 @@
      */
     function toggleLimitMode(wildart, mode) {
         // Immediately update display based on mode
-        if (mode === 'meldegruppen_specific') {
-            $('#meldegruppen-limits-' + wildart).show();
+        if (mode === 'jagdbezirk_specific') {
+            $('#jagdbezirk-limits-' + wildart).show();
             $('#hegegemeinschaft-limits-' + wildart).hide();
         } else {
-            $('#meldegruppen-limits-' + wildart).hide();
+            $('#jagdbezirk-limits-' + wildart).hide();
             $('#hegegemeinschaft-limits-' + wildart).show();
         }
         
