@@ -164,17 +164,17 @@ class AHGMH_Wildart_Service {
         $modes = get_option('ahgmh_limit_modes', []);
         $original_mode = isset($modes[$wildart]) ? $modes[$wildart] : null; // NULL = never explicitly set
         
-        // Migration: Convert old 'meldegruppen_specific' to 'jagdbezirk_specific'
-        if ($original_mode === 'meldegruppen_specific') {
-            $modes[$wildart] = 'jagdbezirk_specific';
+        // Migration: Convert old 'jagdbezirk_specific' back to 'meldegruppen_specific' for compatibility
+        if ($original_mode === 'jagdbezirk_specific') {
+            $modes[$wildart] = 'meldegruppen_specific';
             update_option('ahgmh_limit_modes', $modes);
-            return 'jagdbezirk_specific';
+            return 'meldegruppen_specific';
         } else if ($original_mode === null) {
             // Never explicitly set - intelligent detection
             $all_limits = get_option('ahgmh_wildart_limits', []);
             $has_specific_limits = isset($all_limits[$wildart]) && !empty($all_limits[$wildart]);
             
-            return $has_specific_limits ? 'jagdbezirk_specific' : 'hegegemeinschaft_total';
+            return $has_specific_limits ? 'meldegruppen_specific' : 'hegegemeinschaft_total';
         }
         
         return $original_mode;
@@ -184,7 +184,7 @@ class AHGMH_Wildart_Service {
      * Set limit mode for wildart
      */
     public function set_limit_mode($wildart, $mode) {
-        if (!in_array($mode, ['jagdbezirk_specific', 'hegegemeinschaft_total'])) {
+        if (!in_array($mode, ['meldegruppen_specific', 'hegegemeinschaft_total'])) {
             throw new Exception('Ungültiger Limit-Modus');
         }
         

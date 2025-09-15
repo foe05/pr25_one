@@ -567,24 +567,19 @@ class AHGMH_Admin_Page_Modern {
                 'attributes' => __('limit: Anzahl Einträge, species: Wildart filtern, page: Seitennummer', 'abschussplan-hgmh')
             ),
             array(
-                'code' => '[abschuss_summary]',
-                'description' => __('Zeigt eine Zusammenfassung aller Abschusszahlen an', 'abschussplan-hgmh'),
-                'attributes' => __('Keine Parameter - zeigt Gesamtstatistiken', 'abschussplan-hgmh')
-            ),
-            array(
                 'code' => '[abschuss_summary species="Rotwild"]',
                 'description' => __('Zeigt eine Zusammenfassung für eine bestimmte Wildart an', 'abschussplan-hgmh'),
                 'attributes' => __('species: Wildart (Rotwild, Damwild, etc.)', 'abschussplan-hgmh')
             ),
             array(
-                'code' => '[abschuss_summary jagdbezirk="Revier_Nord"]',
+                'code' => '[abschuss_summary meldegruppe="Revier_Nord"]',
                 'description' => __('Zeigt eine Zusammenfassung für einen bestimmten Jagdbezirk an', 'abschussplan-hgmh'),
-                'attributes' => __('jagdbezirk: Name des Jagdbezirks (Leerzeichen und Umlaute erlaubt)', 'abschussplan-hgmh')
+                'attributes' => __('meldegruppe: Name des Jagdbezirks (wird intern als Jagdbezirk behandelt)', 'abschussplan-hgmh')
             ),
             array(
-                'code' => '[abschuss_summary species="Rotwild" jagdbezirk="Revier_Nord"]',
+                'code' => '[abschuss_summary species="Rotwild" meldegruppe="Revier_Nord"]',
                 'description' => __('Zeigt eine Zusammenfassung für Wildart + Jagdbezirk Kombination an', 'abschussplan-hgmh'),
-                'attributes' => __('Kombinierbare Filter: species und jagdbezirk können gemeinsam verwendet werden', 'abschussplan-hgmh')
+                'attributes' => __('Kombinierbare Filter: species und meldegruppe können gemeinsam verwendet werden', 'abschussplan-hgmh')
             ),
             array(
                 'code' => '[abschuss_limits species="Rotwild"]',
@@ -3649,34 +3644,30 @@ class AHGMH_Admin_Page_Modern {
         $limit_modes = get_option('ahgmh_limit_modes', []);
         $original_mode = isset($limit_modes[$wildart]) ? $limit_modes[$wildart] : null; // NULL = never explicitly set
         
-        // Migration: Convert old 'meldegruppen_specific' to 'jagdbezirk_specific'
-        if ($original_mode === 'meldegruppen_specific') {
-            $limit_modes[$wildart] = 'jagdbezirk_specific';
+        // Migration: Convert old 'jagdbezirk_specific' back to 'meldegruppen_specific' for compatibility
+        if ($original_mode === 'jagdbezirk_specific') {
+            $limit_modes[$wildart] = 'meldegruppen_specific';
             update_option('ahgmh_limit_modes', $limit_modes);
-            $current_mode = 'jagdbezirk_specific';
+            $current_mode = 'meldegruppen_specific';
         } else if ($original_mode === null) {
             // Never explicitly set - intelligent detection based on configured limits
             $all_limits = get_option('ahgmh_wildart_limits', []);
             $has_specific_limits = isset($all_limits[$wildart]) && !empty($all_limits[$wildart]);
             
             if ($has_specific_limits) {
-                // Has specific limits configured - must be jagdbezirk_specific
-                $current_mode = 'jagdbezirk_specific';
-                echo "<!-- SMART-DEFAULT: Detected specific limits, defaulting to jagdbezirk_specific -->";
+                // Has specific limits configured - use meldegruppen_specific (treats as jagdbezirk internally)
+                $current_mode = 'meldegruppen_specific';
             } else {
                 // No specific limits - use hegegemeinschaft_total as default
                 $current_mode = 'hegegemeinschaft_total';
-                echo "<!-- SMART-DEFAULT: No specific limits found, defaulting to hegegemeinschaft_total -->";
             }
             // DON'T save to database yet - let user explicitly choose
         } else {
             // Explicitly set value - respect user choice
             $current_mode = $original_mode;
-            echo "<!-- USER-SET: Using explicitly set mode: $original_mode -->";
         }
         
-        // Temporary debug - visible on page
-        echo "<!-- DEBUG: Wildart=$wildart, Original=$original_mode, Current=$current_mode -->";
+
         
         // Get existing limits from options
         $all_limits = get_option('ahgmh_wildart_limits', []);
@@ -3708,10 +3699,10 @@ class AHGMH_Admin_Page_Modern {
             <div class="limit-mode-selector">
                 <h4><?php echo esc_html__('Limit-Modus:', 'abschussplan-hgmh'); ?></h4>
                 <label>
-                    <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="jagdbezirk_specific" 
-                           <?php checked($current_mode, 'jagdbezirk_specific'); ?>
+                    <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="meldegruppen_specific" 
+                           <?php checked($current_mode, 'meldegruppen_specific'); ?>
                            class="limit-mode-radio" data-wildart="<?php echo esc_attr($wildart); ?>">
-                    <?php echo esc_html__('Jagdbezirk-spezifische Limits', 'abschussplan-hgmh'); ?>
+                    <?php echo esc_html__('Meldegruppen-spezifische Limits', 'abschussplan-hgmh'); ?>
                 </label>
                 <label>
                     <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="hegegemeinschaft_total" 
@@ -3721,10 +3712,10 @@ class AHGMH_Admin_Page_Modern {
                 </label>
             </div>
             
-            <!-- Jagdbezirk-specific Limits Matrix -->
-            <div class="limits-matrix jagdbezirk-specific" id="jagdbezirk-limits-<?php echo esc_attr($wildart); ?>" 
-                 style="display: <?php echo $current_mode === 'jagdbezirk_specific' ? 'block' : 'none'; ?>">
-                <h4>📋 <?php echo esc_html(sprintf(__('Abschuss-Limits für %s (Jagdbezirk-spezifisch)', 'abschussplan-hgmh'), $wildart)); ?></h4>
+            <!-- Meldegruppen-specific Limits Matrix -->
+            <div class="limits-matrix meldegruppen-specific" id="meldegruppen-limits-<?php echo esc_attr($wildart); ?>" 
+                 style="display: <?php echo $current_mode === 'meldegruppen_specific' ? 'block' : 'none'; ?>">
+                <h4>📋 <?php echo esc_html(sprintf(__('Abschuss-Limits für %s (Meldegruppen-spezifisch)', 'abschussplan-hgmh'), $wildart)); ?></h4>
                 
                 <table class="ahgmh-limits-table">
                     <thead>
@@ -4107,50 +4098,7 @@ class AHGMH_Admin_Page_Modern {
         }
     }
     
-    /**
-     * AJAX handler: Toggle limit mode for wildart
-     */
-    public function ajax_toggle_limit_mode() {
-        // Security checks
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-
-        $wildart = sanitize_text_field($_POST['wildart'] ?? '');
-        $mode = sanitize_text_field($_POST['mode'] ?? '');
-
-        if (empty($wildart)) {
-            wp_send_json_error(__('Wildart ist erforderlich.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        if (!in_array($mode, array('meldegruppen_specific', 'hegegemeinschaft_total'))) {
-            wp_send_json_error(__('Ungültiger Limit-Modus.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        try {
-            $database = abschussplan_hgmh()->database;
-            $database->set_wildart_limit_mode($wildart, $mode);
-
-            wp_send_json_success(array(
-                'message' => sprintf(
-                    __('Limit-Modus für %s erfolgreich geändert zu: %s', 'abschussplan-hgmh'),
-                    $wildart,
-                    $mode === 'meldegruppen_specific' ? 'Meldegruppen-spezifisch' : 'Gesamt-Hegegemeinschaft'
-                ),
-                'mode' => $mode
-            ));
-        } catch (Exception $e) {
-            wp_send_json_error(sprintf(
-                __('Fehler beim Ändern des Limit-Modus: %s', 'abschussplan-hgmh'),
-                $e->getMessage()
-            ));
-        }
-    }
+    // REMOVED: Legacy AJAX handler - now handled by class-wildart-controller.php
     
     /**
      * AJAX handler: Save limits

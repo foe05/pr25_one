@@ -115,8 +115,8 @@ class AHGMH_Wildart_View {
                 <!-- Limit Mode Selection -->
                 <div class="limit-mode-selection">
                     <label>
-                        <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="jagdbezirk_specific" class="limit-mode-radio" data-wildart="<?php echo esc_attr($wildart); ?>" <?php checked($config['limit_mode'], 'jagdbezirk_specific'); ?>>
-                        <?php echo esc_html__('Jagdbezirk-spezifische Limits', 'abschussplan-hgmh'); ?>
+                        <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="meldegruppen_specific" class="limit-mode-radio" data-wildart="<?php echo esc_attr($wildart); ?>" <?php checked($config['limit_mode'], 'meldegruppen_specific'); ?>>
+                        <?php echo esc_html__('Meldegruppen-spezifische Limits', 'abschussplan-hgmh'); ?>
                     </label>
                     <label>
                         <input type="radio" name="limit_mode_<?php echo esc_attr($wildart); ?>" value="hegegemeinschaft_total" class="limit-mode-radio" data-wildart="<?php echo esc_attr($wildart); ?>" <?php checked($config['limit_mode'], 'hegegemeinschaft_total'); ?>>

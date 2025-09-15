@@ -267,11 +267,11 @@ class AHGMH_Form_Handler {
         // Parse shortcode attributes - now both parameters are optional
         $atts = shortcode_atts(array(
             'species' => '',        // Optional - empty means all species
-            'jagdbezirk' => ''      // Optional - empty means all jagdbezirke
+            'meldegruppe' => ''     // Optional - empty means all meldegruppen (filters by jagdbezirk internally)
         ), $atts, 'abschuss_summary');
         
         $selected_species = sanitize_text_field($atts['species']);
-        $selected_jagdbezirk = sanitize_text_field($atts['jagdbezirk']);
+        $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
         $user_id = get_current_user_id();
         
         // Apply permission-based filtering for logged-in users
@@ -309,8 +309,9 @@ class AHGMH_Form_Handler {
         // Simple validation: jagdbezirk parameter is used directly without complex validation
         // as requested - no special validation needed for Umlaute or spaces
         
-        // Get public summary data based on parameter combination
-        $summary_data = $database->get_public_summary_data($selected_species, $selected_jagdbezirk);
+        // Get public summary data based on parameter combination  
+        // NOTE: meldegruppe parameter now filters by jagdbezirk internally
+        $summary_data = $database->get_public_summary_data($selected_species, $selected_meldegruppe);
         
         // Extract data for template
         $categories = $summary_data['categories'];
