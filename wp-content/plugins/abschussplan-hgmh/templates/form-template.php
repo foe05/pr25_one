@@ -107,8 +107,9 @@ if (!defined('ABSPATH')) {
                     $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
                     $meldegruppen = $user_meldegruppe ? array($user_meldegruppe) : array();
                 } else {
-                    // Vorstand: Show all meldegruppen configured for this wildart
-                    $meldegruppen = $database->get_meldegruppen_for_wildart($selected_species);
+                    // Vorstand: Show all meldegruppen configured for this wildart - FIX: use correct source
+                    $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+                    $meldegruppen = isset($wildart_meldegruppen[$selected_species]) ? $wildart_meldegruppen[$selected_species] : ['Gruppe_A', 'Gruppe_B'];
                 }
                 
                 foreach ($meldegruppen as $meldegruppe) : ?>

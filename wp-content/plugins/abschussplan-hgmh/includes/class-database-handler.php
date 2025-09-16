@@ -594,7 +594,9 @@ class AHGMH_Database_Handler {
             return false;
         }
         
-        $meldegruppen = $this->get_meldegruppen_for_wildart($wildart);
+        // FIX: use correct meldegruppen source for validation
+        $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        $meldegruppen = isset($wildart_meldegruppen[$wildart]) ? $wildart_meldegruppen[$wildart] : ['Gruppe_A', 'Gruppe_B'];
         return in_array($meldegruppe, $meldegruppen, true);
     }
 

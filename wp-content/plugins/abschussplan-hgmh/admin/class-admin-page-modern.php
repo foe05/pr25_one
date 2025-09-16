@@ -3606,13 +3606,6 @@ class AHGMH_Admin_Page_Modern {
             <!-- Meldegruppen Box -->
             <div class="config-box meldegruppen-box">
                 <h3>👥 <?php echo esc_html(sprintf(__('Meldegruppen für %s', 'abschussplan-hgmh'), $wildart)); ?></h3>
-                
-                <!-- TEMP DEBUG: Show what's actually in the database -->
-                <?php 
-                $debug_data = get_option('ahgmh_wildart_meldegruppen', []);
-                echo '<div style="background: yellow; padding: 5px; font-size: 11px;">DEBUG - ahgmh_wildart_meldegruppen: <pre>' . print_r($debug_data, true) . '</pre></div>';
-                echo '<div style="background: lightblue; padding: 5px; font-size: 11px;">DEBUG - Current meldegruppen variable: <pre>' . print_r($meldegruppen, true) . '</pre></div>';
-                ?>
                 <div class="config-items" id="meldegruppen-list">
                     <?php foreach ($meldegruppen as $meldegruppe): ?>
                     <div class="config-item">
@@ -4284,9 +4277,9 @@ class AHGMH_Admin_Page_Modern {
             wp_send_json_error('Wildart ist erforderlich');
         }
         
-        // Get meldegruppen for this wildart from database
-        $database = abschussplan_hgmh()->database;
-        $meldegruppen = $database->get_meldegruppen_for_wildart($wildart);
+        // Get meldegruppen for this wildart - FIX: use correct source  
+        $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        $meldegruppen = isset($wildart_meldegruppen[$wildart]) ? $wildart_meldegruppen[$wildart] : ['Gruppe_A', 'Gruppe_B'];
         
         wp_send_json_success($meldegruppen);
     }

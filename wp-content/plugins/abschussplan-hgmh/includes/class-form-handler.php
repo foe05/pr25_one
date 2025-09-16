@@ -178,7 +178,7 @@ class AHGMH_Form_Handler {
                 $submissions = $database->get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit, ($page - 1) * $limit);
                 $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $meldegruppe);
             } else if (!empty($species)) {
-                // Only species specified
+                // Only species specified - FIX: correct parameter order (limit, offset, species)
                 $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
                 $total_count = $database->count_submissions_by_species($species);
             } else {
@@ -187,23 +187,19 @@ class AHGMH_Form_Handler {
                 $total_count = $database->count_submissions();
             }
         } else {
-            // Obmann: Automatic filtering to user's meldegruppen
-            if (!empty($species)) {
-                $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $species);
-                $submissions = $database->get_submissions_by_species_and_meldegruppe($species, $user_meldegruppe, $limit, ($page - 1) * $limit);
-                $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $user_meldegruppe);
+            // Obmann: Show ALL submissions (use EXACT same logic as Vorstand)
+            if (!empty($species) && !empty($meldegruppe)) {
+                // Filter by both species and meldegruppe
+                $submissions = $database->get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit, ($page - 1) * $limit);
+                $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $meldegruppe);
+            } elseif (!empty($species)) {
+                // Filter by species only - SAME AS VORSTAND
+                $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
+                $total_count = $database->count_submissions_by_species($species);
             } else {
-                // No species specified - show all user's wildarten
-                $user_wildarten = AHGMH_Permissions_Service::get_user_wildarten($user_id);
-                $submissions = array();
-                $total_count = 0;
-                
-                foreach ($user_wildarten as $wildart) {
-                    $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $wildart);
-                    $wildart_submissions = $database->get_submissions_by_species_and_meldegruppe($wildart, $user_meldegruppe, $limit, ($page - 1) * $limit);
-                    $submissions = array_merge($submissions, $wildart_submissions);
-                    $total_count += $database->count_submissions_by_species_and_meldegruppe($wildart, $user_meldegruppe);
-                }
+                // No filters - all submissions - SAME AS VORSTAND
+                $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
+                $total_count = $database->count_submissions();
             }
         }
         
@@ -390,9 +386,9 @@ class AHGMH_Form_Handler {
         if (empty($field5)) {
             $errors['field5'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
-            // Validate that the selected Meldegruppe exists in the current wildart configuration
-            $database = abschussplan_hgmh()->database;
-            $valid_meldegruppen = $database->get_meldegruppen_for_wildart($game_species);
+            // Validate that the selected Meldegruppe exists in the current wildart configuration - FIX: use correct source
+            $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+            $valid_meldegruppen = isset($wildart_meldegruppen[$game_species]) ? $wildart_meldegruppen[$game_species] : ['Gruppe_A', 'Gruppe_B'];
             
             if (!in_array($field5, $valid_meldegruppen)) {
                 $errors['field5'] = __('Bitte wählen Sie eine gültige Meldegruppe aus.', 'abschussplan-hgmh');

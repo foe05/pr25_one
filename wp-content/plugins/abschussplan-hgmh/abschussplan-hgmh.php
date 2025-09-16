@@ -3,7 +3,7 @@
  * Plugin Name: Abschussplan HGMH
  * Plugin URI: https://github.com/foe05/pr25_one
  * Description: Collect and view game shoots for registration with local hunting authorities in Germany.
- * Version: 2.4.0
+ * Version: 2.5.0
  * Author: foe05
  * Author URI: https://github.com/foe05
  * License: GPL v3 or later

@@ -1,7 +1,7 @@
 # Abschussplan HGMH - WordPress Plugin
 
-**Version:** 2.4.0  
-**Status:** Production Ready - Final Release for WordPress.org  
+**Version:** 2.5.0  
+**Status:** Production Ready - Enhanced Meldegruppen Management System  
 **Type:** WordPress Plugin for German Hegegemeinschaften Management
 
 ## 🎯 Overview
@@ -553,6 +553,26 @@ abschussplan-hgmh/
 **WordPress Compatible:** 5.0+ with PHP 7.4+
 
 ## 📋 Changelog
+
+### Version 2.5.0 (2025-09-15) - Enhanced Meldegruppen Management System
+**🔧 Critical Meldegruppen Fixes**
+- Fixed meldegruppen-box in admin backend - adding, editing, and saving now fully functional
+- Resolved data source inconsistency between save/load operations for meldegruppen
+- Implemented automatic default meldegruppen (Gruppe_A, Gruppe_B) for new wildarten
+- Fixed AJAX handler conflicts causing "0" response errors
+- Corrected parameter order in database method calls
+
+**🚀 Enhanced Frontend Integration**
+- [abschuss_form] now properly loads and validates custom meldegruppen
+- [abschuss_table] displays all submissions for Obleute (not just their assigned meldegruppe)
+- Obleute configuration now accepts and validates custom meldegruppen assignments
+- Consistent data sources across all plugin components (ahgmh_wildart_meldegruppen)
+
+**⚡ System Improvements**
+- Eliminated duplicate AJAX handler registrations
+- Fixed emergency handler conflicts with main controller system
+- Enhanced permission system with proper data filtering
+- Improved validation logic for meldegruppen across all components
 
 ### Version 2.4.0 (2024-09-12) - Final Production Release
 **🔧 Code Quality & Stability**

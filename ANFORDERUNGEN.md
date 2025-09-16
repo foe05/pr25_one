@@ -1,8 +1,8 @@
 # Anforderungsdokumentation: Abschussplan HGMH WordPress Plugin
 
-**Version:** 2.4.0 - Vollständige Implementierung  
+**Version:** 2.5.0 - Erweiterte Meldegruppen-Verwaltung  
 **Status:** ✅ Alle Anforderungen implementiert und getestet  
-**WordPress.org:** Submission-ready  
+**WordPress.org:** Production-ready mit kritischen Meldegruppen-Fixes  
 
 ## 1. Überblick
 
@@ -297,7 +297,20 @@ Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
 
 ---
 
-**Version:** 1.5.0  
-**Erstellt:** 2025  
-**Zielgruppe:** Entwickler, Systemadministratoren, Jagdrevierverwalter  
-**Status:** Vollständig implementiert mit CSV Export
+## Versionshistorie
+
+### Version 2.5.0 (2025-09-15)
+**🔧 Kritische Meldegruppen-Bugfixes**
+- Meldegruppen-Box im Admin-Backend vollständig funktionsfähig
+- Datenquellen-Inkonsistenzen zwischen Speichern/Laden behoben
+- Automatische Standard-Meldegruppen für neue Wildarten implementiert
+- AJAX Handler-Konflikte und "0"-Response-Fehler behoben
+
+**🚀 Erweiterte Frontend-Integration**
+- [abschuss_form] lädt und validiert benutzerdefinierte Meldegruppen korrekt
+- [abschuss_table] zeigt alle Abschüsse für Obleute an (nicht nur zugewiesene)
+- Obleute-Konfiguration akzeptiert benutzerdefinierte Meldegruppen-Zuweisungen
+- Konsistente Datenquellen systemweit (ahgmh_wildart_meldegruppen)
+
+### Version 2.4.0 (2024-09-12)
+**Status:** Vollständig implementiert mit CSV Export und WordPress.org Compliance
