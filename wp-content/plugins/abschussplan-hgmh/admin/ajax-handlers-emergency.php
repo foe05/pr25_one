@@ -181,7 +181,7 @@ function ahgmh_emergency_save_categories() {
     wp_send_json_success(['message' => 'Kategorien erfolgreich gespeichert']);
 }
 
-// AJAX: Save wildart meldegruppen
+// AJAX: Save wildart meldegruppen - RE-ENABLED since main controller is disabled
 add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', 'ahgmh_emergency_save_meldegruppen');
 function ahgmh_emergency_save_meldegruppen() {
     check_ajax_referer('ahgmh_admin_nonce', 'nonce');
@@ -199,15 +199,11 @@ function ahgmh_emergency_save_meldegruppen() {
         return;
     }
     
-    // Save meldegruppen - use database handler if available
-    $database = abschussplan_hgmh()->database;
-    if (method_exists($database, 'save_wildart_meldegruppen')) {
-        $database->save_wildart_meldegruppen($wildart, $meldegruppen);
-    } else {
-        // Fallback: save to options
-        $meldegruppen_key = 'ahgmh_meldegruppen_' . sanitize_key($wildart);
-        update_option($meldegruppen_key, $meldegruppen);
-    }
+    // Save meldegruppen using same format as categories (WordPress Options)
+    // Use the new wildart_meldegruppen format for consistency
+    $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+    $wildart_meldegruppen[$wildart] = $meldegruppen;
+    update_option('ahgmh_wildart_meldegruppen', $wildart_meldegruppen);
     
     wp_send_json_success(['message' => 'Meldegruppen erfolgreich gespeichert']);
 }

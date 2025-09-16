@@ -3546,8 +3546,9 @@ class AHGMH_Admin_Page_Modern {
             }
         }
         
-        // Get meldegruppen for this wildart
-        $meldegruppen = $database->get_meldegruppen_for_wildart($wildart);
+        // Get meldegruppen for this wildart - FIX: read from correct option
+        $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        $meldegruppen = isset($wildart_meldegruppen[$wildart]) ? $wildart_meldegruppen[$wildart] : ['Gruppe_A', 'Gruppe_B'];
         
         // Get overview statistics
         $stats = $this->get_wildart_overview_stats($wildart);
@@ -3605,6 +3606,13 @@ class AHGMH_Admin_Page_Modern {
             <!-- Meldegruppen Box -->
             <div class="config-box meldegruppen-box">
                 <h3>👥 <?php echo esc_html(sprintf(__('Meldegruppen für %s', 'abschussplan-hgmh'), $wildart)); ?></h3>
+                
+                <!-- TEMP DEBUG: Show what's actually in the database -->
+                <?php 
+                $debug_data = get_option('ahgmh_wildart_meldegruppen', []);
+                echo '<div style="background: yellow; padding: 5px; font-size: 11px;">DEBUG - ahgmh_wildart_meldegruppen: <pre>' . print_r($debug_data, true) . '</pre></div>';
+                echo '<div style="background: lightblue; padding: 5px; font-size: 11px;">DEBUG - Current meldegruppen variable: <pre>' . print_r($meldegruppen, true) . '</pre></div>';
+                ?>
                 <div class="config-items" id="meldegruppen-list">
                     <?php foreach ($meldegruppen as $meldegruppe): ?>
                     <div class="config-item">

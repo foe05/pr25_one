@@ -40,6 +40,9 @@ class AHGMH_Wildart_Service {
         $species[] = $name;
         update_option('ahgmh_species', $species);
         
+        // Initialize default meldegruppen for new wildart
+        $this->initialize_default_meldegruppen($name);
+        
         return ['species' => $species, 'created' => $name];
     }
     
@@ -106,39 +109,111 @@ class AHGMH_Wildart_Service {
      * Get meldegruppen for wildart
      */
     public function get_meldegruppen($wildart) {
+        // DEBUG: Log get request
+        error_log("=== GET MELDEGRUPPEN DEBUG ===");
+        error_log("Requested wildart: " . $wildart);
+        
         $meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        error_log("Raw option data: " . print_r($meldegruppen, true));
         
         if (isset($meldegruppen[$wildart]) && !empty($meldegruppen[$wildart])) {
-            return AHGMH_Validation_Service::sanitize_text_array($meldegruppen[$wildart]);
+            $result = AHGMH_Validation_Service::sanitize_text_array($meldegruppen[$wildart]);
+            error_log("Found data for wildart - returning: " . print_r($result, true));
+            error_log("=== END GET DEBUG ===");
+            return $result;
         }
         
-        // Return default meldegruppen if none configured
-        return ['Gruppe_A', 'Gruppe_B', 'Gruppe_C'];
+        error_log("No data found for wildart - initializing defaults");
+        // Initialize default meldegruppen if none configured
+        $this->initialize_default_meldegruppen($wildart);
+        
+        // Re-fetch from database after initialization
+        $meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        error_log("After initialization: " . print_r($meldegruppen, true));
+        
+        if (isset($meldegruppen[$wildart]) && !empty($meldegruppen[$wildart])) {
+            $result = AHGMH_Validation_Service::sanitize_text_array($meldegruppen[$wildart]);
+            error_log("After initialization found data - returning: " . print_r($result, true));
+            error_log("=== END GET DEBUG ===");
+            return $result;
+        }
+        
+        // Final fallback (should never happen)
+        error_log("Final fallback - returning hardcoded defaults");
+        error_log("=== END GET DEBUG ===");
+        return ['Gruppe_A', 'Gruppe_B'];
     }
     
     /**
      * Save meldegruppen for wildart
      */
     public function save_meldegruppen($wildart, $meldegruppen) {
+        // DEBUG: Log incoming data
+        error_log("=== SAVE MELDEGRUPPEN DEBUG ===");
+        error_log("Wildart: " . $wildart);
+        error_log("Incoming meldegruppen: " . print_r($meldegruppen, true));
+        
         // Validate and sanitize input
         $meldegruppen = AHGMH_Validation_Service::sanitize_text_array($meldegruppen);
+        error_log("After sanitization: " . print_r($meldegruppen, true));
         
         // Remove empty entries
         $meldegruppen = array_filter($meldegruppen, function($item) {
             return !empty(trim($item));
         });
+        error_log("After filtering: " . print_r($meldegruppen, true));
         
         // Get current configuration
         $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        error_log("Current config before save: " . print_r($wildart_meldegruppen, true));
+        
         $wildart_meldegruppen[$wildart] = array_values($meldegruppen);
+        error_log("Config after update: " . print_r($wildart_meldegruppen, true));
         
         // Save to database
         $result = update_option('ahgmh_wildart_meldegruppen', $wildart_meldegruppen);
+        error_log("Update result: " . ($result ? 'SUCCESS' : 'FAILED'));
+        
+        // Verify save
+        $verify = get_option('ahgmh_wildart_meldegruppen', []);
+        error_log("Verification - what's actually in DB: " . print_r($verify, true));
         
         // Also update the global meldegruppen list for backwards compatibility
         $this->update_global_meldegruppen_list();
+        error_log("=== END SAVE DEBUG ===");
         
         return $result;
+    }
+    
+    /**
+     * Initialize default meldegruppen for new wildart
+     */
+    private function initialize_default_meldegruppen($wildart) {
+        $meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        error_log("INIT DEFAULT DEBUG: Current meldegruppen before init: " . print_r($meldegruppen, true));
+        
+        // Only initialize if not already set
+        if (!isset($meldegruppen[$wildart]) || empty($meldegruppen[$wildart])) {
+            error_log("INIT DEFAULT DEBUG: Initializing defaults for " . $wildart);
+            $meldegruppen[$wildart] = ['Gruppe_A', 'Gruppe_B'];
+            $result = update_option('ahgmh_wildart_meldegruppen', $meldegruppen);
+            error_log("INIT DEFAULT DEBUG: Update result: " . ($result ? 'SUCCESS' : 'FAILED'));
+            
+            // Also update the global meldegruppen list for backwards compatibility
+            $this->update_global_meldegruppen_list();
+        } else {
+            error_log("INIT DEFAULT DEBUG: NOT initializing - data already exists for " . $wildart);
+        }
+    }
+    
+    /**
+     * Initialize default meldegruppen for all existing wildarten
+     */
+    public function initialize_all_wildarten_meldegruppen() {
+        $wildarten = $this->get_all_wildarten();
+        foreach ($wildarten as $wildart) {
+            $this->initialize_default_meldegruppen($wildart);
+        }
     }
     
     /**

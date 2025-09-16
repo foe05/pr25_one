@@ -228,7 +228,9 @@
         // Save meldegruppen
         $(document).on('click', '.save-meldegruppen', function (e) {
             e.preventDefault();
+            console.log('Save meldegruppen button clicked!');
             var wildart = $(this).data('wildart');
+            console.log('Wildart:', wildart);
             saveWildartMeldegruppen(wildart);
         });
 
@@ -447,6 +449,8 @@
      * Save wildart meldegruppen
      */
     function saveWildartMeldegruppen(wildart) {
+        console.log('saveWildartMeldegruppen function called for:', wildart);
+        
         var meldegruppen = [];
         $('.meldegruppe-input').each(function () {
             var value = $(this).val().trim();
@@ -454,11 +458,14 @@
                 meldegruppen.push(value);
             }
         });
+        
+        console.log('Collected meldegruppen:', meldegruppen);
 
         var $btn = $('.save-meldegruppen[data-wildart="' + wildart + '"]');
         var originalText = $btn.text();
         $btn.prop('disabled', true).text('Speichern...');
 
+        console.log('Starting AJAX request...');
         $.ajax({
             url: ahgmh_admin.ajax_url,
             type: 'POST',
@@ -471,10 +478,10 @@
             success: function (response) {
                 if (response.success) {
                     showNotification('Meldegruppen gespeichert!', 'success');
-                    // Reload the wildart config to update limits section
+                    // TEMP FIX: Reload entire page instead of just config
                     setTimeout(function () {
-                        loadWildartConfig(wildart);
-                    }, 500);
+                        location.reload();
+                    }, 1000);
                 } else {
                     showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
