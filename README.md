@@ -12,7 +12,7 @@ The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digit
 - ✅ **Digital Hunting Reports** - Advanced web forms with validation and permission-based preselection
 - ✅ **3-Level Permission System** - Besucher, Obmann, Vorstand with wildart-specific assignments
 - ✅ **Comprehensive Admin Panel** - Modern tabbed interface with full CRUD operations and obmann management
-- ✅ **Master-Detail Wildart Configuration** - Intuitive wildart-specific category and meldegruppe management
+- ✅ **Master-Detail Wildart Configuration** - Intuitive wildart-specific category and meldegruppe management with full CRUD operations
 - ✅ **Flexible Limits Management** - Dual-mode system: Meldegruppen-specific vs. Hegegemeinschaft-total limits
 - ✅ **Advanced Export System** - Configurable CSV exports with admin interface and public URLs
 - ✅ **Obmann Management** - Complete user assignment system with wildart-specific meldegruppe assignments
@@ -21,7 +21,7 @@ The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digit
 - ✅ **Date Range Operations** - Delete submissions by custom date ranges
 - ✅ **Responsive Design** - Mobile-optimized Bootstrap 5.3 interface
 - ✅ **Multi-Database** - WordPress MySQL, SQLite, PostgreSQL support
-- ✅ **Shortcode Integration** - 5 powerful shortcodes with permission-based access control
+- ✅ **Shortcode Integration** - 5 powerful shortcodes with permission-based access control and cross-component data consistency
 - ✅ **Real-time Table Updates** - AJAX-powered data refreshing
 - ✅ **Complete Internationalization** - German translation with POT file for additional languages
 - ✅ **WordPress.org Compliance** - Security hardened, coding standards compliant, production ready

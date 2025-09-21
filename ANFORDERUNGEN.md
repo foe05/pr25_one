@@ -46,6 +46,7 @@ Das **Abschussplan HGMH** Plugin ist eine spezialisierte WordPress-Erweiterung f
 - **CRUD Operations**: Vollständiges Erstellen, Bearbeiten, Löschen von Wildarten
 - **Persistenz**: Wildarten-Synchronisation über alle Systemteile
 - **Real-time Updates**: AJAX-basierte Konfiguration ohne Page-Reload
+- **Automatische Meldegruppen**: Standard-Meldegruppen (Gruppe_A, Gruppe_B) bei neuen Wildarten
 
 ### 3.2 Kategorienverwaltung ✅ **IMPLEMENTIERT**  
 - **Wildart-spezifische Kategorien**: Individuelle Kategorien pro Wildart

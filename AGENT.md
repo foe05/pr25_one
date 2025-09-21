@@ -33,6 +33,7 @@
 ## Core Functionality
 - **Form Submission**: Hunting harvest data entry with advanced validation and permission-based meldegruppe preselection
 - **Data Management**: Complete CRUD operations for harvest records with real-time updates
+- **Enhanced Meldegruppen System**: Full CRUD operations for wildart-specific meldegruppen with cross-component data consistency
 - **CSV Export**: Advanced WordPress AJAX-based exports with configurable filename patterns (public URLs)
 - **Admin Interface**: Modern tabbed interface (Dashboard, Data Management, Obleute, Categories, Database, Wildarten-Konfiguration, CSV Export)
 - **Master-Detail Wildart Configuration**: Intuitive left-sidebar wildart navigation with right-panel detail editing including comprehensive limits management
