@@ -1,6 +1,6 @@
 # Abschussplan HGMH - WordPress Plugin
 
-**Version:** 2.5.0  
+**Version:** 2.5.1  
 **Status:** Production Ready - Enhanced Meldegruppen Management System  
 **Type:** WordPress Plugin for German Hegegemeinschaften Management
 
@@ -553,6 +553,23 @@ abschussplan-hgmh/
 **WordPress Compatible:** 5.0+ with PHP 7.4+
 
 ## 📋 Changelog
+
+### Version 2.5.1 (2025-09-21) - CRUD Operations Enhancement
+
+#### 🐛 Bug Fixes
+- **Delete Functionality**: Fixed non-functional delete buttons in admin data management table
+- **JavaScript Loading**: Resolved missing event handlers due to disabled script loading
+- **AJAX Integration**: Corrected nonce validation and proper script localization
+
+#### ✨ New Features  
+- **Edit Functionality**: Added inline edit capability for individual submissions
+- **Improved UX**: Enhanced admin interface with edit and delete buttons for each record
+- **Data Validation**: Comprehensive form validation for edit operations
+
+#### 🔧 Technical Improvements
+- **Event Handler Optimization**: Prevented duplicate form creation and improved click handling
+- **Database Operations**: Implemented flexible update_submission method with dynamic field handling
+- **Security Enhancement**: Proper nonce validation for all CRUD operations
 
 ### Version 2.5.0 (2025-09-15) - Enhanced Meldegruppen Management System
 **🔧 Critical Meldegruppen Fixes**

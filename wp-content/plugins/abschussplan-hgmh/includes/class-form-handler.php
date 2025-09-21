@@ -19,6 +19,7 @@ class AHGMH_Form_Handler {
         // Register shortcodes for displaying the form and other components
         add_shortcode('abschuss_form', array($this, 'render_form'));
         add_shortcode('abschuss_table', array($this, 'render_table'));
+        add_shortcode('abschuss_summary_table', array($this, 'render_summary_table'));
         add_shortcode('abschuss_admin', array($this, 'render_admin'));
         add_shortcode('abschuss_summary', array($this, 'render_summary'));
         add_shortcode('abschuss_limits', array($this, 'render_limits_config'));
@@ -210,6 +211,64 @@ class AHGMH_Form_Handler {
         
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/table-template.php';
+        return ob_get_clean();
+    }
+    
+    /**
+     * Render a public summary table (no login required) with reduced columns
+     * 
+     * @param array $atts Shortcode attributes
+     * @return string HTML output of the table
+     */
+    public function render_summary_table($atts) {
+        // Parse shortcode attributes
+        $atts = shortcode_atts(
+            array(
+                'limit' => 10,
+                'page' => 1,
+                'species' => '',
+                'meldegruppe' => ''
+            ),
+            $atts,
+            'abschuss_summary_table'
+        );
+        
+        // No permission check - this is public
+        
+        // Get current page and limit
+        $page = isset($_GET['abschuss_page']) ? max(1, intval($_GET['abschuss_page'])) : intval($atts['page']);
+        $limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : intval($atts['limit']);
+        
+        // Get submissions data without permission filtering
+        $database = abschussplan_hgmh()->database;
+        $species = sanitize_text_field($atts['species']);
+        $meldegruppe = sanitize_text_field($atts['meldegruppe']);
+        
+        // Apply filtering based on parameters
+        if (!empty($species) && !empty($meldegruppe)) {
+            // Both species and meldegruppe specified
+            $submissions = $database->get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit, ($page - 1) * $limit);
+            $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $meldegruppe);
+        } else if (!empty($species)) {
+            // Only species specified
+            $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
+            $total_count = $database->count_submissions_by_species($species);
+        } else {
+            // No filters - all submissions
+            $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
+            $total_count = $database->count_submissions();
+        }
+        
+        $total_pages = ceil($total_count / $limit);
+        
+        // Set show_export_button = false (no export functionality in public table)
+        $show_export_button = false;
+        
+        // Set flag for reduced columns
+        $show_reduced_columns = true;
+        
+        ob_start();
+        include AHGMH_PLUGIN_DIR . 'templates/summary-table-template.php';
         return ob_get_clean();
     }
     

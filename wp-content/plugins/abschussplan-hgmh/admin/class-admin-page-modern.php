@@ -23,6 +23,7 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_quick_export', array($this, 'ajax_quick_export'));
         add_action('wp_ajax_ahgmh_export_data', array($this, 'ajax_export_data'));
         add_action('wp_ajax_ahgmh_delete_submission', array($this, 'ajax_delete_submission'));
+        add_action('wp_ajax_ahgmh_edit_submission', array($this, 'ajax_edit_submission'));
         add_action('wp_ajax_ahgmh_danger_action', array($this, 'ajax_danger_action'));
         // Jagdbezirk handlers moved to emergency file
         // Legacy handlers - these are now handled by AHGMH_Wildart_Controller
@@ -125,18 +126,23 @@ class AHGMH_Admin_Page_Modern {
             AHGMH_PLUGIN_VERSION
         );
         
-        wp_enqueue_script(
-            'ahgmh-admin-modern',
-            AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.js',
-            array('jquery'),
-            AHGMH_PLUGIN_VERSION . '-crud-fix-' . time(),
-            true
-        );
+        // Sicherstellen, dass das Skript genau einmal geladen wird
+        if (!wp_script_is('ahgmh-admin-modern', 'enqueued') && !wp_script_is('ahgmh-admin-modern', 'to_do')) {
+            wp_enqueue_script(
+                'ahgmh-admin-modern',
+                AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.js',
+                array('jquery'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
         
-        wp_localize_script(
-            'ahgmh-admin-modern',
-            'ahgmh_admin',
-            array(
+        // Lokalisierung ausgeben, wenn das Handle in der Queue ist
+        if (wp_script_is('ahgmh-admin-modern', 'enqueued') || wp_script_is('ahgmh-admin-modern', 'to_do')) {
+            wp_localize_script(
+                'ahgmh-admin-modern',
+                'ahgmh_admin',
+                array(
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('ahgmh_admin_nonce'),
                 'strings' => array(
@@ -156,8 +162,9 @@ class AHGMH_Admin_Page_Modern {
                     'limitsSaved' => __('Limits erfolgreich gespeichert!', 'abschussplan-hgmh'),
                     'modeChanged' => __('Limit-Modus erfolgreich geändert!', 'abschussplan-hgmh'),
                 )
-            )
-        );
+                )
+            );
+        }
     }
 
     /**
@@ -756,6 +763,10 @@ class AHGMH_Admin_Page_Modern {
                                 <td><?php echo esc_html($submission['field5']); ?></td>
                                 <td><?php echo esc_html(mysql2date('d.m.Y H:i', $submission['created_at'])); ?></td>
                                 <td>
+                                    <button class="button button-small button-secondary ahgmh-edit-submission" 
+                                            data-id="<?php echo esc_attr($submission['id']); ?>">
+                                        <?php echo esc_html__('Bearbeiten', 'abschussplan-hgmh'); ?>
+                                    </button>
                                     <button class="button button-small button-link-delete ahgmh-delete-submission" 
                                             data-id="<?php echo esc_attr($submission['id']); ?>"
                                             data-nonce="<?php echo wp_create_nonce('ahgmh_delete_submission'); ?>">
@@ -2284,6 +2295,53 @@ class AHGMH_Admin_Page_Modern {
             wp_send_json_success(__('Meldung erfolgreich gelöscht', 'abschussplan-hgmh'));
         } else {
             wp_send_json_error(__('Fehler beim Löschen der Meldung', 'abschussplan-hgmh'));
+        }
+    }
+
+    /**
+     * AJAX: Edit submission
+     */
+    public function ajax_edit_submission() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
+        }
+        
+        $id = intval($_POST['id'] ?? 0);
+        
+        if ($id <= 0) {
+            wp_send_json_error(__('Ungültige Meldungs-ID', 'abschussplan-hgmh'));
+        }
+        
+        // Sanitize inputs
+        $data = array(
+            'game_species' => sanitize_text_field($_POST['wildart'] ?? ''),
+            'field2' => sanitize_text_field($_POST['kategorie'] ?? ''),
+            'field3' => sanitize_text_field($_POST['wus_nummer'] ?? ''),
+            'field4' => sanitize_text_field($_POST['erlegungsort'] ?? ''),
+            'field5' => sanitize_text_field($_POST['jagdbezirk'] ?? ''),
+            'created_at' => sanitize_text_field($_POST['datum'] ?? '')
+        );
+        
+        // Convert datetime-local format to MySQL datetime format
+        if ($data['created_at']) {
+            // Input format: YYYY-MM-DDTHH:MM
+            $datetime = str_replace('T', ' ', $data['created_at']);
+            $data['created_at'] = $datetime . ':00'; // Add seconds
+        }
+        
+        // Validate required fields
+        if (empty($data['game_species']) || empty($data['field2'])) {
+            wp_send_json_error(__('Wildart und Kategorie sind Pflichtfelder', 'abschussplan-hgmh'));
+        }
+        
+        $database = abschussplan_hgmh()->database;
+        
+        if ($database->update_submission($id, $data)) {
+            wp_send_json_success(__('Meldung erfolgreich aktualisiert', 'abschussplan-hgmh'));
+        } else {
+            wp_send_json_error(__('Fehler beim Aktualisieren der Meldung', 'abschussplan-hgmh'));
         }
     }
 

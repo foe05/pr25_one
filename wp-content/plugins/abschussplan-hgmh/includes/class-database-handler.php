@@ -331,7 +331,44 @@ class AHGMH_Database_Handler {
         return $result !== false;
     }
 
-
+    /**
+     * Update a submission
+     *
+     * @param int $id The submission ID
+     * @param array $data The updated data
+     * @return bool Whether the update was successful
+     */
+    public function update_submission($id, $data) {
+        global $wpdb;
+        
+        // Remove any empty values except created_at which can be empty but valid
+        $filtered_data = array();
+        foreach ($data as $key => $value) {
+            if ($value !== null && ($key === 'created_at' || $value !== '')) {
+                $filtered_data[$key] = $value;
+            }
+        }
+        
+        if (empty($filtered_data)) {
+            return false;
+        }
+        
+        // Build format array dynamically based on filtered data
+        $formats = array();
+        foreach ($filtered_data as $key => $value) {
+            $formats[] = '%s';
+        }
+        
+        $result = $wpdb->update(
+            $this->table_name,
+            $filtered_data,
+            array('id' => $id),
+            $formats,
+            array('%d')
+        );
+        
+        return $result !== false;
+    }
 
     /**
      * Delete all submissions for a specific species

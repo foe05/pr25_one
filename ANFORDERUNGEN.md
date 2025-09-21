@@ -1,6 +1,6 @@
 # Anforderungsdokumentation: Abschussplan HGMH WordPress Plugin
 
-**Version:** 2.5.0 - Erweiterte Meldegruppen-Verwaltung  
+**Version:** 2.5.1 - CRUD-Operationen Verbesserung  
 **Status:** ✅ Alle Anforderungen implementiert und getestet  
 **WordPress.org:** Production-ready mit kritischen Meldegruppen-Fixes  
 
@@ -299,6 +299,14 @@ Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
 ---
 
 ## Versionshistorie
+
+### Version 2.5.1 (2025-09-21)
+
+**🛠️ CRUD-Verbesserungen**
+- Reparierte Delete-Funktionalität für einzelne Meldungen im Admin-Bereich
+- Implementierte Edit-Funktionalität mit Inline-Bearbeitung für einzelne Einträge
+- Behobenes JavaScript-Loading Problem bei deaktiviertem Admin-Controller
+- Verbesserte AJAX-Integration mit korrekter Nonce-Validierung
 
 ### Version 2.5.0 (2025-09-15)
 **🔧 Kritische Meldegruppen-Bugfixes**
