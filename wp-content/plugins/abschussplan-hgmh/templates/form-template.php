@@ -128,6 +128,12 @@ if (!defined('ABSPATH')) {
             <div class="form-error"></div>
         </div>
         
+        <div class="mb-3">
+            <label for="field6" class="form-label"><?php echo esc_html__('Interne Notiz', 'abschussplan-hgmh'); ?></label>
+            <textarea class="form-control" id="field6" name="field6" rows="4"></textarea>
+            <div class="form-error"></div>
+        </div>
+        
         <button type="submit" class="btn btn-primary submit-btn"><?php echo esc_html__('Speichern', 'abschussplan-hgmh'); ?></button>
     </form>
 </div>

@@ -38,6 +38,7 @@
             formData.append('field3', $('#field3').val());
             formData.append('field4', $('#field4').val());
             formData.append('field5', $('#field5').val());
+            formData.append('field6', $('#field6').val());
             
 
             

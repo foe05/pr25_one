@@ -4,7 +4,7 @@
 - **Project Name**: Abschussplan HGMH (Hunting Harvest Tracking for German Hunting Districts)
 - **Repository**: https://github.com/foe05/pr25_one
 - **Type**: WordPress Plugin for hunting submission tracking
-- **Version**: 2.5.1
+- **Version**: 2.5.2
 - **Status**: Production Ready - Enhanced Meldegruppen Management System
 - **License**: GPLv3
 - **Target Audience**: German hunting associations (Hegegemeinschaften)
@@ -109,6 +109,7 @@ wp-content/plugins/abschussplan-hgmh/
 - **Database**: Test with different database configurations
 
 ## Development Notes
+- **Version 2.5.2**: Interne Notiz Feature - Added new "Interne Notiz" field (field6) to database schema, forms ([abschuss_form]), tables ([abschuss_table], admin tables), and summary displays ([abschuss_summary_table] with Bemerkung column)
 - **Version 2.5.1**: CRUD Operations Enhancement - Fixed delete functionality, implemented edit functionality for individual submissions, resolved JavaScript loading issues, and enhanced admin interface UX
 - **Version 2.5.0**: Enhanced Meldegruppen Management System - Fixed critical meldegruppen-box functionality, resolved data source inconsistencies, and improved [abschuss_table] filtering for Obleute to display all submissions
 - **Version 2.4.0**: Production-ready release with all critical fixes implemented, ready for immediate WordPress.org submission

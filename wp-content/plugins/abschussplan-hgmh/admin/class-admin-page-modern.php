@@ -739,7 +739,8 @@ class AHGMH_Admin_Page_Modern {
                         <th scope="col"><?php echo esc_html__('Wildart', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('WUS-Nummer', 'abschussplan-hgmh'); ?></th>
-                        <th scope="col"><?php echo esc_html__('Erlegungsort', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Interne Notiz', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Datum', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Aktionen', 'abschussplan-hgmh'); ?></th>
@@ -759,6 +760,7 @@ class AHGMH_Admin_Page_Modern {
                                 <td><?php echo esc_html($submission['game_species']); ?></td>
                                 <td><?php echo esc_html($submission['field2']); ?></td>
                                 <td><?php echo esc_html($submission['field3']); ?></td>
+                                <td><?php echo esc_html($submission['field6'] ?? ''); ?></td>
                                 <td><?php echo esc_html($submission['field4']); ?></td>
                                 <td><?php echo esc_html($submission['field5']); ?></td>
                                 <td><?php echo esc_html(mysql2date('d.m.Y H:i', $submission['created_at'])); ?></td>
@@ -2319,8 +2321,9 @@ class AHGMH_Admin_Page_Modern {
             'game_species' => sanitize_text_field($_POST['wildart'] ?? ''),
             'field2' => sanitize_text_field($_POST['kategorie'] ?? ''),
             'field3' => sanitize_text_field($_POST['wus_nummer'] ?? ''),
-            'field4' => sanitize_text_field($_POST['erlegungsort'] ?? ''),
+            'field4' => sanitize_textarea_field($_POST['bemerkung'] ?? ''),
             'field5' => sanitize_text_field($_POST['jagdbezirk'] ?? ''),
+            'field6' => sanitize_textarea_field($_POST['interne_notiz'] ?? ''),
             'created_at' => sanitize_text_field($_POST['datum'] ?? '')
         );
         
