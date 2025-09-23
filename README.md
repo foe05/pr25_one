@@ -1,6 +1,6 @@
 # Abschussplan HGMH - WordPress Plugin
 
-**Version:** 2.5.1  
+**Version:** 2.5.2  
 **Status:** Production Ready - Enhanced Meldegruppen Management System  
 **Type:** WordPress Plugin for German Hegegemeinschaften Management
 
@@ -553,6 +553,31 @@ abschussplan-hgmh/
 **WordPress Compatible:** 5.0+ with PHP 7.4+
 
 ## 📋 Changelog
+
+### Version 2.5.2 (2025-09-23) - Interne Notiz Feature
+
+**Enhanced Data Capture & Display System**
+
+#### ✨ New Features
+- **Interne Notiz Field**: Added new optional "Interne Notiz" (Internal Note) field to all forms and displays
+- **Database Schema Extension**: Extended database with field6 for internal notes storage
+- **Comprehensive Form Integration**: Internal notes field added to [abschuss_form] shortcode
+- **Table Display Enhancement**: Internal notes column added to [abschuss_table] positioned left of remarks
+- **Admin Interface Updates**: Admin tables now include internal notes column with proper labeling
+- **Summary Display Enhancement**: [abschuss_summary_table] now includes remarks column for better data visibility
+
+#### 🔧 Technical Improvements
+- Database field6 added with proper sanitization using sanitize_textarea_field()
+- Form validation extended to include internal notes field
+- JavaScript form handling updated for new field
+- Admin interface column headers updated ("Erlegungsort" → "Bemerkung")
+- Responsive table design maintained across all displays
+- Proper field positioning in all table layouts
+
+#### 📝 Documentation Updates
+- Updated all technical documentation for new field structure
+- Enhanced field mapping documentation (field1-field6)
+- Updated API documentation for data handling
 
 ### Version 2.5.1 (2025-09-21) - CRUD Operations Enhancement
 

@@ -42,6 +42,7 @@ class AHGMH_Database_Handler {
             field3 text NOT NULL,
             field4 text NOT NULL,
             field5 text NOT NULL,
+            field6 text,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id)
         ) $charset_collate;";
@@ -202,15 +203,22 @@ class AHGMH_Database_Handler {
             'field2' => sanitize_text_field($data['field2']),
             'field3' => sanitize_text_field($data['field3']),
             'field4' => sanitize_text_field($data['field4']),
-            'field5' => sanitize_text_field($data['field5'])
+            'field5' => sanitize_text_field($data['field5']),
+            'field6' => isset($data['field6']) ? sanitize_textarea_field($data['field6']) : ''
         );
         
         // Insert data
         $result = $wpdb->insert(
             $this->table_name,
             $sanitized_data,
-            array('%d', '%s', '%s', '%s', '%s', '%s', '%s')
+            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
         );
+        
+        // Log error for debugging if WP_DEBUG is enabled
+        if ($result === false && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('AHGMH insert error: ' . $wpdb->last_error);
+            error_log('AHGMH last query: ' . $wpdb->last_query);
+        }
         
         return $result ? $wpdb->insert_id : false;
     }

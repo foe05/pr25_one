@@ -160,23 +160,25 @@
             wildart: $cells.eq(1).text().trim(),
             kategorie: $cells.eq(2).text().trim(),  
             wus_nummer: $cells.eq(3).text().trim(),
-            erlegungsort: $cells.eq(4).text().trim(),
-            jagdbezirk: $cells.eq(5).text().trim(),
-            datum: $cells.eq(6).text().trim()
+            interne_notiz: $cells.eq(4).text().trim(),
+            bemerkung: $cells.eq(5).text().trim(),
+            jagdbezirk: $cells.eq(6).text().trim(),
+            datum: $cells.eq(7).text().trim()
         };
         
         // Create inline edit form
         const editFormHtml = `
-            <td colspan="8" class="ahgmh-edit-submission-row">
+            <td colspan="9" class="ahgmh-edit-submission-row">
                 <form class="ahgmh-edit-submission-form" data-id="${id}">
                     <table class="ahgmh-edit-table">
                         <tr>
                             <td><label>Wildart:</label><input type="text" name="wildart" value="${currentData.wildart}" class="regular-text" readonly></td>
                             <td><label>Kategorie:</label><input type="text" name="kategorie" value="${currentData.kategorie}" class="regular-text"></td>
                             <td><label>WUS-Nummer:</label><input type="text" name="wus_nummer" value="${currentData.wus_nummer}" class="regular-text"></td>
-                            <td><label>Erlegungsort:</label><input type="text" name="erlegungsort" value="${currentData.erlegungsort}" class="regular-text"></td>
+                            <td><label>Interne Notiz:</label><textarea name="interne_notiz" class="regular-text" rows="2">${currentData.interne_notiz}</textarea></td>
                         </tr>
                         <tr>
+                            <td><label>Bemerkung:</label><textarea name="bemerkung" class="regular-text" rows="2">${currentData.bemerkung}</textarea></td>
                             <td><label>Jagdbezirk:</label><input type="text" name="jagdbezirk" value="${currentData.jagdbezirk}" class="regular-text"></td>
                             <td><label>Datum:</label><input type="datetime-local" name="datum" value="${convertToDateTimeLocal(currentData.datum)}" class="regular-text"></td>
                             <td colspan="2">
@@ -217,7 +219,8 @@
                 wildart: $form.find('input[name="wildart"]').val(),
                 kategorie: $form.find('input[name="kategorie"]').val(),
                 wus_nummer: $form.find('input[name="wus_nummer"]').val(),
-                erlegungsort: $form.find('input[name="erlegungsort"]').val(),
+                interne_notiz: $form.find('textarea[name="interne_notiz"]').val(),
+                bemerkung: $form.find('textarea[name="bemerkung"]').val(),
                 jagdbezirk: $form.find('input[name="jagdbezirk"]').val(),
                 datum: $form.find('input[name="datum"]').val()
             };

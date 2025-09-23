@@ -1,6 +1,6 @@
 # Anforderungsdokumentation: Abschussplan HGMH WordPress Plugin
 
-**Version:** 2.5.1 - CRUD-Operationen Verbesserung  
+**Version:** 2.5.2 - Interne Notiz Feature  
 **Status:** ✅ Alle Anforderungen implementiert und getestet  
 **WordPress.org:** Production-ready mit kritischen Meldegruppen-Fixes  
 
@@ -299,6 +299,31 @@ Das Plugin fügt ein Hauptmenü "Abschussplan" mit folgenden Unterseiten hinzu:
 ---
 
 ## Versionshistorie
+
+### Version 2.5.2 (2025-09-23)
+
+**✨ Interne Notiz Feature**
+
+#### Neue Features
+- **Interne Notiz Feld**: Neues optionales Textfeld "Interne Notiz" für alle Formulare und Anzeigen
+- **Datenbankschema-Erweiterung**: field6 für interne Notizen hinzugefügt
+- **Formular-Integration**: Interne Notiz Feld zu [abschuss_form] Shortcode hinzugefügt (am Ende)
+- **Tabellen-Anzeige**: Interne Notiz Spalte zu [abschuss_table] hinzugefügt (links von Bemerkung)
+- **Admin-Interface**: Admin-Tabellen mit Interne Notiz Spalte erweitert
+- **Summary-Anzeige**: [abschuss_summary_table] mit Bemerkung-Spalte für bessere Datenübersicht
+
+#### Technische Verbesserungen
+- field6 Datenbankfeld mit korrekter Sanitization (sanitize_textarea_field)
+- Formular-Validierung für neues Feld erweitert
+- JavaScript Form-Handling aktualisiert
+- Admin-Interface Spaltenüberschriften angepasst ("Erlegungsort" → "Bemerkung")
+- Responsive Tabellen-Design für alle Anzeigen beibehalten
+- Korrekte Feldpositionierung in allen Tabellen-Layouts
+
+#### Dokumentation
+- Aktualisierte technische Dokumentation für neue Feldstruktur
+- Erweiterte Feldmapping-Dokumentation (field1-field6)
+- API-Dokumentation für Datenverarbeitung aktualisiert
 
 ### Version 2.5.1 (2025-09-21)
 

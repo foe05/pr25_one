@@ -3,7 +3,7 @@
  * Plugin Name: Abschussplan HGMH
  * Plugin URI: https://github.com/foe05/pr25_one
  * Description: Collect and view game shoots for registration with local hunting authorities in Germany.
- * Version: 2.5.1
+ * Version: 2.5.2
  * Author: foe05
  * Author URI: https://github.com/foe05
  * License: GPL v3 or later
@@ -25,7 +25,8 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('AHGMH_PLUGIN_VERSION', '2.5.1');
+define('AHGMH_PLUGIN_VERSION', '2.5.2');
+define('AHGMH_DB_VERSION', '3');
 
 // Include required files
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
@@ -134,6 +135,9 @@ class Abschussplan_HGMH {
         // Initialize table display
         $this->table = new AHGMH_Table_Display();
 
+        // Check for database schema updates
+        add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));
+
         // Initialize admin controllers only in admin area
         if (is_admin()) {
             // TEMPORARY: Use only legacy admin to fix broken backend
@@ -221,6 +225,20 @@ class Abschussplan_HGMH {
                 'nonce' => wp_create_nonce('ahgmh_form_nonce')
             )
         );
+    }
+
+    /**
+     * Maybe upgrade database schema
+     */
+    public function maybe_upgrade_db() {
+        $installed_db_version = get_option('ahgmh_db_version');
+        if ($installed_db_version !== AHGMH_DB_VERSION) {
+            // Run database creation/update
+            $this->database->create_table();
+            
+            // Update stored version
+            update_option('ahgmh_db_version', AHGMH_DB_VERSION);
+        }
     }
 }
 

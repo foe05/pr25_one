@@ -407,6 +407,7 @@ class AHGMH_Form_Handler {
         $field3 = isset($_POST['field3']) ? sanitize_text_field($_POST['field3']) : ''; // WUS (optional)
         $field4 = isset($_POST['field4']) ? sanitize_textarea_field($_POST['field4']) : ''; // Bemerkung (optional)
         $field5 = isset($_POST['field5']) ? sanitize_text_field($_POST['field5']) : ''; // Jagdbezirk
+        $field6 = isset($_POST['field6']) ? sanitize_textarea_field($_POST['field6']) : ''; // Interne Notiz (optional)
         
         // Validate data
         $errors = array();
@@ -491,7 +492,8 @@ class AHGMH_Form_Handler {
             'field2' => $field2,
             'field3' => $field3,
             'field4' => $field4,
-            'field5' => $field5
+            'field5' => $field5,
+            'field6' => $field6
         );
         
         $database = abschussplan_hgmh()->database;
