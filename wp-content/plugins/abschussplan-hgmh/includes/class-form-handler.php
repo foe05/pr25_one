@@ -254,6 +254,10 @@ class AHGMH_Form_Handler {
             // Only species specified
             $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
             $total_count = $database->count_submissions_by_species($species);
+        } else if (!empty($meldegruppe)) {
+            // Only meldegruppe specified
+            $submissions = $database->get_submissions_by_meldegruppe($meldegruppe, $limit, ($page - 1) * $limit);
+            $total_count = $database->count_submissions_by_meldegruppe($meldegruppe);
         } else {
             // No filters - all submissions
             $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
