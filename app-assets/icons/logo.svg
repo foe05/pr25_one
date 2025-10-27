@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hintergrund-Kreis -->
+  <circle cx="256" cy="256" r="240" fill="#2d5016" stroke="#1a3009" stroke-width="8"/>
+
+  <!-- Hirschgeweih (stilisiert) -->
+  <g fill="none" stroke="#e8d4a0" stroke-width="12" stroke-linecap="round">
+    <!-- Linkes Geweih -->
+    <path d="M 180 200 L 160 160 L 140 140"/>
+    <path d="M 180 200 L 150 180 L 130 170"/>
+    <path d="M 180 200 L 160 185"/>
+
+    <!-- Rechtes Geweih -->
+    <path d="M 332 200 L 352 160 L 372 140"/>
+    <path d="M 332 200 L 362 180 L 382 170"/>
+    <path d="M 332 200 L 352 185"/>
+  </g>
+
+  <!-- Hirschkopf (stilisiert) -->
+  <ellipse cx="256" cy="260" rx="70" ry="90" fill="#8b6f47"/>
+
+  <!-- Ohren -->
+  <ellipse cx="210" cy="220" rx="20" ry="35" fill="#8b6f47"/>
+  <ellipse cx="302" cy="220" rx="20" ry="35" fill="#8b6f47"/>
+
+  <!-- Augen -->
+  <circle cx="235" cy="250" r="8" fill="#1a1a1a"/>
+  <circle cx="277" cy="250" r="8" fill="#1a1a1a"/>
+
+  <!-- Nase -->
+  <ellipse cx="256" cy="280" rx="15" ry="10" fill="#5a4a3a"/>
+
+  <!-- Notizblock-Symbol (Management) -->
+  <rect x="200" y="340" width="112" height="140" rx="8" fill="#f0f0f0" stroke="#333" stroke-width="4"/>
+
+  <!-- Linien auf Notizblock -->
+  <line x1="215" y1="365" x2="297" y2="365" stroke="#666" stroke-width="3"/>
+  <line x1="215" y1="390" x2="297" y2="390" stroke="#666" stroke-width="3"/>
+  <line x1="215" y1="415" x2="297" y2="415" stroke="#666" stroke-width="3"/>
+  <line x1="215" y1="440" x2="280" y2="440" stroke="#666" stroke-width="3"/>
+
+  <!-- Stift -->
+  <g transform="translate(290, 350) rotate(-25)">
+    <rect x="0" y="0" width="8" height="50" fill="#2d5016" rx="2"/>
+    <polygon points="4,50 0,58 8,58" fill="#333"/>
+  </g>
+</svg>

@@ -33,6 +33,7 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
