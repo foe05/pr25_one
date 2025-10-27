@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rundes Icon für Android Adaptive Icons -->
+
+  <!-- Hintergrund-Kreis -->
+  <circle cx="256" cy="256" r="256" fill="#2d5016"/>
+
+  <!-- Hirschgeweih minimalistisch -->
+  <g fill="none" stroke="#e8d4a0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Linkes Geweih -->
+    <path d="M 190 220 L 160 170 L 130 140"/>
+    <path d="M 190 220 L 160 200"/>
+    <path d="M 190 220 L 170 190"/>
+
+    <!-- Rechtes Geweih -->
+    <path d="M 322 220 L 352 170 L 382 140"/>
+    <path d="M 322 220 L 352 200"/>
+    <path d="M 322 220 L 342 190"/>
+  </g>
+
+  <!-- Kopf -->
+  <ellipse cx="256" cy="280" rx="60" ry="75" fill="#e8d4a0"/>
+
+  <!-- Ohren -->
+  <ellipse cx="220" cy="250" rx="18" ry="30" fill="#e8d4a0"/>
+  <ellipse cx="292" cy="250" rx="18" ry="30" fill="#e8d4a0"/>
+
+  <!-- Augen -->
+  <circle cx="238" cy="270" r="6" fill="#1a1a1a"/>
+  <circle cx="274" cy="270" r="6" fill="#1a1a1a"/>
+
+  <!-- Nase -->
+  <ellipse cx="256" cy="295" rx="12" ry="8" fill="#8b6f47"/>
+
+  <!-- Notizblock-Symbol (vereinfacht) -->
+  <rect x="220" y="350" width="72" height="90" rx="6" fill="#e8d4a0"/>
+  <line x1="235" y1="370" x2="277" y2="370" stroke="#2d5016" stroke-width="4"/>
+  <line x1="235" y1="390" x2="277" y2="390" stroke="#2d5016" stroke-width="4"/>
+  <line x1="235" y1="410" x2="270" y2="410" stroke="#2d5016" stroke-width="4"/>
+</svg>
