@@ -3,7 +3,7 @@
  * Plugin Name: Abschussplan HGMH
  * Plugin URI: https://github.com/foe05/pr25_one
  * Description: Collect and view game shoots for registration with local hunting authorities in Germany.
- * Version: 2.5.2
+ * Version: 2.5.3
  * Author: foe05
  * Author URI: https://github.com/foe05
  * License: GPL v3 or later
@@ -25,8 +25,8 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('AHGMH_PLUGIN_VERSION', '2.5.2');
-define('AHGMH_DB_VERSION', '3');
+define('AHGMH_PLUGIN_VERSION', '2.5.3');
+define('AHGMH_DB_VERSION', '4');
 
 // Include required files
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
@@ -34,6 +34,7 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
@@ -52,12 +53,13 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-wildart-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
 
     // Legacy support - keep for backward compatibility
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page-modern.php';
-    
+
     // EMERGENCY: Load emergency AJAX handlers for missing methods
     require_once AHGMH_PLUGIN_DIR . 'admin/ajax-handlers-emergency.php';
 }
@@ -143,7 +145,10 @@ class Abschussplan_HGMH {
         if (is_admin()) {
             // TEMPORARY: Use only legacy admin to fix broken backend
             $this->admin = new AHGMH_Admin_Page_Modern();
-            
+
+            // Initialize page views controller
+            new AHGMH_Page_Views_Controller();
+
             // New modular controller disabled until issues resolved
             // $this->admin_controller = new AHGMH_Admin_Controller();
         }
@@ -296,6 +301,42 @@ function ahgmh_activate_plugin() {
         update_option($damwild_categories_key, $damwild_categories);
     }
 }
+
+/**
+ * Cron job for automatic page views cleanup
+ */
+function ahgmh_page_views_cleanup_cron() {
+    // Check if auto cleanup is enabled
+    if (!get_option('ahgmh_auto_cleanup_enabled', false)) {
+        return;
+    }
+
+    $days = get_option('ahgmh_auto_cleanup_days', 90);
+    $logger = new AHGMH_Page_View_Logger();
+    $logger->cleanup_old_logs($days);
+}
+add_action('ahgmh_page_views_cleanup_hook', 'ahgmh_page_views_cleanup_cron');
+
+/**
+ * Schedule cron job on plugin activation
+ */
+function ahgmh_schedule_page_views_cleanup() {
+    if (!wp_next_scheduled('ahgmh_page_views_cleanup_hook')) {
+        wp_schedule_event(time(), 'daily', 'ahgmh_page_views_cleanup_hook');
+    }
+}
+add_action('wp', 'ahgmh_schedule_page_views_cleanup');
+
+/**
+ * Clear cron job on plugin deactivation
+ */
+function ahgmh_clear_page_views_cleanup() {
+    $timestamp = wp_next_scheduled('ahgmh_page_views_cleanup_hook');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'ahgmh_page_views_cleanup_hook');
+    }
+}
+register_deactivation_hook(__FILE__, 'ahgmh_clear_page_views_cleanup');
 
 // Start the plugin
 abschussplan_hgmh();
