@@ -545,10 +545,63 @@ class AHGMH_Database_Handler {
          
          return (int) $count;
      }
-    
+
+    /**
+     * Get submissions filtered by meldegruppe only
+     *
+     * @param string $meldegruppe The meldegruppe to filter by
+     * @param int $limit Number of submissions to return
+     * @param int $offset Offset for pagination
+     * @return array Array of submissions
+     */
+    public function get_submissions_by_meldegruppe($meldegruppe, $limit = 10, $offset = 0) {
+        global $wpdb;
+
+        if (empty($meldegruppe)) {
+            return array();
+        }
+
+        $query = "SELECT s.*, j.meldegruppe
+                  FROM $this->table_name s
+                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+                  WHERE j.meldegruppe = %s
+                  ORDER BY s.created_at DESC";
+
+        if ($limit > 0) {
+            $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
+        }
+
+        $results = $wpdb->get_results($wpdb->prepare($query, $meldegruppe), ARRAY_A);
+
+        return $results ? $results : array();
+    }
+
+    /**
+     * Count submissions filtered by meldegruppe only
+     *
+     * @param string $meldegruppe The meldegruppe to filter by
+     * @return int Number of submissions
+     */
+    public function count_submissions_by_meldegruppe($meldegruppe) {
+        global $wpdb;
+
+        if (empty($meldegruppe)) {
+            return 0;
+        }
+
+        $query = "SELECT COUNT(*)
+                  FROM $this->table_name s
+                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+                  WHERE j.meldegruppe = %s";
+
+        $count = $wpdb->get_var($wpdb->prepare($query, $meldegruppe));
+
+        return (int) $count;
+    }
+
     /**
      * Check if WUS number already exists in database
-     * 
+     *
      * @param string $wus_number The WUS number to check
      * @return bool True if WUS exists, false otherwise
      */

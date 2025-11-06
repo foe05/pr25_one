@@ -235,10 +235,10 @@ class AHGMH_Form_Handler {
         
         // No permission check - this is public
         
-        // Get current page and limit - use only shortcode attributes for summary table
-        // This prevents conflicts when multiple tables are on the same page
-        $page = intval($atts['page']);
-        $limit = intval($atts['limit']);
+        // Get current page and limit - check URL params first, then use shortcode attributes
+        // URL params allow pagination to work properly
+        $page = isset($_GET['abschuss_page']) ? max(1, intval($_GET['abschuss_page'])) : intval($atts['page']);
+        $limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : intval($atts['limit']);
         
         // Get submissions data without permission filtering
         $database = abschussplan_hgmh()->database;
@@ -254,6 +254,10 @@ class AHGMH_Form_Handler {
             // Only species specified
             $submissions = $database->get_submissions_by_species($limit, ($page - 1) * $limit, $species);
             $total_count = $database->count_submissions_by_species($species);
+        } else if (!empty($meldegruppe)) {
+            // Only meldegruppe specified
+            $submissions = $database->get_submissions_by_meldegruppe($meldegruppe, $limit, ($page - 1) * $limit);
+            $total_count = $database->count_submissions_by_meldegruppe($meldegruppe);
         } else {
             // No filters - all submissions
             $submissions = $database->get_submissions($limit, ($page - 1) * $limit);
