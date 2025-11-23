@@ -52,7 +52,7 @@ class AHGMH_Form_Handler {
 
     /**
     * Render the form using shortcode
-    * 
+    *
     * @param array $atts Shortcode attributes
     * @return string HTML output of the form
      */
@@ -61,11 +61,15 @@ class AHGMH_Form_Handler {
         $atts = shortcode_atts(array(
             'species' => ''
         ), $atts, 'abschuss_form');
-        
+
         // Parameter validation - species is required
         if (empty($atts['species'])) {
             return '<div class="alert alert-warning">Parameter "species" ist erforderlich für [abschuss_form]. Beispiel: [abschuss_form species="Rotwild"]</div>';
         }
+
+        // Log page view
+        $logger = new AHGMH_Page_View_Logger();
+        $logger->log_page_view('abschuss_form', $atts);
         
         // Check permissions with new 3-level system
         if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_form', $atts)) {
@@ -138,7 +142,11 @@ class AHGMH_Form_Handler {
             $atts,
             'abschuss_table'
         );
-        
+
+        // Log page view
+        $logger = new AHGMH_Page_View_Logger();
+        $logger->log_page_view('abschuss_table', $atts);
+
         // Check permissions with new 3-level system
         if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_table', $atts)) {
             $user_id = get_current_user_id();
@@ -216,7 +224,7 @@ class AHGMH_Form_Handler {
     
     /**
      * Render a public summary table (no login required) with reduced columns
-     * 
+     *
      * @param array $atts Shortcode attributes
      * @return string HTML output of the table
      */
@@ -232,7 +240,11 @@ class AHGMH_Form_Handler {
             $atts,
             'abschuss_summary_table'
         );
-        
+
+        // Log page view
+        $logger = new AHGMH_Page_View_Logger();
+        $logger->log_page_view('abschuss_summary_table', $atts);
+
         // No permission check - this is public
         
         // Get current page and limit - check URL params first, then use shortcode attributes
@@ -319,7 +331,7 @@ class AHGMH_Form_Handler {
     
     /**
      * Render the summary table using shortcode
-     * 
+     *
      * @param array $atts Shortcode attributes
      * @return string HTML output of the summary table
      */
@@ -329,7 +341,11 @@ class AHGMH_Form_Handler {
             'species' => '',        // Optional - empty means all species
             'meldegruppe' => ''     // Optional - empty means all meldegruppen (filters by jagdbezirk internally)
         ), $atts, 'abschuss_summary');
-        
+
+        // Log page view
+        $logger = new AHGMH_Page_View_Logger();
+        $logger->log_page_view('abschuss_summary', $atts);
+
         $selected_species = sanitize_text_field($atts['species']);
         $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
         $user_id = get_current_user_id();

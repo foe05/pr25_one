@@ -49,9 +49,12 @@ class AHGMH_Database_Handler {
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
-        
+
         // Create Jagdbezirk configuration table
         $this->create_jagdbezirk_table();
+
+        // Create page views tracking table
+        $this->create_page_views_table();
     }
     
     /**
@@ -95,6 +98,36 @@ class AHGMH_Database_Handler {
         
         // Add some default Jagdbezirke if table is empty
         $this->seed_default_jagdbezirke();
+    }
+
+    /**
+     * Create the page views tracking table
+     */
+    public function create_page_views_table() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'ahgmh_page_views';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            shortcode_name varchar(100) NOT NULL,
+            user_id bigint(20) NOT NULL DEFAULT 0,
+            user_display_name varchar(255) DEFAULT '',
+            ip_address varchar(100) DEFAULT NULL,
+            shortcode_attributes text,
+            page_url text,
+            referer text,
+            user_agent text,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY shortcode_name (shortcode_name),
+            KEY user_id (user_id),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
     }
 
     /**
