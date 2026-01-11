@@ -43,6 +43,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-service.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
@@ -54,6 +55,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-import-controller.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
 
@@ -148,6 +150,9 @@ class Abschussplan_HGMH {
 
             // Initialize page views controller
             new AHGMH_Page_Views_Controller();
+
+            // Initialize import controller
+            new AHGMH_Import_Controller();
 
             // New modular controller disabled until issues resolved
             // $this->admin_controller = new AHGMH_Admin_Controller();
