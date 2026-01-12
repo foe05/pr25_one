@@ -235,6 +235,52 @@ class Abschussplan_HGMH {
             AHGMH_PLUGIN_VERSION
         );
 
+        // Enqueue admin reports script
+        wp_enqueue_script(
+            'ahgmh-admin-reports',
+            AHGMH_PLUGIN_URL . 'admin/assets/admin-reports.js',
+            array('jquery'),
+            AHGMH_PLUGIN_VERSION,
+            true
+        );
+
+        // Localize admin reports script
+        wp_localize_script(
+            'ahgmh-admin-reports',
+            'ahgmh_reports',
+            array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('ahgmh_admin_nonce'),
+                'strings' => array(
+                    'loading' => __('Lädt...', 'abschussplan-hgmh'),
+                    'error' => __('Ein Fehler ist aufgetreten.', 'abschussplan-hgmh'),
+                    'apply_filter' => __('Filter anwenden', 'abschussplan-hgmh'),
+                    'select_dates' => __('Bitte wählen Sie Start- und Enddatum.', 'abschussplan-hgmh'),
+                    'start_before_end' => __('Startdatum muss vor Enddatum liegen.', 'abschussplan-hgmh'),
+                    'valid_email' => __('Bitte geben Sie eine gültige E-Mail-Adresse ein.', 'abschussplan-hgmh'),
+                    'preview_error' => __('Fehler beim Laden der Vorschau.', 'abschussplan-hgmh'),
+                    'csv_started' => __('CSV-Download wurde gestartet.', 'abschussplan-hgmh'),
+                    'pdf_started' => __('PDF-Download wurde gestartet.', 'abschussplan-hgmh'),
+                    'sending_email' => __('Sendet E-Mail...', 'abschussplan-hgmh'),
+                    'configure_report' => __('Konfigurieren Sie einen Bericht und klicken Sie auf "Vorschau anzeigen", um das Ergebnis zu sehen.', 'abschussplan-hgmh'),
+                    'new_schedule' => __('Neuer Zeitplan', 'abschussplan-hgmh'),
+                    'edit_schedule' => __('Zeitplan bearbeiten', 'abschussplan-hgmh'),
+                    'confirm_delete_schedule' => __('Sind Sie sicher, dass Sie diesen Zeitplan löschen möchten?', 'abschussplan-hgmh'),
+                    'required_fields' => __('Bitte füllen Sie alle Pflichtfelder aus.', 'abschussplan-hgmh'),
+                    'saving' => __('Speichert...', 'abschussplan-hgmh'),
+                    'active' => __('Aktiv', 'abschussplan-hgmh'),
+                    'inactive' => __('Inaktiv', 'abschussplan-hgmh'),
+                    'no_history' => __('Keine Verlaufsdaten verfügbar.', 'abschussplan-hgmh'),
+                    'testing' => __('Testet...', 'abschussplan-hgmh'),
+                    'test_success' => __('Konfiguration ist gültig!', 'abschussplan-hgmh'),
+                    'test_failed' => __('Konfigurationstest fehlgeschlagen.', 'abschussplan-hgmh'),
+                    'enter_recipients' => __('Bitte geben Sie mindestens einen Empfänger ein.', 'abschussplan-hgmh'),
+                    'email_sent' => __('Test-E-Mail wurde erfolgreich gesendet!', 'abschussplan-hgmh'),
+                    'email_failed' => __('E-Mail-Versand fehlgeschlagen.', 'abschussplan-hgmh')
+                )
+            )
+        );
+
         // Enqueue form validation script
         wp_enqueue_script(
             'ahgmh-form-validation',

@@ -59,9 +59,6 @@ class AHGMH_Schedule_Settings_View {
                 </div>
             </div>
         </div>
-
-        <?php $this->render_styles(); ?>
-        <?php $this->render_scripts(); ?>
         <?php
     }
 
@@ -385,11 +382,7 @@ class AHGMH_Schedule_Settings_View {
         </div>
         <?php
     }
-
-    /**
-     * Render inline styles
-     */
-    private function render_styles() {
+}
         ?>
         <style>
             .ahgmh-schedule-settings-page {

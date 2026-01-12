@@ -53,8 +53,6 @@ class AHGMH_Compliance_View {
                 </p>
             </div>
         </div>
-
-        <?php $this->render_scripts(); ?>
         <?php
     }
 
@@ -275,80 +273,6 @@ class AHGMH_Compliance_View {
                 </table>
             </div>
         </div>
-        <?php
-    }
-
-    /**
-     * Render inline JavaScript for AJAX operations
-     */
-    private function render_scripts() {
-        ?>
-        <script type="text/javascript">
-        jQuery(document).ready(function($) {
-            // Apply filters
-            $('#apply-compliance-filters').on('click', function() {
-                var season = $('#compliance-season-filter').val();
-                var species = $('#compliance-species-filter').val();
-                var meldegruppe = $('#compliance-meldegruppe-filter').val();
-
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'ahgmh_compliance_filter',
-                        nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>',
-                        season: season,
-                        species: species,
-                        meldegruppe: meldegruppe
-                    },
-                    beforeSend: function() {
-                        $('#apply-compliance-filters').prop('disabled', true).text('<?php echo esc_js(__('Lädt...', 'abschussplan-hgmh')); ?>');
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            location.reload();
-                        } else {
-                            alert(response.data);
-                        }
-                    },
-                    error: function() {
-                        alert('<?php echo esc_js(__('Ein Fehler ist aufgetreten.', 'abschussplan-hgmh')); ?>');
-                    },
-                    complete: function() {
-                        $('#apply-compliance-filters').prop('disabled', false).text('<?php echo esc_js(__('Filter anwenden', 'abschussplan-hgmh')); ?>');
-                    }
-                });
-            });
-
-            // Refresh data
-            $('#refresh-compliance').on('click', function() {
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'ahgmh_compliance_refresh',
-                        nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
-                    },
-                    beforeSend: function() {
-                        $('#refresh-compliance').prop('disabled', true);
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            location.reload();
-                        } else {
-                            alert(response.data);
-                        }
-                    },
-                    error: function() {
-                        alert('<?php echo esc_js(__('Ein Fehler ist aufgetreten.', 'abschussplan-hgmh')); ?>');
-                    },
-                    complete: function() {
-                        $('#refresh-compliance').prop('disabled', false);
-                    }
-                });
-            });
-        });
-        </script>
         <?php
     }
 
