@@ -4,7 +4,7 @@
   "summary": "Implement bulk operations and data import functionality for the Abschussplan WordPress plugin, including CSV/Excel import with column mapping, preview/validation, bulk updates, batch deletion, and undo capability.",
   "estimated_total_hours": 24,
   "created_at": "2026-01-11T17:29:25.592Z",
-  "updated_at": "2026-01-12T10:19:45.696Z",
+  "updated_at": "2026-01-12T17:46:30.836Z",
   "status": "in_progress",
   "planStatus": "in_progress",
   "phases": [
@@ -29,7 +29,7 @@
             "Returns structured array with headers and data"
           ],
           "status": "completed",
-          "notes": "AHGMH_Import_Service fully implemented with CSV/Excel parsing, encoding detection (UTF-8/UTF-16), delimiter auto-detection (comma/semicolon for German Excel), and comprehensive data extraction. All acceptance criteria met."
+          "notes": "AHGMH_Import_Service class created with comprehensive file upload handling, CSV/Excel parsing, UTF-8/UTF-16 encoding detection, and German Excel semicolon delimiter support. All acceptance criteria met. Already committed in b1f23a8."
         },
         {
           "subtask_id": "1.2",
@@ -45,8 +45,8 @@
             "All handlers verify nonce and user capability",
             "Proper error handling with translatable messages"
           ],
-          "status": "completed",
-          "notes": "AHGMH_Import_Controller fully implemented with all three AJAX handlers (ajax_upload_file, ajax_get_preview, ajax_execute_import). Includes secure file upload validation, nonce/capability verification on all endpoints, duplicate WUS number detection, flexible date parsing for German/international formats, and comprehensive error handling."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "1.3",
@@ -60,8 +60,8 @@
             "AJAX actions registered properly",
             "No PHP errors on admin load"
           ],
-          "status": "completed",
-          "notes": "Import controller registered in main plugin file (line 61: require_once, line 158: instantiation). AJAX actions registered properly through controller constructor."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
@@ -85,8 +85,8 @@
             "Returns confidence score for mappings",
             "Supports manual mapping override"
           ],
-          "status": "completed",
-          "notes": "Column mapping service implemented with German header auto-detection, pattern matching for variations, confidence scoring, and manual override support."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "2.2",
@@ -101,8 +101,8 @@
             "Graceful fallback to generic mapping for unknown templates",
             "Logs detected template type for debugging"
           ],
-          "status": "completed",
-          "notes": "LJV template detector implemented with structure/header identification, pre-configured mappings for known templates, and graceful fallback for unknown formats."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "2.3",
@@ -118,8 +118,8 @@
             "Validates species and categories against configured values",
             "Returns array of errors and warnings per row"
           ],
-          "status": "completed",
-          "notes": "Import validator service implemented with required field validation, WUS number uniqueness checks, date format validation/conversion, species/category validation, and per-row error/warning reporting."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
@@ -143,8 +143,8 @@
             "Shows preview of first 5 rows",
             "Shows validation errors/warnings inline"
           ],
-          "status": "completed",
-          "notes": "Import view class implemented with file upload dropzone, drag-and-drop support, column mapping interface with dropdowns, preview table rendering, and inline validation error display."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "3.2",
@@ -161,8 +161,8 @@
             "Shows import progress during execution",
             "Handles errors gracefully with user feedback"
           ],
-          "status": "completed",
-          "notes": "Import JavaScript module implemented with file selection/drag-drop upload, progress indicators, dynamic column mapping UI updates, preview data fetching/display, import progress feedback, and comprehensive error handling."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "3.3",
@@ -178,8 +178,8 @@
             "Progress bar matches WordPress admin style",
             "Responsive design for smaller screens"
           ],
-          "status": "completed",
-          "notes": "Import CSS styles implemented with comprehensive styling for all import interface components: dropzone with drag-over states and visual feedback, column mapping table with confidence badges, scrollable preview table, WordPress-style progress bars with shimmer animation, validation error/warning/success displays, import completion summary with statistics, toast-style notifications, and fully responsive design for mobile devices. All styles match existing admin-modern.css patterns."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
@@ -203,8 +203,8 @@
             "Processes in batches of 100 to avoid timeouts",
             "Returns count of affected records"
           ],
-          "status": "completed",
-          "notes": "AHGMH_Bulk_Operations_Service fully implemented with comprehensive functionality: bulk_update, bulk_delete, mass_assign_meldegruppe, bulk_update_field methods. Includes batch processing (default 100, configurable 10-500), input validation, jagdbezirk validation, detailed results with success/failure counts, and German-language error messages. All acceptance criteria met."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "4.2",
@@ -220,8 +220,8 @@
             "Validates all record IDs before processing",
             "Returns success count and any failures"
           ],
-          "status": "completed",
-          "notes": "AHGMH_Bulk_Operations_Controller fully implemented with all three AJAX handlers (ajax_bulk_update, ajax_bulk_delete, ajax_mass_assign). Includes comprehensive security measures: nonce/capability verification on all endpoints, confirmation token requirement for destructive delete operations, input validation and sanitization of record IDs and update data. Returns detailed results with success/failure counts and affected record IDs. Integrated into main plugin file with proper includes and instantiation. All acceptance criteria met."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "4.3",
@@ -238,8 +238,8 @@
             "Apply button triggers selected action",
             "Selected count displayed"
           ],
-          "status": "completed",
-          "notes": "Bulk selection UI fully implemented with checkboxes in table header ('select all') and each row. Bulk actions dropdown added with delete and assign jagdbezirk options. Selected count displayed dynamically. JavaScript handlers implement bulk delete with confirmation, bulk assign with modal dialog, and proper AJAX integration with existing bulk operations controller. CSS styling added for responsive design. Modified class-admin-page-modern.php to add checkbox column and bulk actions dropdown. Modified admin-modern.js to add initBulkActions(), updateBulkActionUI(), handleBulkDelete(), and handleBulkAssign() functions. Modified admin-modern.css to add bulk actions styling. All acceptance criteria met."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
@@ -262,8 +262,8 @@
             "Related table stores: log_id, record_id, field_name, old_value, new_value",
             "Index on created_at for efficient cleanup"
           ],
-          "status": "completed",
-          "notes": "Operation log tables created successfully. Created two tables: ahgmh_operation_logs (main log table with id, operation_type, user_id, affected_count, description, created_at) and ahgmh_operation_log_details (details table with log_id, record_id, field_name, old_value, new_value). Includes indexes on created_at for efficient cleanup, and on log_id/record_id for fast lookups. Integrated into create_table() workflow and cleanup_database() method."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "5.2",
@@ -279,8 +279,8 @@
             "cleanup_old_logs removes logs older than 30 days",
             "get_recent_operations returns undo-able operations"
           ],
-          "status": "completed",
-          "notes": "AHGMH_Undo_Service fully implemented with comprehensive undo functionality: log_operation stores operation metadata, log_record_change/log_bulk_changes track before/after values, undo_operation restores previous state including re-inserting deleted records, get_records_snapshot captures state before operations, get_recent_operations returns paginated undo-able operations, cleanup_old_logs removes logs beyond 30-day retention period (configurable 1-365 days), can_undo validates undo-ability. Follows WordPress coding standards with German i18n, proper sanitization, and comprehensive error handling. All acceptance criteria met."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "5.3",
@@ -297,8 +297,8 @@
             "Confirmation before undo execution",
             "Success/failure feedback after undo"
           ],
-          "status": "completed",
-          "notes": "AHGMH_Undo_Controller fully implemented with comprehensive undo functionality: ajax_undo_operation reverts changes from logged operations with validation, ajax_get_recent_operations returns paginated list of undoable operations. Integrated undo logging into all bulk operations (bulk_update, bulk_delete, mass_assign) - each operation captures before/after state and returns log_id for undo tracking. Added showUndoNotification() and handleUndo() functions to admin-modern.js. Undo notifications display for 10 seconds with prominent 'Rückgängig machen' button. Confirmation dialog before executing undo operation. Success/failure feedback with automatic page reload to show restored data. Registered undo service and controller in main plugin file. All acceptance criteria met and committed (9a2eb14)."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
@@ -321,8 +321,8 @@
             "Correct page renders when clicked",
             "Active state styling when on import page"
           ],
-          "status": "completed",
-          "notes": "Import submenu item successfully added to admin menu with proper capability checks (manage_options). Menu item positioned between Obleute and Einstellungen using emoji icon 📥 Import. Render method created to instantiate AHGMH_Import_View class. Import View class included in main plugin file. All changes committed (1f748f1)."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "6.2",
@@ -337,8 +337,8 @@
             "Field mapping options passed to JS",
             "No conflicts with other admin pages"
           ],
-          "status": "completed",
-          "notes": "Import asset enqueuing implemented successfully. Added conditional loading of import.css and import.js only on import page (when hook contains 'abschussplan-hgmh-import'). Import CSS depends on main admin CSS. Import JS depends on jQuery and main admin JS. Localized import script with ahgmh_import object containing AJAX URL/nonce, max file size (10 MB), supported types (csv, xlsx), field labels (all 7 fields with German translations), required fields array (datum, wildart, kategorie), and comprehensive localized strings for UI messages. No conflicts with other admin pages. All acceptance criteria met. Committed: cdf0978"
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "6.3",
@@ -353,8 +353,8 @@
             "Controllers instantiated in admin context",
             "No PHP errors or warnings"
           ],
-          "status": "completed",
-          "notes": "All new controllers (Import, Bulk Operations, Undo) are properly registered in main plugin file (abschussplan-hgmh.php). Services included at lines 46-51, controllers included at lines 64-66, and all three controllers instantiated in admin context at lines 163-169. All acceptance criteria verified: all service files included (import-service, column-mapper, ljv-template-detector, import-validator, bulk-operations-service, undo-service), all controller files included (import-controller, bulk-operations-controller, undo-controller), controllers instantiated in admin context, no PHP errors. No code changes needed - this was completed as part of previous subtasks (1.3, 4.2, 5.3)."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
