@@ -101,8 +101,8 @@
             "Graceful fallback to generic mapping for unknown templates",
             "Logs detected template type for debugging"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "LJV Template Detector successfully integrated into Import Controller. All acceptance criteria met: 1) Identifies LJV template by structure/headers using signature matching with 3 state-specific formats (Hessen, Bayern, NRW) plus generic LJV, 2) Returns pre-configured column mapping for detected templates with field-to-header associations, 3) Graceful fallback to generic Column Mapper for unknown templates, 4) Logs detected template type for debugging when WP_DEBUG enabled. Integration complete with confidence scoring (>0.6 threshold) and comprehensive test fixtures verified. Committed in 864c770."
         },
         {
           "subtask_id": "2.3",
@@ -118,8 +118,8 @@
             "Validates species and categories against configured values",
             "Returns array of errors and warnings per row"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "AHGMH_Import_Validator service fully implemented and committed (cc3533c). All acceptance criteria met: 1) Validates required fields (wildart, kategorie) are mapped and present, 2) Checks WUS number uniqueness against database with caching for performance, 3) Validates date formats (DD.MM.YYYY, ISO, etc.) and converts to MySQL format with fallback, 4) Validates species against configured wildarten and categories against wildart-specific configuration with case-insensitive fuzzy matching, 5) Returns structured array of errors and warnings per row with detailed messages. Additional features: validate_import() for batch validation, meldegruppe validation (warnings only), comprehensive error messages with row numbers, WUS cache reset method for batch imports. Service is integrated in main plugin file at line 49. Already committed in cc3533c."
         }
       ]
     },
