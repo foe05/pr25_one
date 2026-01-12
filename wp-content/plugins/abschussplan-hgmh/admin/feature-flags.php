@@ -12,27 +12,6 @@ if (!current_user_can('manage_options')) {
     wp_die(__('You do not have sufficient permissions to access this page.'));
 }
 
-// Handle AJAX save
-add_action('wp_ajax_hgmh_save_feature_flags', function() {
-    check_ajax_referer('hgmh_feature_flags_nonce', 'nonce');
-
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error(['message' => 'Keine Berechtigung']);
-    }
-
-    $flags = $_POST['flags'] ?? [];
-
-    foreach (HGMH_Feature_Flags::get_all_flags() as $flag_name => $flag_meta) {
-        if (isset($flags[$flag_name])) {
-            HGMH_Feature_Flags::enable($flag_name);
-        } else {
-            HGMH_Feature_Flags::disable($flag_name);
-        }
-    }
-
-    wp_send_json_success(['message' => 'Feature Flags gespeichert']);
-});
-
 $all_flags = HGMH_Feature_Flags::get_all_flags();
 ?>
 

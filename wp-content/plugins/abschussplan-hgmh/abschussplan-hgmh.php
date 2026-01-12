@@ -55,6 +55,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-feature-flags-controller.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
 
@@ -63,20 +64,6 @@ if (is_admin()) {
 
     // EMERGENCY: Load emergency AJAX handlers for missing methods
     require_once AHGMH_PLUGIN_DIR . 'admin/ajax-handlers-emergency.php';
-
-    // Register Feature Flags admin page
-    add_action('admin_menu', function() {
-        add_submenu_page(
-            'abschussplan-hgmh',
-            'Feature Flags',
-            '🚩 Feature Flags',
-            'manage_options',
-            'hgmh-feature-flags',
-            function() {
-                require_once AHGMH_PLUGIN_DIR . 'admin/feature-flags.php';
-            }
-        );
-    });
 }
 
 /**
@@ -163,6 +150,9 @@ class Abschussplan_HGMH {
 
             // Initialize page views controller
             new AHGMH_Page_Views_Controller();
+
+            // Initialize feature flags controller
+            new AHGMH_Feature_Flags_Controller();
 
             // New modular controller disabled until issues resolved
             // $this->admin_controller = new AHGMH_Admin_Controller();

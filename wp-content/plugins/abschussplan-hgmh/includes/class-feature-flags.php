@@ -57,8 +57,23 @@ class HGMH_Feature_Flags {
      */
     public static function enable($flag_name) {
         self::load_flags();
+        $old_value = isset(self::$flags[$flag_name]) ? self::$flags[$flag_name] : false;
         self::$flags[$flag_name] = true;
-        return update_option(self::OPTION_KEY, self::$flags);
+        $result = update_option(self::OPTION_KEY, self::$flags);
+
+        // Log the change
+        if ($result && $old_value !== true) {
+            $user = wp_get_current_user();
+            error_log(sprintf(
+                '[HGMH Feature Flags] User "%s" (ID: %d) ENABLED flag: %s at %s',
+                $user->user_login,
+                $user->ID,
+                $flag_name,
+                current_time('mysql')
+            ));
+        }
+
+        return $result;
     }
 
     /**
@@ -69,8 +84,23 @@ class HGMH_Feature_Flags {
      */
     public static function disable($flag_name) {
         self::load_flags();
+        $old_value = isset(self::$flags[$flag_name]) ? self::$flags[$flag_name] : false;
         self::$flags[$flag_name] = false;
-        return update_option(self::OPTION_KEY, self::$flags);
+        $result = update_option(self::OPTION_KEY, self::$flags);
+
+        // Log the change
+        if ($result && $old_value !== false) {
+            $user = wp_get_current_user();
+            error_log(sprintf(
+                '[HGMH Feature Flags] User "%s" (ID: %d) DISABLED flag: %s at %s',
+                $user->user_login,
+                $user->ID,
+                $flag_name,
+                current_time('mysql')
+            ));
+        }
+
+        return $result;
     }
 
     /**
