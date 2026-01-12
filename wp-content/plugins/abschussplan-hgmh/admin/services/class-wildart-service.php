@@ -161,5 +161,62 @@ class AHGMH_Wildart_Service {
     public function save_limits($wildart, $limits) {
         $this->repository->save_limits($wildart, $limits);
     }
-    
+
+    /**
+     * Assign Obmann to meldegruppe
+     *
+     * @param string $wildart Wildart name
+     * @param string $meldegruppe Meldegruppe name
+     * @param int $user_id WordPress user ID
+     * @return bool True on success, false on failure
+     */
+    public function assign_obmann($wildart, $meldegruppe, $user_id) {
+        $wildart = sanitize_text_field($wildart);
+        $meldegruppe = sanitize_text_field($meldegruppe);
+        $user_id = absint($user_id);
+
+        if (empty($wildart) || empty($meldegruppe) || $user_id <= 0) {
+            throw new Exception('Ungültige Parameter für Obmann-Zuweisung');
+        }
+
+        $meldegruppe_repo = new AHGMH_Meldegruppe_Repository();
+        return $meldegruppe_repo->assign_obmann($wildart, $meldegruppe, $user_id);
+    }
+
+    /**
+     * Remove Obmann assignment from meldegruppe
+     *
+     * @param string $wildart Wildart name
+     * @param string $meldegruppe Meldegruppe name
+     * @return bool True on success, false on failure
+     */
+    public function remove_obmann_assignment($wildart, $meldegruppe) {
+        $wildart = sanitize_text_field($wildart);
+        $meldegruppe = sanitize_text_field($meldegruppe);
+
+        if (empty($wildart) || empty($meldegruppe)) {
+            throw new Exception('Ungültige Parameter für Obmann-Entfernung');
+        }
+
+        $meldegruppe_repo = new AHGMH_Meldegruppe_Repository();
+        return $meldegruppe_repo->remove_obmann($wildart, $meldegruppe);
+    }
+
+    /**
+     * Get Obmann assignments
+     *
+     * @param string|null $wildart Optional wildart name to filter assignments
+     * @return array Array of Obmann assignments
+     */
+    public function get_obmann_assignments($wildart = null) {
+        $meldegruppe_repo = new AHGMH_Meldegruppe_Repository();
+
+        if ($wildart !== null) {
+            $wildart = sanitize_text_field($wildart);
+            return $meldegruppe_repo->get_obmann_assignments_by_wildart($wildart);
+        }
+
+        return $meldegruppe_repo->get_obmann_assignments();
+    }
+
 }

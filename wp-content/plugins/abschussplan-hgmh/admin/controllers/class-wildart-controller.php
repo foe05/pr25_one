@@ -54,6 +54,9 @@ class AHGMH_Wildart_Controller {
         add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
         add_action('wp_ajax_ahgmh_toggle_limit_mode', array($this, 'ajax_toggle_limit_mode'));
         add_action('wp_ajax_ahgmh_save_limits', array($this, 'ajax_save_limits'));
+        add_action('wp_ajax_ahgmh_assign_obmann', array($this, 'ajax_assign_obmann'));
+        add_action('wp_ajax_ahgmh_remove_obmann', array($this, 'ajax_remove_obmann'));
+        add_action('wp_ajax_ahgmh_get_obmann_assignments', array($this, 'ajax_get_obmann_assignments'));
         
         // DEBUG: Confirm meldegruppen handler registration
         file_put_contents(ABSPATH . 'wp-content/debug_wildart_controller.log', 
@@ -265,6 +268,86 @@ class AHGMH_Wildart_Controller {
         }
     }
     
+    /**
+     * AJAX: Assign Obmann to meldegruppe
+     */
+    public function ajax_assign_obmann() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        try {
+            $wildart = sanitize_text_field($_POST['wildart'] ?? '');
+            $meldegruppe = sanitize_text_field($_POST['meldegruppe'] ?? '');
+            $user_id = absint($_POST['user_id'] ?? 0);
+
+            if (empty($wildart) || empty($meldegruppe) || $user_id <= 0) {
+                wp_send_json_error('Ungültige Parameter');
+                return;
+            }
+
+            $result = $this->wildart_service->assign_obmann($wildart, $meldegruppe, $user_id);
+
+            if ($result) {
+                wp_send_json_success(array(
+                    'message' => __('Obmann erfolgreich zugewiesen', 'abschussplan-hgmh')
+                ));
+            } else {
+                wp_send_json_error('Fehler beim Zuweisen des Obmanns');
+            }
+
+        } catch (Exception $e) {
+            wp_send_json_error('Fehler beim Zuweisen: ' . esc_html($e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX: Remove Obmann assignment
+     */
+    public function ajax_remove_obmann() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        try {
+            $wildart = sanitize_text_field($_POST['wildart'] ?? '');
+            $meldegruppe = sanitize_text_field($_POST['meldegruppe'] ?? '');
+
+            if (empty($wildart) || empty($meldegruppe)) {
+                wp_send_json_error('Ungültige Parameter');
+                return;
+            }
+
+            $result = $this->wildart_service->remove_obmann_assignment($wildart, $meldegruppe);
+
+            if ($result) {
+                wp_send_json_success(array(
+                    'message' => __('Obmann-Zuweisung erfolgreich entfernt', 'abschussplan-hgmh')
+                ));
+            } else {
+                wp_send_json_error('Fehler beim Entfernen der Obmann-Zuweisung');
+            }
+
+        } catch (Exception $e) {
+            wp_send_json_error('Fehler beim Entfernen: ' . esc_html($e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX: Get Obmann assignments
+     */
+    public function ajax_get_obmann_assignments() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        try {
+            $wildart = isset($_POST['wildart']) ? sanitize_text_field($_POST['wildart']) : null;
+            $assignments = $this->wildart_service->get_obmann_assignments($wildart);
+
+            wp_send_json_success(array(
+                'assignments' => $assignments
+            ));
+
+        } catch (Exception $e) {
+            wp_send_json_error('Fehler beim Laden der Zuweisungen: ' . esc_html($e->getMessage()));
+        }
+    }
+
     /**
      * Render wildart configuration section
      */
