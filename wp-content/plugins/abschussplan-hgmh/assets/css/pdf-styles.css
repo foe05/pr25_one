@@ -1,0 +1,487 @@
+/**
+ * PDF Styles for DOMPDF
+ * Professional formatting for PDF reports
+ *
+ * IMPORTANT: DOMPDF has limited CSS support
+ * - No flexbox or CSS grid
+ * - Limited positioning (avoid absolute/fixed)
+ * - Use tables for layout
+ * - Inline-block for horizontal alignment
+ * - Simple selectors only
+ */
+
+/* ========================================
+   Base Styles
+   ======================================== */
+
+body {
+    font-family: "DejaVu Sans", Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #333333;
+    margin: 0;
+    padding: 20px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #2c5f2d;
+    margin-top: 0;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 20pt;
+    margin-bottom: 8px;
+}
+
+h2 {
+    font-size: 16pt;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #2c5f2d;
+    padding-bottom: 5px;
+}
+
+h3 {
+    font-size: 13pt;
+    margin-bottom: 8px;
+    margin-top: 15px;
+}
+
+h4 {
+    font-size: 11pt;
+    margin-bottom: 6px;
+}
+
+p {
+    margin: 0 0 8px 0;
+}
+
+/* ========================================
+   Header Styles
+   ======================================== */
+
+.pdf-header {
+    margin-bottom: 20px;
+}
+
+.header-table {
+    width: 100%;
+    border: none;
+    margin-bottom: 10px;
+}
+
+.header-table td {
+    border: none;
+    padding: 0;
+    vertical-align: top;
+}
+
+.logo-cell {
+    width: 80px;
+}
+
+.logo-placeholder {
+    width: 70px;
+    height: 70px;
+    background-color: #2c5f2d;
+    border-radius: 5px;
+    text-align: center;
+    vertical-align: middle;
+    display: table-cell;
+}
+
+.logo-text {
+    color: #ffffff;
+    font-size: 24pt;
+    font-weight: bold;
+    line-height: 70px;
+}
+
+.header-info {
+    padding-left: 15px;
+}
+
+.association-name {
+    font-size: 18pt;
+    color: #2c5f2d;
+    margin: 0 0 3px 0;
+    font-weight: bold;
+}
+
+.header-subtitle {
+    font-size: 10pt;
+    color: #666666;
+    margin: 0;
+}
+
+.report-title-section {
+    margin: 15px 0 10px 0;
+}
+
+.report-title {
+    font-size: 16pt;
+    color: #2c5f2d;
+    margin: 0;
+    padding: 8px 0;
+    border-bottom: 2px solid #2c5f2d;
+}
+
+.report-metadata {
+    margin: 10px 0;
+}
+
+.metadata-table {
+    width: 100%;
+    border: none;
+    font-size: 9pt;
+}
+
+.metadata-table td {
+    border: none;
+    padding: 3px 0;
+}
+
+.meta-label {
+    width: 150px;
+    font-weight: bold;
+    color: #666666;
+}
+
+.meta-value {
+    color: #333333;
+}
+
+.header-divider {
+    height: 1px;
+    background-color: #cccccc;
+    margin: 15px 0;
+}
+
+/* ========================================
+   Content Sections
+   ======================================== */
+
+.report-content {
+    margin-bottom: 30px;
+}
+
+.report-section {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+}
+
+.section-title {
+    font-size: 13pt;
+    color: #2c5f2d;
+    margin: 15px 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #2c5f2d;
+}
+
+/* ========================================
+   Summary Statistics Boxes
+   ======================================== */
+
+.summary-stats-table {
+    width: 100%;
+    border: none;
+    margin: 15px 0;
+}
+
+.summary-stats-table td {
+    border: none;
+    padding: 5px;
+}
+
+.stat-cell {
+    width: 33.33%;
+    vertical-align: top;
+}
+
+.stat-box {
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+    padding: 12px;
+    text-align: center;
+    background-color: #f9f9f9;
+    margin: 0 5px;
+}
+
+.stat-box-primary {
+    background-color: #e8f4f8;
+    border-color: #4a90a4;
+}
+
+.stat-box-success {
+    background-color: #e8f5e9;
+    border-color: #4caf50;
+}
+
+.stat-box-info {
+    background-color: #fff8e1;
+    border-color: #ffc107;
+}
+
+.stat-label {
+    font-size: 9pt;
+    color: #666666;
+    margin-bottom: 5px;
+    font-weight: normal;
+}
+
+.stat-value {
+    font-size: 20pt;
+    color: #2c5f2d;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.stat-sublabel {
+    font-size: 8pt;
+    color: #888888;
+    margin-top: 3px;
+}
+
+/* ========================================
+   Data Tables
+   ======================================== */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 15px 0;
+    font-size: 9pt;
+}
+
+.data-table thead {
+    background-color: #2c5f2d;
+    color: #ffffff;
+}
+
+.data-table th {
+    padding: 8px 6px;
+    text-align: left;
+    font-weight: bold;
+    border: 1px solid #2c5f2d;
+}
+
+.data-table td {
+    padding: 6px;
+    border: 1px solid #dddddd;
+    vertical-align: middle;
+}
+
+.data-table tbody tr {
+    background-color: #ffffff;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.data-table .total-row {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;
+    border-top: 2px solid #2c5f2d;
+}
+
+/* Column Widths */
+.col-name {
+    width: 40%;
+    text-align: left;
+}
+
+.col-category {
+    width: 30%;
+    text-align: left;
+}
+
+.col-meldegruppe {
+    width: 35%;
+    text-align: left;
+}
+
+.col-number {
+    width: 15%;
+    text-align: right;
+}
+
+.col-percent {
+    width: 15%;
+    text-align: right;
+}
+
+.col-status {
+    width: 18%;
+    text-align: center;
+}
+
+/* ========================================
+   Status Indicators
+   ======================================== */
+
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 8pt;
+    font-weight: bold;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.status-good,
+.status-badge.status-good {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-warning,
+.status-badge.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-critical,
+.status-badge.status-critical {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-exceeded,
+.status-badge.status-exceeded {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-neutral,
+.status-badge.status-neutral {
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #dee2e6;
+}
+
+/* Row highlighting based on status */
+tr.status-good {
+    background-color: #f1f9f1 !important;
+}
+
+tr.status-warning {
+    background-color: #fffbf0 !important;
+}
+
+tr.status-critical {
+    background-color: #fef5f5 !important;
+}
+
+tr.status-exceeded {
+    background-color: #f0f8fa !important;
+}
+
+/* ========================================
+   Legend
+   ======================================== */
+
+.legend-section {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+}
+
+.legend-title {
+    font-size: 11pt;
+    margin: 0 0 8px 0;
+    color: #2c5f2d;
+}
+
+.legend-table {
+    width: 100%;
+    border: none;
+    font-size: 9pt;
+}
+
+.legend-table td {
+    border: none;
+    padding: 4px 8px;
+}
+
+.legend-table td:first-child {
+    width: 120px;
+}
+
+/* ========================================
+   Footer
+   ======================================== */
+
+.pdf-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    padding: 10px 20px;
+    border-top: 1px solid #cccccc;
+    background-color: #f9f9f9;
+}
+
+.footer-table {
+    width: 100%;
+    border: none;
+    font-size: 8pt;
+    color: #666666;
+}
+
+.footer-table td {
+    border: none;
+    padding: 0;
+}
+
+.footer-left {
+    width: 33%;
+    text-align: left;
+}
+
+.footer-center {
+    width: 34%;
+    text-align: center;
+}
+
+.footer-right {
+    width: 33%;
+    text-align: right;
+}
+
+.footer-text {
+    font-size: 8pt;
+    color: #666666;
+}
+
+/* ========================================
+   Page Breaks
+   ======================================== */
+
+.page-break {
+    page-break-after: always;
+}
+
+.no-break {
+    page-break-inside: avoid;
+}
+
+/* ========================================
+   Print Adjustments
+   ======================================== */
+
+@page {
+    margin: 2cm 1.5cm;
+}
+
+@page :first {
+    margin-top: 1cm;
+}
