@@ -53,6 +53,12 @@ class AHGMH_Wildart_Service {
      * Delete wildart
      */
     public function delete_wildart($wildart) {
+        // Check if wildart has existing submissions
+        $db_handler = new AHGMH_Database_Handler();
+        if ($db_handler->check_wildart_has_submissions($wildart)) {
+            throw new Exception('Diese Wildart kann nicht gelöscht werden, da bereits Meldungen existieren.');
+        }
+
         // Repository handles existence check and cleanup
         $this->repository->delete($wildart);
 
