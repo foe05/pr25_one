@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class HGMH_Migration_001 {
+class AHGMH_Migration_001 {
 
     public function up() {
         global $wpdb;
