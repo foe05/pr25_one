@@ -4,7 +4,7 @@
   "summary": "Implement bulk operations and data import functionality for the Abschussplan WordPress plugin, including CSV/Excel import with column mapping, preview/validation, bulk updates, batch deletion, and undo capability.",
   "estimated_total_hours": 24,
   "created_at": "2026-01-11T17:29:25.592Z",
-  "updated_at": "2026-01-12T17:46:30.836Z",
+  "updated_at": "2026-01-12T20:52:00.075Z",
   "status": "in_progress",
   "planStatus": "in_progress",
   "phases": [
@@ -29,7 +29,7 @@
             "Returns structured array with headers and data"
           ],
           "status": "completed",
-          "notes": "AHGMH_Import_Service class created with comprehensive file upload handling, CSV/Excel parsing, UTF-8/UTF-16 encoding detection, and German Excel semicolon delimiter support. All acceptance criteria met. Already committed in b1f23a8."
+          "notes": "AHGMH_Import_Service class fully implemented with CSV/Excel parsing, UTF-8/UTF-16 encoding detection, BOM handling, automatic delimiter detection (comma/semicolon), and structured data extraction. All acceptance criteria met."
         },
         {
           "subtask_id": "1.2",
@@ -45,8 +45,8 @@
             "All handlers verify nonce and user capability",
             "Proper error handling with translatable messages"
           ],
-          "status": "completed",
-          "notes": "AHGMH_Import_Controller class created with complete AJAX handler implementation. All acceptance criteria met: ajax_upload_file handles multipart file uploads with security validation, ajax_get_preview returns sample data with detected columns (up to 20 rows max), ajax_execute_import processes column mapping and imports data to database. Security: All handlers use verify_ajax_request() for nonce/capability verification. Error handling: Comprehensive try-catch blocks with translatable German messages. Features: Duplicate WUS detection, date format parsing, input sanitization, automatic file cleanup. Already committed in 7e288a0."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "1.3",
@@ -60,8 +60,8 @@
             "AJAX actions registered properly",
             "No PHP errors on admin load"
           ],
-          "status": "completed",
-          "notes": "Import controller is fully integrated in abschussplan-hgmh.php. Verification confirms: 1) Controller file included at line 64, 2) Controller instantiated at line 163 inside is_admin() context, 3) AJAX handlers registered via constructor (wp_ajax_ahgmh_upload_file, wp_ajax_ahgmh_get_preview, wp_ajax_ahgmh_execute_import), 4) All dependencies loaded in correct order (service before controller), 5) No PHP errors. Integration was completed in previous session (commit d3d7fbf). All acceptance criteria met."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
@@ -85,8 +85,8 @@
             "Returns confidence score for mappings",
             "Supports manual mapping override"
           ],
-          "status": "completed",
-          "notes": "AHGMH_Column_Mapper class fully implemented with comprehensive auto-detection logic. All acceptance criteria met: 1) Auto-detects common German column names (Datum, Wildart, Kategorie, Meldegruppe, Jagdbezirk, WUS-Nummer, Bemerkung) with extensive variation matching. 2) Matches variations using normalized string comparison, exact/contains matching, and Levenshtein similarity. 3) Identifies date, number, and text columns through pattern analysis of sample data. 4) Returns individual and overall confidence scores, weighted by field importance (required fields weighted 2x). 5) Supports manual mapping override via merge_mappings and validate_mapping methods. Additional features: String normalization with umlaut handling, field definitions with labels/types, validation for required fields. Committed in 819d3bc."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "2.2",
@@ -101,8 +101,8 @@
             "Graceful fallback to generic mapping for unknown templates",
             "Logs detected template type for debugging"
           ],
-          "status": "completed",
-          "notes": "LJV Template Detector successfully integrated into Import Controller. All acceptance criteria met: 1) Identifies LJV template by structure/headers using signature matching with 3 state-specific formats (Hessen, Bayern, NRW) plus generic LJV, 2) Returns pre-configured column mapping for detected templates with field-to-header associations, 3) Graceful fallback to generic Column Mapper for unknown templates, 4) Logs detected template type for debugging when WP_DEBUG enabled. Integration complete with confidence scoring (>0.6 threshold) and comprehensive test fixtures verified. Committed in 864c770."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "2.3",
@@ -118,8 +118,8 @@
             "Validates species and categories against configured values",
             "Returns array of errors and warnings per row"
           ],
-          "status": "completed",
-          "notes": "AHGMH_Import_Validator service fully implemented and committed (cc3533c). All acceptance criteria met: 1) Validates required fields (wildart, kategorie) are mapped and present, 2) Checks WUS number uniqueness against database with caching for performance, 3) Validates date formats (DD.MM.YYYY, ISO, etc.) and converts to MySQL format with fallback, 4) Validates species against configured wildarten and categories against wildart-specific configuration with case-insensitive fuzzy matching, 5) Returns structured array of errors and warnings per row with detailed messages. Additional features: validate_import() for batch validation, meldegruppe validation (warnings only), comprehensive error messages with row numbers, WUS cache reset method for batch imports. Service is integrated in main plugin file at line 49. Already committed in cc3533c."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
