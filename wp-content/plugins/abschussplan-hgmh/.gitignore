@@ -1,0 +1,7 @@
+# Composer dependencies
+/vendor/
+/composer.lock
+
+# Ignore temp files
+*.log
+.DS_Store
