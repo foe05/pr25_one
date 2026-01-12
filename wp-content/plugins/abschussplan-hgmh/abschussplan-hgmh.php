@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
 define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('AHGMH_PLUGIN_VERSION', '2.5.3');
-define('AHGMH_DB_VERSION', '4');
+define('AHGMH_DB_VERSION', '5');
 
 // Include required files
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
