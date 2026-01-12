@@ -60,8 +60,8 @@
             "AJAX actions registered properly",
             "No PHP errors on admin load"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "Import controller is fully integrated in abschussplan-hgmh.php. Verification confirms: 1) Controller file included at line 64, 2) Controller instantiated at line 163 inside is_admin() context, 3) AJAX handlers registered via constructor (wp_ajax_ahgmh_upload_file, wp_ajax_ahgmh_get_preview, wp_ajax_ahgmh_execute_import), 4) All dependencies loaded in correct order (service before controller), 5) No PHP errors. Integration was completed in previous session (commit d3d7fbf). All acceptance criteria met."
         }
       ]
     },
