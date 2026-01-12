@@ -15,12 +15,16 @@ if (!defined('ABSPATH')) {
 class AHGMH_Import_Controller {
 
     private $import_service;
+    private $column_mapper;
+    private $ljv_detector;
 
     /**
      * Constructor
      */
     public function __construct() {
         $this->import_service = new AHGMH_Import_Service();
+        $this->column_mapper = new AHGMH_Column_Mapper();
+        $this->ljv_detector = new AHGMH_LJV_Template_Detector();
         $this->register_ajax_handlers();
     }
 
@@ -54,7 +58,31 @@ class AHGMH_Import_Controller {
             // Parse file to detect columns
             $parse_result = $this->import_service->parse_file($upload_result['filepath']);
 
-            // Return upload and parse results
+            // Try to detect LJV template
+            $ljv_detection = $this->ljv_detector->detect_template($parse_result['headers']);
+
+            // Auto-detect column mapping (with LJV template as fallback)
+            $suggested_mapping = array();
+            $detection_method = 'none';
+            $template_name = null;
+
+            if ($ljv_detection['template_id'] !== null) {
+                // LJV template detected - use its pre-configured mapping
+                $suggested_mapping = $ljv_detection['column_mapping'];
+                $detection_method = 'ljv_template';
+                $template_name = $ljv_detection['template_name'];
+            } else {
+                // No LJV template - use generic column mapper
+                $sample_data = array_slice($parse_result['data'], 0, 10);
+                $mapping_result = $this->column_mapper->auto_detect_mapping(
+                    $parse_result['headers'],
+                    $sample_data
+                );
+                $suggested_mapping = $mapping_result['mappings'];
+                $detection_method = 'auto_detect';
+            }
+
+            // Return upload and parse results with mapping suggestions
             wp_send_json_success(array(
                 'filepath' => $upload_result['filepath'],
                 'filename' => $upload_result['filename'],
@@ -63,6 +91,10 @@ class AHGMH_Import_Controller {
                 'row_count' => $parse_result['row_count'],
                 'column_count' => $parse_result['column_count'],
                 'delimiter' => $parse_result['delimiter'],
+                'suggested_mapping' => $suggested_mapping,
+                'detection_method' => $detection_method,
+                'template_name' => $template_name,
+                'ljv_confidence' => $ljv_detection['confidence'],
                 'message' => sprintf(
                     __('Datei erfolgreich hochgeladen: %d Zeilen, %d Spalten erkannt.', 'abschussplan-hgmh'),
                     $parse_result['row_count'],
