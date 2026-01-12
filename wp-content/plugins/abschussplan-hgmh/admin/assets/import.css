@@ -1,0 +1,780 @@
+/**
+ * Import Interface Styles for Abschussplan HGMH
+ * Matches existing admin design patterns from admin-modern.css
+ */
+
+/* === Import Container === */
+.ahgmh-import-container {
+    max-width: 1200px;
+}
+
+.ahgmh-import-step {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === Import Instructions === */
+.ahgmh-import-instructions {
+    padding: 20px;
+    background: #f0f6fc;
+    border-left: 4px solid #2271b1;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 25px;
+}
+
+.ahgmh-import-instructions p {
+    margin: 0 0 12px 0;
+    color: #1d2327;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.ahgmh-import-instructions p:last-child {
+    margin-bottom: 0;
+}
+
+.ahgmh-import-instructions ul {
+    margin: 8px 0 0 20px;
+    padding: 0;
+}
+
+.ahgmh-import-instructions li {
+    color: #646970;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 6px;
+}
+
+/* === Dropzone Styling === */
+.ahgmh-dropzone {
+    border: 2px dashed #dcdcde;
+    border-radius: 8px;
+    padding: 60px 40px;
+    text-align: center;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.ahgmh-dropzone:hover {
+    border-color: #2271b1;
+    background: #f0f6fc;
+}
+
+.ahgmh-dropzone.dragover {
+    border-color: #2271b1;
+    background: #e6f3ff;
+    border-width: 3px;
+    transform: scale(1.02);
+}
+
+.dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.dropzone-content .dashicons {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #2271b1;
+    opacity: 0.6;
+}
+
+.ahgmh-dropzone.dragover .dashicons {
+    opacity: 1;
+    animation: bounce 0.5s ease-in-out;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.dropzone-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1d2327;
+    margin: 0;
+}
+
+.dropzone-hint {
+    font-size: 13px;
+    color: #646970;
+    margin: 0;
+}
+
+/* === Upload Progress === */
+.ahgmh-upload-progress,
+.ahgmh-import-progress {
+    padding: 30px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 24px;
+    background: #f0f0f1;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #2271b1, #72aee6);
+    border-radius: 12px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.progress-text {
+    text-align: center;
+    margin: 15px 0 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #646970;
+}
+
+/* === Column Mapping Table === */
+.ahgmh-mapping-table {
+    margin-top: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.ahgmh-mapping-table thead th {
+    background: #f6f7f7;
+    font-weight: 600;
+    color: #1d2327;
+    padding: 12px 15px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.ahgmh-mapping-table tbody td {
+    padding: 15px;
+    vertical-align: middle;
+}
+
+.ahgmh-mapping-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.column-mapping-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    background: #fff;
+}
+
+.column-mapping-select:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
+}
+
+.required-indicator {
+    color: #d63638;
+    font-weight: 700;
+    font-size: 16px;
+    margin-left: 4px;
+}
+
+.required-icon {
+    color: #00a32a;
+}
+
+.optional-icon {
+    color: #8c8f94;
+}
+
+/* === Confidence Badges === */
+.confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 50px;
+}
+
+.confidence-badge.none {
+    background: #f6f7f7;
+    color: #8c8f94;
+}
+
+.confidence-badge.low {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.confidence-badge.medium {
+    background: #cfe2ff;
+    color: #084298;
+}
+
+.confidence-badge.high {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+/* === Template Detection Info === */
+#template-detection-info {
+    margin-bottom: 20px;
+}
+
+#template-detection-info p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#template-detection-info p::before {
+    content: "\f534";
+    font-family: dashicons;
+    font-size: 18px;
+    color: #00a32a;
+}
+
+/* === Import Actions === */
+.ahgmh-import-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.ahgmh-import-actions .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* === Validation Summary === */
+.ahgmh-validation-summary {
+    margin-bottom: 25px;
+}
+
+.ahgmh-validation-summary .notice {
+    margin: 0 0 15px 0;
+    padding: 12px 16px;
+    border-radius: 6px;
+}
+
+.ahgmh-validation-summary .notice:last-child {
+    margin-bottom: 0;
+}
+
+.ahgmh-validation-summary .notice p {
+    margin: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.ahgmh-validation-summary .notice p:last-child {
+    margin-bottom: 0;
+}
+
+.ahgmh-validation-summary ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.ahgmh-validation-summary li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.ahgmh-validation-summary li:last-child {
+    margin-bottom: 0;
+}
+
+#validation-success {
+    display: flex;
+    align-items: center;
+}
+
+#validation-success .dashicons {
+    color: #00a32a;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+}
+
+/* === Preview Table === */
+.ahgmh-preview-container {
+    margin-top: 20px;
+}
+
+.ahgmh-preview-container h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.ahgmh-preview-scroll {
+    overflow-x: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.ahgmh-preview-table {
+    margin: 0;
+    border: none;
+}
+
+.ahgmh-preview-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.ahgmh-preview-table thead th {
+    background: #f6f7f7;
+    font-weight: 600;
+    color: #1d2327;
+    padding: 12px 15px;
+    border-bottom: 2px solid #e0e0e0;
+    white-space: nowrap;
+}
+
+.ahgmh-preview-table tbody td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f1;
+    white-space: nowrap;
+}
+
+.ahgmh-preview-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.preview-hint {
+    margin: 10px 0 0 0;
+    font-size: 13px;
+    color: #646970;
+    font-style: italic;
+}
+
+/* === Inline Validation === */
+.inline-validation {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    margin-top: 8px;
+}
+
+.inline-errors,
+.inline-warnings {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.inline-errors {
+    color: #d63638;
+}
+
+.inline-warnings {
+    color: #dba617;
+}
+
+.inline-errors .dashicons,
+.inline-warnings .dashicons {
+    flex-shrink: 0;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.error-message,
+.warning-message {
+    flex: 1;
+}
+
+/* === Import Complete === */
+.ahgmh-import-complete {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.ahgmh-import-complete .complete-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #00a32a;
+    margin-bottom: 20px;
+}
+
+.ahgmh-import-complete h2 {
+    margin: 0 0 30px 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+/* === Import Summary Stats === */
+.ahgmh-import-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.summary-stat {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 25px 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.summary-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: #2271b1;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.summary-stat:nth-child(2) .stat-number {
+    color: #d63638;
+}
+
+.summary-stat:nth-child(3) .stat-number {
+    color: #dba617;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #646970;
+    font-weight: 500;
+}
+
+/* === Import Details === */
+.ahgmh-import-details {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    text-align: left;
+}
+
+.ahgmh-import-details h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+#import-details-content ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+#import-details-content li {
+    margin-bottom: 8px;
+    color: #646970;
+    line-height: 1.5;
+}
+
+/* === Notifications === */
+.ahgmh-notification {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    min-width: 300px;
+    max-width: 500px;
+    padding: 16px 20px;
+    background: #fff;
+    border-left: 4px solid #2271b1;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 999999;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.ahgmh-notification.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.ahgmh-notification-success {
+    border-left-color: #00a32a;
+    color: #1d2327;
+}
+
+.ahgmh-notification-error {
+    border-left-color: #d63638;
+    color: #1d2327;
+}
+
+.ahgmh-notification-warning {
+    border-left-color: #dba617;
+    color: #1d2327;
+}
+
+.ahgmh-notification-info {
+    border-left-color: #2271b1;
+    color: #1d2327;
+}
+
+/* === Loading State === */
+.ahgmh-import-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #646970;
+}
+
+.ahgmh-import-loading::before {
+    content: "";
+    width: 24px;
+    height: 24px;
+    border: 3px solid #f0f0f1;
+    border-top: 3px solid #2271b1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 12px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* === Responsive Design === */
+@media (max-width: 1200px) {
+    .ahgmh-preview-scroll {
+        max-height: 350px;
+    }
+}
+
+@media (max-width: 782px) {
+    .ahgmh-dropzone {
+        padding: 40px 20px;
+    }
+
+    .dropzone-content .dashicons {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+    }
+
+    .dropzone-text {
+        font-size: 14px;
+    }
+
+    .ahgmh-import-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .ahgmh-import-actions .button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .ahgmh-preview-scroll {
+        max-height: 300px;
+    }
+
+    .ahgmh-import-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .ahgmh-notification {
+        left: 15px;
+        right: 15px;
+        bottom: 15px;
+        min-width: auto;
+    }
+
+    .ahgmh-mapping-table {
+        font-size: 13px;
+    }
+
+    .ahgmh-mapping-table thead th,
+    .ahgmh-mapping-table tbody td {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 600px) {
+    .ahgmh-panel h2 {
+        font-size: 18px;
+    }
+
+    .ahgmh-import-instructions {
+        padding: 15px;
+    }
+
+    .ahgmh-upload-progress,
+    .ahgmh-import-progress {
+        padding: 20px;
+    }
+
+    .progress-bar-container {
+        height: 20px;
+    }
+
+    .ahgmh-import-complete {
+        padding: 30px 15px;
+    }
+
+    .ahgmh-import-complete .complete-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+    }
+
+    .ahgmh-import-complete h2 {
+        font-size: 20px;
+    }
+
+    .stat-number {
+        font-size: 28px;
+    }
+
+    /* Make mapping table scrollable on small screens */
+    .ahgmh-mapping-table thead,
+    .ahgmh-mapping-table tbody {
+        display: block;
+    }
+
+    .ahgmh-mapping-table thead tr,
+    .ahgmh-mapping-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        border-bottom: 2px solid #e0e0e0;
+        padding: 10px 0;
+    }
+
+    .ahgmh-mapping-table td,
+    .ahgmh-mapping-table th {
+        display: block;
+        padding: 8px 15px !important;
+        border: none !important;
+    }
+
+    .ahgmh-mapping-table th {
+        background: transparent !important;
+        font-weight: 700;
+        color: #2271b1 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .ahgmh-import-container {
+        margin: 0 -10px;
+    }
+
+    .ahgmh-panel {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .confidence-badge {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+}
+
+/* === Print Styles === */
+@media print {
+    .ahgmh-dropzone,
+    .ahgmh-import-actions,
+    .ahgmh-notification {
+        display: none !important;
+    }
+
+    .ahgmh-preview-scroll {
+        max-height: none;
+        overflow: visible;
+    }
+}
