@@ -227,6 +227,14 @@ class Abschussplan_HGMH {
             AHGMH_PLUGIN_VERSION
         );
 
+        // Enqueue admin reports styles
+        wp_enqueue_style(
+            'ahgmh-admin-reports',
+            AHGMH_PLUGIN_URL . 'admin/assets/admin-reports.css',
+            array('bootstrap-css'),
+            AHGMH_PLUGIN_VERSION
+        );
+
         // Enqueue form validation script
         wp_enqueue_script(
             'ahgmh-form-validation',
