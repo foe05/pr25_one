@@ -46,6 +46,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-report-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-report-generator-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-pdf-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-email-service.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';

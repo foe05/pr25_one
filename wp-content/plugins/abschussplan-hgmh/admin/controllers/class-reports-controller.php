@@ -16,6 +16,7 @@ class AHGMH_Reports_Controller {
 
     private $report_generator_service;
     private $report_service;
+    private $email_service;
     private $view;
 
     /**
@@ -25,9 +26,11 @@ class AHGMH_Reports_Controller {
         // Load report services
         require_once AHGMH_PLUGIN_DIR . 'admin/services/class-report-service.php';
         require_once AHGMH_PLUGIN_DIR . 'admin/services/class-report-generator-service.php';
+        require_once AHGMH_PLUGIN_DIR . 'admin/services/class-email-service.php';
 
         $this->report_service = new AHGMH_Report_Service();
         $this->report_generator_service = new AHGMH_Report_Generator_Service();
+        $this->email_service = new AHGMH_Email_Service();
 
         // Load view
         if (file_exists(AHGMH_PLUGIN_DIR . 'admin/views/class-reports-view.php')) {
@@ -339,8 +342,8 @@ class AHGMH_Reports_Controller {
                 throw new Exception($dates['error']);
             }
 
-            // Generate report with HTML format
-            $report = $this->generate_report($report_type, $dates, $filters, 'html');
+            // Generate report with PDF format (includes both HTML and PDF-ready HTML)
+            $report = $this->generate_report($report_type, $dates, $filters, 'pdf');
 
             if (isset($report['error'])) {
                 throw new Exception($report['message']);
@@ -660,27 +663,87 @@ class AHGMH_Reports_Controller {
             $report['title']
         );
 
-        // Prepare email body
-        $body = '<html><body>';
-        $body .= '<h2>' . esc_html($report['title']) . '</h2>';
-        $body .= '<p>' . __('Anbei finden Sie den angeforderten Bericht.', 'abschussplan-hgmh') . '</p>';
+        // Prepare template variables
+        $report_type = isset($report['report_type']) ? $report['report_type'] : '';
+        $report_title = isset($report['title']) ? $report['title'] : __('Bericht', 'abschussplan-hgmh');
 
-        if (isset($report['html'])) {
-            $body .= $report['html'];
+        // Format period for display
+        $report_period = '';
+        if (isset($report['metadata']['period'])) {
+            $start = isset($report['metadata']['period']['start']) ? $report['metadata']['period']['start'] : '';
+            $end = isset($report['metadata']['period']['end']) ? $report['metadata']['period']['end'] : '';
+
+            if (!empty($start) && !empty($end)) {
+                $report_period = sprintf(
+                    '%s - %s',
+                    date_i18n('d.m.Y', strtotime($start)),
+                    date_i18n('d.m.Y', strtotime($end))
+                );
+            }
         }
 
-        $body .= '<hr>';
-        $body .= '<p><small>' . __('Diese E-Mail wurde automatisch generiert.', 'abschussplan-hgmh') . '</small></p>';
-        $body .= '</body></html>';
+        // Get report summary if available
+        $report_summary = '';
+        if (isset($report['data']['summary'])) {
+            $summary_data = $report['data']['summary'];
+            $report_summary = '<ul>';
 
-        // Set email headers
-        $headers = [
-            'Content-Type: text/html; charset=UTF-8',
-            'From: ' . get_option('blogname') . ' <' . get_option('admin_email') . '>'
-        ];
+            if (isset($summary_data['total_submissions'])) {
+                $report_summary .= '<li>' . sprintf(
+                    __('Gesamte Meldungen: %d', 'abschussplan-hgmh'),
+                    $summary_data['total_submissions']
+                ) . '</li>';
+            }
 
-        // Send email
-        return wp_mail($recipient, $subject, $body, $headers);
+            if (isset($summary_data['species_count'])) {
+                $report_summary .= '<li>' . sprintf(
+                    __('Wildarten: %d', 'abschussplan-hgmh'),
+                    $summary_data['species_count']
+                ) . '</li>';
+            }
+
+            $report_summary .= '</ul>';
+        }
+
+        // Generate PDF HTML for attachment if report has PDF format support
+        $pdf_html = null;
+        $pdf_filename = null;
+
+        if (isset($report['pdf_html']) || isset($report['html'])) {
+            // Generate PDF HTML
+            $pdf_html = isset($report['pdf_html']) ? $report['pdf_html'] : $report['html'];
+
+            // Generate filename for PDF
+            $pdf_filename = $this->generate_filename($report_type, 'pdf', $report['metadata']);
+        }
+
+        // Prepare email options
+        $email_options = array(
+            'from_name' => get_option('blogname'),
+            'from_email' => get_option('admin_email')
+        );
+
+        // Add PDF attachment if available
+        if ($pdf_html !== null) {
+            $email_options['pdf_html'] = $pdf_html;
+            $email_options['pdf_filename'] = $pdf_filename;
+        }
+
+        // Send email using email service with template
+        return $this->email_service->send_with_template(
+            $recipient,
+            $subject,
+            'report-email',
+            array(
+                'report_title' => $report_title,
+                'report_period' => $report_period,
+                'report_type' => $report_type,
+                'report_summary' => $report_summary,
+                'has_attachment' => ($pdf_html !== null),
+                'additional_info' => ''
+            ),
+            $email_options
+        );
     }
 
     /**
