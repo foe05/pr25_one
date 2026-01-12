@@ -3,23 +3,23 @@
   "spec": "002-migration-manager-schema",
   "state": "building",
   "subtasks": {
-    "completed": 2,
+    "completed": 4,
     "total": 10,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Migration Manager Core",
+    "current": "Create First Migration (Schema V2)",
     "id": null,
-    "total": 3
+    "total": 2
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 4,
+    "number": 6,
     "started_at": "2026-01-12T22:36:25.563183"
   },
-  "last_update": "2026-01-12T22:45:46.733783"
+  "last_update": "2026-01-12T22:51:55.600552"
 }
