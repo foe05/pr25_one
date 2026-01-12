@@ -101,8 +101,8 @@
             "Graceful fallback to generic mapping for unknown templates",
             "Logs detected template type for debugging"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "✅ LJV Template Detector fully implemented with support for Hessen, Bayern (Bavaria), and NRW state hunting association formats. Features include: Auto-detection via signature header matching, pre-configured column mappings for each regional template, confidence scoring (0.0-1.0) with 0.6 threshold, graceful fallback to empty mapping when no template matches, debug logging when WP_DEBUG enabled, header normalization handling umlauts and special characters, and is_likely_ljv_format() helper method for quick LJV format detection. Includes 4 template definitions: ljv_hessen, ljv_bayern, ljv_nrw, and ljv_generic fallback."
         },
         {
           "subtask_id": "2.3",
@@ -118,8 +118,8 @@
             "Validates species and categories against configured values",
             "Returns array of errors and warnings per row"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "✅ Import Validator Service fully implemented with comprehensive validation features: Required field validation (wildart, kategorie), wildart validation against configured species with case-insensitive fuzzy matching, kategorie validation against wildart-specific categories, meldegruppe validation with warnings for unconfigured values, date format validation supporting multiple formats (DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD, DD/MM/YYYY, etc.) with MySQL conversion, WUS number uniqueness checking against existing database records with caching for performance, detailed error and warning messages with row numbers for user feedback, batch validation via validate_import() method, reset_wus_cache() for multi-batch imports. Returns structured arrays with errors (blocking) and warnings (non-blocking) per row."
         }
       ]
     },
