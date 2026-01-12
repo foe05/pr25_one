@@ -3,7 +3,7 @@
   "spec": "001-advanced-reporting-compliance-tools",
   "state": "building",
   "subtasks": {
-    "completed": 19,
+    "completed": 21,
     "total": 22,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 372,
+    "number": 374,
     "started_at": "2026-01-12T11:20:11.505854"
   },
-  "last_update": "2026-01-12T16:18:27.927806"
+  "last_update": "2026-01-12T16:30:41.536998"
 }
