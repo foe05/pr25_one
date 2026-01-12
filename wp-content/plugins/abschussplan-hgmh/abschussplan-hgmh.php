@@ -35,6 +35,7 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-feature-flags.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
@@ -62,6 +63,20 @@ if (is_admin()) {
 
     // EMERGENCY: Load emergency AJAX handlers for missing methods
     require_once AHGMH_PLUGIN_DIR . 'admin/ajax-handlers-emergency.php';
+
+    // Register Feature Flags admin page
+    add_action('admin_menu', function() {
+        add_submenu_page(
+            'abschussplan-hgmh',
+            'Feature Flags',
+            '🚩 Feature Flags',
+            'manage_options',
+            'hgmh-feature-flags',
+            function() {
+                require_once AHGMH_PLUGIN_DIR . 'admin/feature-flags.php';
+            }
+        );
+    });
 }
 
 /**
