@@ -101,8 +101,8 @@
             "Graceful fallback to generic mapping for unknown templates",
             "Logs detected template type for debugging"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "LJV Template Detector successfully implemented and integrated. Supports templates from Hessen (LJV Hessen), Bavaria (LJV Bayern), and NRW (LJV NRW), plus a generic LJV fallback. Features include: signature-based template detection with confidence scoring (>0.6 threshold), pre-configured column mappings for each template, intelligent header matching with normalization (handles umlauts, special characters), graceful fallback to empty mapping for unknown templates (triggers generic column mapper), debug logging when WP_DEBUG enabled, and extensibility via add_custom_template() method. All acceptance criteria met and committed in a87b8e0."
         },
         {
           "subtask_id": "2.3",
