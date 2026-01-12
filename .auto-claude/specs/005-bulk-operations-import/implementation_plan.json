@@ -4,7 +4,7 @@
   "summary": "Implement bulk operations and data import functionality for the Abschussplan WordPress plugin, including CSV/Excel import with column mapping, preview/validation, bulk updates, batch deletion, and undo capability.",
   "estimated_total_hours": 24,
   "created_at": "2026-01-11T17:29:25.592Z",
-  "updated_at": "2026-01-12T21:00:32.656Z",
+  "updated_at": "2026-01-12T21:02:56.223Z",
   "status": "in_progress",
   "planStatus": "in_progress",
   "phases": [
@@ -45,8 +45,8 @@
             "All handlers verify nonce and user capability",
             "Proper error handling with translatable messages"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "AHGMH_Import_Controller fully implemented with all required AJAX handlers (ajax_upload_file, ajax_get_preview, ajax_execute_import). All acceptance criteria met: secure file upload handling, preview generation, import execution with column mapping, nonce/capability verification on all endpoints, and comprehensive error handling with translatable messages. Follows existing controller patterns. Committed in 7e288a0."
         },
         {
           "subtask_id": "1.3",
