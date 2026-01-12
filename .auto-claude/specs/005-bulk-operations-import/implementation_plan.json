@@ -45,8 +45,8 @@
             "All handlers verify nonce and user capability",
             "Proper error handling with translatable messages"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "AHGMH_Import_Controller fully implemented with all three AJAX handlers (ajax_upload_file, ajax_get_preview, ajax_execute_import). Includes secure file upload validation, nonce/capability verification on all endpoints, duplicate WUS number detection, flexible date parsing for German/international formats, and comprehensive error handling. Follows existing controller patterns. Committed in 7e288a0."
         },
         {
           "subtask_id": "1.3",
