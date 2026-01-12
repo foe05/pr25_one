@@ -34,9 +34,36 @@ class HGMH_Migration_002 {
             return true;
         }
 
+        // Get count of old submissions before migration
+        $old_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}ahgmh_submissions");
+
         $this->migrate_wildarten();
         $this->migrate_hierarchie();
-        $this->migrate_submissions();
+        $migrated_count = $this->migrate_submissions();
+
+        // Validate migration: new count should equal old count
+        $new_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}hgmh_submissions_v2");
+
+        if ($new_count !== $old_count) {
+            $skipped_count = $old_count - $migrated_count;
+            error_log(
+                sprintf(
+                    'HGMH Migration 002 FAILED: Count mismatch! Old: %d, New: %d, Migrated: %d, Skipped: %d',
+                    $old_count,
+                    $new_count,
+                    $migrated_count,
+                    $skipped_count
+                )
+            );
+            return false;
+        }
+
+        error_log(
+            sprintf(
+                'HGMH Migration 002 SUCCESS: Migrated %d submissions from v1 to v2 schema',
+                $new_count
+            )
+        );
 
         return true;
     }
@@ -148,6 +175,8 @@ class HGMH_Migration_002 {
      * - field6 → internal_note
      *
      * All migrated submissions receive status 'approved'
+     *
+     * @return int Number of successfully migrated submissions
      */
     private function migrate_submissions() {
         global $wpdb;
@@ -155,6 +184,9 @@ class HGMH_Migration_002 {
         $submissions = $wpdb->get_results(
             "SELECT * FROM {$wpdb->prefix}ahgmh_submissions"
         );
+
+        $migrated_count = 0;
+        $skipped_count = 0;
 
         foreach ($submissions as $old) {
             // Resolve Wildart ID
@@ -164,6 +196,14 @@ class HGMH_Migration_002 {
             ));
 
             if (!$wildart_id) {
+                $skipped_count++;
+                error_log(
+                    sprintf(
+                        'HGMH Migration 002: Skipping submission ID %d - Wildart "%s" not found',
+                        $old->id,
+                        $old->game_species
+                    )
+                );
                 continue;
             }
 
@@ -176,11 +216,20 @@ class HGMH_Migration_002 {
             ", $wildart_id, $old->field5));
 
             if (!$eigenjagdbezirk_id) {
+                $skipped_count++;
+                error_log(
+                    sprintf(
+                        'HGMH Migration 002: Skipping submission ID %d - Eigenjagdbezirk "%s" not found for Wildart ID %d',
+                        $old->id,
+                        $old->field5,
+                        $wildart_id
+                    )
+                );
                 continue;
             }
 
             // Insert into new schema
-            $wpdb->insert(
+            $result = $wpdb->insert(
                 $wpdb->prefix . 'hgmh_submissions_v2',
                 array(
                     'wildart_id' => $wildart_id,
@@ -196,7 +245,22 @@ class HGMH_Migration_002 {
                     'approved_at' => $old->created_at
                 )
             );
+
+            if ($result !== false) {
+                $migrated_count++;
+            }
         }
+
+        if ($skipped_count > 0) {
+            error_log(
+                sprintf(
+                    'HGMH Migration 002: Skipped %d submissions due to missing references',
+                    $skipped_count
+                )
+            );
+        }
+
+        return $migrated_count;
     }
 
     /**
