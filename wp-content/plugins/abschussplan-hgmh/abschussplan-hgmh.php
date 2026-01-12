@@ -53,6 +53,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-compliance-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-reports-view.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-schedule-settings-view.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-dashboard-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-data-controller.php';
@@ -63,6 +64,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-compliance-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-reports-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-schedule-controller.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
 

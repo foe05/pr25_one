@@ -100,6 +100,16 @@ class AHGMH_Admin_Page_Modern {
             array($this, 'render_reports')
         );
 
+        // Scheduled Reports
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Geplante Berichte', 'abschussplan-hgmh'),
+            __('🕐 Geplante Berichte', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-scheduled-reports',
+            array($this, 'render_scheduled_reports')
+        );
+
         // Data Management (Meldungen)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -328,6 +338,14 @@ class AHGMH_Admin_Page_Modern {
     public function render_reports() {
         $reports_controller = new AHGMH_Reports_Controller();
         $reports_controller->render();
+    }
+
+    /**
+     * Render scheduled reports page
+     */
+    public function render_scheduled_reports() {
+        $schedule_controller = new AHGMH_Schedule_Controller();
+        $schedule_controller->render();
     }
 
     /**
