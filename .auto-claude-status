@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "009-activity-logging",
+  "state": "building",
+  "subtasks": {
+    "completed": 4,
+    "total": 7,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Cron Job Setup",
+    "id": null,
+    "total": 1
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 6,
+    "started_at": "2026-01-13T00:02:27.690177"
+  },
+  "last_update": "2026-01-13T00:15:51.164133"
+}
