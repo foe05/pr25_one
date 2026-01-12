@@ -50,7 +50,12 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_edit_obmann_assignment', array($this, 'ajax_edit_obmann_assignment'));
         add_action('wp_ajax_ahgmh_get_obmann_assignments', array($this, 'ajax_get_obmann_assignments'));
         add_action('wp_ajax_ahgmh_reset_all_assignments', array($this, 'ajax_reset_all_assignments'));
-        
+
+        // Migration AJAX handlers
+        add_action('wp_ajax_ahgmh_run_migration', array($this, 'ajax_run_migration'));
+        add_action('wp_ajax_ahgmh_get_migration_status', array($this, 'ajax_get_migration_status'));
+        add_action('wp_ajax_ahgmh_rollback_migration', array($this, 'ajax_rollback_migration'));
+
         // Add WordPress dashboard widget
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
     }
@@ -4846,6 +4851,98 @@ class AHGMH_Admin_Page_Modern {
         }
         </script>
         <?php
+    }
+
+    /**
+     * AJAX: Run migration to target version
+     */
+    public function ajax_run_migration() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
+        }
+
+        $target_version = isset($_POST['target_version']) ? intval($_POST['target_version']) : null;
+
+        // Get migration manager instance
+        $migration_manager = new AHGMH_Migration_Manager();
+
+        // Run migrations
+        $result = $migration_manager->migrate_to($target_version);
+
+        if ($result['success']) {
+            wp_send_json_success(array(
+                'message' => __('Migration erfolgreich durchgeführt', 'abschussplan-hgmh'),
+                'final_version' => $result['final_version'],
+                'log' => $result['log']
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => __('Migration fehlgeschlagen', 'abschussplan-hgmh'),
+                'final_version' => $result['final_version'],
+                'log' => $result['log']
+            ));
+        }
+    }
+
+    /**
+     * AJAX: Get migration status
+     */
+    public function ajax_get_migration_status() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
+        }
+
+        // Get migration manager instance
+        $migration_manager = new AHGMH_Migration_Manager();
+
+        $current_version = $migration_manager->get_current_version();
+        $available_migrations = $migration_manager->get_available_migrations();
+
+        wp_send_json_success(array(
+            'current_version' => $current_version,
+            'migrations' => array_values($available_migrations)
+        ));
+    }
+
+    /**
+     * AJAX: Rollback migration to target version
+     */
+    public function ajax_rollback_migration() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
+        }
+
+        $target_version = isset($_POST['target_version']) ? intval($_POST['target_version']) : 0;
+
+        if ($target_version < 0) {
+            wp_send_json_error(__('Ungültige Zielversion', 'abschussplan-hgmh'));
+        }
+
+        // Get migration manager instance
+        $migration_manager = new AHGMH_Migration_Manager();
+
+        // Run rollback
+        $result = $migration_manager->rollback_to($target_version);
+
+        if ($result['success']) {
+            wp_send_json_success(array(
+                'message' => __('Rollback erfolgreich durchgeführt', 'abschussplan-hgmh'),
+                'final_version' => $result['final_version'],
+                'log' => $result['log']
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => __('Rollback fehlgeschlagen', 'abschussplan-hgmh'),
+                'final_version' => $result['final_version'],
+                'log' => $result['log']
+            ));
+        }
     }
 
 
