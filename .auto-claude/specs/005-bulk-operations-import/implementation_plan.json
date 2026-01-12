@@ -4,7 +4,7 @@
   "summary": "Implement bulk operations and data import functionality for the Abschussplan WordPress plugin, including CSV/Excel import with column mapping, preview/validation, bulk updates, batch deletion, and undo capability.",
   "estimated_total_hours": 24,
   "created_at": "2026-01-11T17:29:25.592Z",
-  "updated_at": "2026-01-12T20:52:00.075Z",
+  "updated_at": "2026-01-12T21:00:32.656Z",
   "status": "in_progress",
   "planStatus": "in_progress",
   "phases": [
@@ -29,7 +29,7 @@
             "Returns structured array with headers and data"
           ],
           "status": "completed",
-          "notes": "AHGMH_Import_Service class fully implemented with CSV/Excel parsing, UTF-8/UTF-16 encoding detection, BOM handling, automatic delimiter detection (comma/semicolon), and structured data extraction. All acceptance criteria met."
+          "notes": "AHGMH_Import_Service class fully implemented with all required features: CSV/Excel parsing, UTF-8/UTF-16 encoding detection, semicolon/comma delimiter support, BOM handling, data extraction with sanitization, and preview functionality. All acceptance criteria met."
         },
         {
           "subtask_id": "1.2",
@@ -547,5 +547,5 @@
       "mitigation": "Validate WUS numbers against existing records, preview before commit"
     }
   ],
-  "recoveryNote": "Task recovered from stuck state at 2026-01-12T10:19:45.433Z"
+  "recoveryNote": "Task recovered from stuck state at 2026-01-12T21:00:07.906Z"
 }
