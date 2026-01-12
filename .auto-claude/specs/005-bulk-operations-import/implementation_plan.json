@@ -4,7 +4,7 @@
   "summary": "Implement bulk operations and data import functionality for the Abschussplan WordPress plugin, including CSV/Excel import with column mapping, preview/validation, bulk updates, batch deletion, and undo capability.",
   "estimated_total_hours": 24,
   "created_at": "2026-01-11T17:29:25.592Z",
-  "updated_at": "2026-01-11T22:30:00.000Z",
+  "updated_at": "2026-01-12T09:03:38.804Z",
   "status": "in_progress",
   "planStatus": "in_progress",
   "phases": [
@@ -29,7 +29,7 @@
             "Returns structured array with headers and data"
           ],
           "status": "completed",
-          "notes": "✅ Import service fully implemented with all features: CSV/Excel parsing, encoding detection (UTF-8/UTF-16), BOM removal, delimiter auto-detection (comma/semicolon for German Excel), preview functionality, and secure file handling with automatic cleanup."
+          "notes": "AHGMH_Import_Service class fully implemented with CSV/Excel parsing, UTF-8/UTF-16 encoding detection, BOM removal, automatic delimiter detection (comma/semicolon for German Excel), file upload handling with security validation, preview functionality, and automatic cleanup scheduling. All acceptance criteria met."
         },
         {
           "subtask_id": "1.2",
@@ -45,8 +45,8 @@
             "All handlers verify nonce and user capability",
             "Proper error handling with translatable messages"
           ],
-          "status": "completed",
-          "notes": "✅ Import Controller fully implemented with all required AJAX handlers: ajax_upload_file (secure file upload with validation), ajax_get_preview (returns first 5-20 rows), and ajax_execute_import (processes mapped data with duplicate detection, date parsing, and error handling). All handlers include nonce verification, capability checks, and translatable error messages. Follows existing controller patterns."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "1.3",
@@ -60,8 +60,8 @@
             "AJAX actions registered properly",
             "No PHP errors on admin load"
           ],
-          "status": "completed",
-          "notes": "✅ Import controller successfully integrated into main plugin file. Added includes for class-import-service.php and class-import-controller.php in admin context. Instantiated AHGMH_Import_Controller following the existing pattern (similar to AHGMH_Page_Views_Controller). AJAX handlers (ahgmh_upload_file, ahgmh_get_preview, ahgmh_execute_import) are now registered and ready to handle import requests."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
@@ -85,8 +85,8 @@
             "Returns confidence score for mappings",
             "Supports manual mapping override"
           ],
-          "status": "completed",
-          "notes": "✅ Column Mapping Service fully implemented with all features: Auto-detection of German column names (Datum, Wildart, Kategorie, Meldegruppe, Jagdbezirk, WUS-Nummer, Bemerkung) with multiple variations, pattern analysis for date/number/text fields using regex patterns, confidence scoring system (0.0-1.0) with weighted average for required fields, string normalization and similarity matching using Levenshtein distance, manual mapping override support with validation, field definitions with labels and required flags. Supports exact matches, partial matches, and fuzzy matching with configurable confidence thresholds."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "2.2",
@@ -101,8 +101,8 @@
             "Graceful fallback to generic mapping for unknown templates",
             "Logs detected template type for debugging"
           ],
-          "status": "completed",
-          "notes": "✅ LJV Template Detector fully implemented with support for Hessen, Bayern (Bavaria), and NRW state hunting association formats. Features include: Auto-detection via signature header matching, pre-configured column mappings for each regional template, confidence scoring (0.0-1.0) with 0.6 threshold, graceful fallback to empty mapping when no template matches, debug logging when WP_DEBUG enabled, header normalization handling umlauts and special characters, and is_likely_ljv_format() helper method for quick LJV format detection. Includes 4 template definitions: ljv_hessen, ljv_bayern, ljv_nrw, and ljv_generic fallback."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "2.3",
@@ -118,8 +118,8 @@
             "Validates species and categories against configured values",
             "Returns array of errors and warnings per row"
           ],
-          "status": "completed",
-          "notes": "✅ Import Validator Service fully implemented with comprehensive validation features: Required field validation (wildart, kategorie), wildart validation against configured species with case-insensitive fuzzy matching, kategorie validation against wildart-specific categories, meldegruppe validation with warnings for unconfigured values, date format validation supporting multiple formats (DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD, DD/MM/YYYY, etc.) with MySQL conversion, WUS number uniqueness checking against existing database records with caching for performance, detailed error and warning messages with row numbers for user feedback, batch validation via validate_import() method, reset_wus_cache() for multi-batch imports. Returns structured arrays with errors (blocking) and warnings (non-blocking) per row."
+          "status": "pending",
+          "notes": ""
         }
       ]
     },
@@ -143,8 +143,8 @@
             "Shows preview of first 5 rows",
             "Shows validation errors/warnings inline"
           ],
-          "status": "completed",
-          "notes": "✅ Import View class fully implemented with all required features: File upload dropzone with drag-and-drop support, supported file types display (CSV, XLSX, LJV templates), column mapping interface with dropdowns for all fields (datum, wildart, kategorie, meldegruppe, jagdbezirk, wus_nummer, bemerkung), preview table showing first 5 rows with scrollable container, validation errors/warnings inline display, four-step workflow (Upload → Mapping → Preview → Complete), progress indicators for upload and import operations, follows existing view patterns, uses WordPress escaping and translation functions, all UI text in German. Committed as ce88192."
+          "status": "pending",
+          "notes": ""
         },
         {
           "subtask_id": "3.2",
