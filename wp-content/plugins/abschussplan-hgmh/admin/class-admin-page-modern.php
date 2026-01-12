@@ -674,22 +674,41 @@ class AHGMH_Admin_Page_Modern {
     private function render_submissions_table() {
         $database = abschussplan_hgmh()->database;
         $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
-        
+
         // Get parameters
         $per_page = 20;
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $offset = ($page - 1) * $per_page;
         $species_filter = isset($_GET['species']) ? sanitize_text_field($_GET['species']) : '';
-        
+
         // Get submissions
         $submissions = $database->get_submissions_by_species($per_page, $offset, $species_filter);
         $total_submissions = $database->count_submissions_by_species($species_filter);
         $total_pages = ceil($total_submissions / $per_page);
-        
+
+        // Get jagdbezirke for bulk assign dropdown
+        $jagdbezirke = $database->get_jagdbezirke();
+
         ?>
         <div class="ahgmh-panel">
             <div class="tablenav top">
-                <div class="alignleft actions">
+                <div class="alignleft actions bulkactions">
+                    <label for="bulk-action-selector-top" class="screen-reader-text"><?php echo esc_html__('Massenaktion wählen', 'abschussplan-hgmh'); ?></label>
+                    <select name="action" id="bulk-action-selector-top">
+                        <option value="-1"><?php echo esc_html__('Massenaktionen', 'abschussplan-hgmh'); ?></option>
+                        <option value="bulk_delete"><?php echo esc_html__('Löschen', 'abschussplan-hgmh'); ?></option>
+                        <option value="bulk_assign"><?php echo esc_html__('Jagdbezirk zuweisen', 'abschussplan-hgmh'); ?></option>
+                    </select>
+                    <button type="button" id="doaction" class="button action" disabled>
+                        <?php echo esc_html__('Anwenden', 'abschussplan-hgmh'); ?>
+                    </button>
+
+                    <span class="bulk-select-info" style="margin-left: 10px; display: none;">
+                        <strong><span id="bulk-selected-count">0</span></strong> <?php echo esc_html__('ausgewählt', 'abschussplan-hgmh'); ?>
+                    </span>
+                </div>
+
+                <div class="alignleft actions" style="margin-left: 10px;">
                     <form method="get" style="display: inline-block;">
                         <input type="hidden" name="page" value="abschussplan-hgmh-data">
                         <input type="hidden" name="tab" value="submissions">
@@ -702,12 +721,17 @@ class AHGMH_Admin_Page_Modern {
                             <?php endforeach; ?>
                         </select>
                     </form>
-                    
+
                     <button class="button button-secondary ahgmh-export-btn" data-format="csv" data-species="<?php echo esc_attr($species_filter); ?>">
                         <span class="dashicons dashicons-download"></span>
                         <?php echo esc_html__('Aktuelle Auswahl exportieren', 'abschussplan-hgmh'); ?>
                     </button>
                 </div>
+
+                <!-- Hidden jagdbezirke data for JS -->
+                <script type="text/javascript">
+                    var ahgmh_jagdbezirke = <?php echo json_encode(array_map(function($jb) { return $jb['jagdbezirk']; }, $jagdbezirke)); ?>;
+                </script>
                 
                 <?php if ($total_pages > 1): ?>
                 <div class="tablenav-pages">
@@ -735,6 +759,10 @@ class AHGMH_Admin_Page_Modern {
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
+                        <td id="cb" class="manage-column column-cb check-column">
+                            <label class="screen-reader-text" for="cb-select-all-1"><?php echo esc_html__('Alle auswählen', 'abschussplan-hgmh'); ?></label>
+                            <input id="cb-select-all-1" type="checkbox">
+                        </td>
                         <th scope="col"><?php echo esc_html__('ID', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Wildart', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
@@ -749,13 +777,23 @@ class AHGMH_Admin_Page_Modern {
                 <tbody>
                     <?php if (empty($submissions)): ?>
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 20px;">
+                            <td colspan="10" style="text-align: center; padding: 20px;">
                                 <?php echo esc_html__('Keine Meldungen gefunden.', 'abschussplan-hgmh'); ?>
                             </td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($submissions as $submission): ?>
                             <tr>
+                                <th scope="row" class="check-column">
+                                    <label class="screen-reader-text" for="cb-select-<?php echo esc_attr($submission['id']); ?>">
+                                        <?php printf(esc_html__('Meldung %s auswählen', 'abschussplan-hgmh'), $submission['id']); ?>
+                                    </label>
+                                    <input id="cb-select-<?php echo esc_attr($submission['id']); ?>"
+                                           type="checkbox"
+                                           name="submission[]"
+                                           value="<?php echo esc_attr($submission['id']); ?>"
+                                           class="ahgmh-submission-checkbox">
+                                </th>
                                 <td><?php echo esc_html($submission['id']); ?></td>
                                 <td><?php echo esc_html($submission['game_species']); ?></td>
                                 <td><?php echo esc_html($submission['field2']); ?></td>
@@ -765,11 +803,11 @@ class AHGMH_Admin_Page_Modern {
                                 <td><?php echo esc_html($submission['field5']); ?></td>
                                 <td><?php echo esc_html(mysql2date('d.m.Y H:i', $submission['created_at'])); ?></td>
                                 <td>
-                                    <button class="button button-small button-secondary ahgmh-edit-submission" 
+                                    <button class="button button-small button-secondary ahgmh-edit-submission"
                                             data-id="<?php echo esc_attr($submission['id']); ?>">
                                         <?php echo esc_html__('Bearbeiten', 'abschussplan-hgmh'); ?>
                                     </button>
-                                    <button class="button button-small button-link-delete ahgmh-delete-submission" 
+                                    <button class="button button-small button-link-delete ahgmh-delete-submission"
                                             data-id="<?php echo esc_attr($submission['id']); ?>"
                                             data-nonce="<?php echo wp_create_nonce('ahgmh_delete_submission'); ?>">
                                         <?php echo esc_html__('Löschen', 'abschussplan-hgmh'); ?>

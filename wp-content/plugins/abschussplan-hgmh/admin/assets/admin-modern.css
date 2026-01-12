@@ -1699,22 +1699,98 @@
     .limits-matrix {
         overflow-x: auto;
     }
-    
+
     .ahgmh-limits-table,
     .ahgmh-ist-table,
     .ahgmh-ist-breakdown-table {
         min-width: 600px;
     }
-    
+
     .limit-mode-selector label {
         display: block;
         margin-right: 0;
         margin-bottom: 8px;
     }
-    
+
     .limits-save-section {
         flex-direction: column;
         align-items: stretch;
         gap: 10px;
+    }
+}
+
+/* === Bulk Actions Styles === */
+.check-column {
+    width: 2.2em;
+    padding: 8px 0 0 0;
+    vertical-align: top;
+}
+
+.check-column input[type="checkbox"] {
+    margin: 0 0 0 8px;
+    cursor: pointer;
+}
+
+.column-cb input[type="checkbox"] {
+    margin: 0;
+}
+
+.bulkactions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bulkactions select {
+    float: none;
+    margin: 0;
+}
+
+.bulkactions .button {
+    float: none;
+    margin: 0;
+}
+
+.bulk-select-info {
+    color: #646970;
+    font-size: 13px;
+    padding: 4px 8px;
+    background: #f0f6fc;
+    border-radius: 4px;
+    border: 1px solid #72aee6;
+}
+
+.bulk-select-info strong {
+    color: #2271b1;
+    font-weight: 600;
+}
+
+/* Bulk assign dialog improvements */
+.ahgmh-bulk-assign-dialog select {
+    font-size: 14px;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+}
+
+.ahgmh-bulk-assign-dialog select:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+/* Responsive bulk actions */
+@media (max-width: 782px) {
+    .bulkactions {
+        flex-wrap: wrap;
+    }
+
+    .bulk-select-info {
+        width: 100%;
+        margin-top: 8px;
+        text-align: center;
+    }
+
+    .check-column {
+        width: 3em;
     }
 }
