@@ -263,4 +263,25 @@ class AHGMH_Activity_Logger {
 
         return null;
     }
+
+    /**
+     * Clean up old logs
+     *
+     * @param int $days Number of days to keep (older logs will be deleted)
+     * @return int|false Number of deleted rows or false on failure
+     */
+    public function cleanup_old_logs($days = 90) {
+        global $wpdb;
+
+        $date_threshold = date('Y-m-d H:i:s', strtotime("-{$days} days"));
+
+        $result = $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$this->table_name} WHERE created_at < %s",
+                $date_threshold
+            )
+        );
+
+        return $result;
+    }
 }
