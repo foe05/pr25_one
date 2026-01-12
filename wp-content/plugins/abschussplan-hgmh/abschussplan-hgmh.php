@@ -172,6 +172,9 @@ class Abschussplan_HGMH {
         // Create database table
         $this->database->create_table();
 
+        // Register scheduled report cron hooks
+        ahgmh_register_scheduled_report_hooks();
+
         // Flush rewrite rules
         flush_rewrite_rules();
     }
@@ -312,6 +315,133 @@ function ahgmh_activate_plugin() {
         update_option($damwild_categories_key, $damwild_categories);
     }
 }
+
+/**
+ * Add custom cron intervals for scheduled reports
+ */
+function ahgmh_add_cron_intervals($schedules) {
+    // Add weekly interval (7 days)
+    if (!isset($schedules['weekly'])) {
+        $schedules['weekly'] = array(
+            'interval' => 604800, // 7 days in seconds
+            'display'  => __('Once Weekly', 'abschussplan-hgmh')
+        );
+    }
+
+    // Add monthly interval (30 days)
+    if (!isset($schedules['monthly'])) {
+        $schedules['monthly'] = array(
+            'interval' => 2592000, // 30 days in seconds
+            'display'  => __('Once Monthly', 'abschussplan-hgmh')
+        );
+    }
+
+    return $schedules;
+}
+add_filter('cron_schedules', 'ahgmh_add_cron_intervals');
+
+/**
+ * Execute a scheduled report
+ * This is the callback function for WP Cron
+ *
+ * @param string $schedule_id The schedule ID to execute
+ */
+function ahgmh_execute_scheduled_report($schedule_id) {
+    try {
+        error_log('AHGMH Cron: Starting execution of schedule - ' . $schedule_id);
+
+        // Initialize scheduler service
+        $scheduler = new AHGMH_Scheduler_Service();
+
+        // Execute the schedule
+        $result = $scheduler->execute_schedule($schedule_id);
+
+        if ($result['success']) {
+            error_log('AHGMH Cron: Successfully executed schedule - ' . $schedule_id);
+        } else {
+            $error_msg = isset($result['error']) ? $result['error'] : 'Unknown error';
+            error_log('AHGMH Cron: Failed to execute schedule - ' . $schedule_id . ': ' . $error_msg);
+        }
+
+    } catch (Exception $e) {
+        error_log('AHGMH Cron: Exception executing schedule - ' . $schedule_id . ': ' . $e->getMessage());
+    }
+}
+
+/**
+ * Register WP Cron action hooks for all scheduled reports
+ * This hook handles all scheduled report execution callbacks
+ */
+function ahgmh_register_scheduled_report_hooks() {
+    // Get all schedules
+    $scheduler = new AHGMH_Scheduler_Service();
+    $schedules = $scheduler->get_all_schedules();
+
+    // Register action hook for each schedule
+    foreach ($schedules as $schedule) {
+        $hook_name = 'ahgmh_scheduled_report_' . $schedule['id'];
+
+        // Remove existing action to prevent duplicates
+        remove_action($hook_name, 'ahgmh_execute_scheduled_report');
+
+        // Add action hook
+        add_action($hook_name, 'ahgmh_execute_scheduled_report', 10, 1);
+
+        error_log('AHGMH: Registered cron action hook - ' . $hook_name);
+    }
+}
+
+/**
+ * Ensure scheduled report cron hooks are registered on init
+ * This runs on every WordPress init to ensure hooks are properly registered
+ */
+function ahgmh_ensure_scheduled_report_hooks() {
+    // Only run in admin or during cron
+    if (!is_admin() && !defined('DOING_CRON')) {
+        return;
+    }
+
+    ahgmh_register_scheduled_report_hooks();
+}
+add_action('init', 'ahgmh_ensure_scheduled_report_hooks');
+
+/**
+ * Clean up all scheduled report cron jobs
+ * Called on plugin deactivation
+ */
+function ahgmh_clear_scheduled_reports() {
+    try {
+        error_log('AHGMH: Clearing all scheduled report cron jobs');
+
+        // Get all schedules
+        $scheduler = new AHGMH_Scheduler_Service();
+        $schedules = $scheduler->get_all_schedules();
+
+        $cleared_count = 0;
+
+        // Clear cron for each schedule
+        foreach ($schedules as $schedule) {
+            $hook_name = 'ahgmh_scheduled_report_' . $schedule['id'];
+
+            // Find and clear all scheduled events for this hook
+            $timestamp = wp_next_scheduled($hook_name, array($schedule['id']));
+            while ($timestamp) {
+                wp_unschedule_event($timestamp, $hook_name, array($schedule['id']));
+                $cleared_count++;
+                error_log('AHGMH: Cleared scheduled event - ' . $hook_name . ' at ' . date('Y-m-d H:i:s', $timestamp));
+
+                // Check for more events
+                $timestamp = wp_next_scheduled($hook_name, array($schedule['id']));
+            }
+        }
+
+        error_log('AHGMH: Cleared ' . $cleared_count . ' scheduled report cron job(s)');
+
+    } catch (Exception $e) {
+        error_log('AHGMH: Error clearing scheduled reports - ' . $e->getMessage());
+    }
+}
+register_deactivation_hook(__FILE__, 'ahgmh_clear_scheduled_reports');
 
 /**
  * Cron job for automatic page views cleanup
