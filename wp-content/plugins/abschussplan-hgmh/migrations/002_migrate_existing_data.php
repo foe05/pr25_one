@@ -31,6 +31,7 @@ class HGMH_Migration_002 {
         // Skip if old table doesn't exist
         $exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}ahgmh_submissions'");
         if (!$exists) {
+            update_option('ahgmh_migration_002_completed', true);
             return true;
         }
 
@@ -65,6 +66,7 @@ class HGMH_Migration_002 {
             )
         );
 
+        update_option('ahgmh_migration_002_completed', true);
         return true;
     }
 
