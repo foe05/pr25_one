@@ -55,6 +55,9 @@ class AHGMH_Database_Handler {
 
         // Create page views tracking table
         $this->create_page_views_table();
+
+        // Run data migration from v1 to v2 schema if needed
+        $this->run_migration_002();
     }
     
     /**
@@ -63,7 +66,52 @@ class AHGMH_Database_Handler {
     public function get_table_name() {
         return $this->table_name;
     }
-    
+
+    /**
+     * Run migration 002 to migrate existing data from v1 to v2 schema
+     *
+     * This method is called during database upgrades to migrate existing data
+     * from the old schema (field1-6) to the new normalized schema.
+     *
+     * @return bool True on success, false on failure
+     */
+    public function run_migration_002() {
+        // Check if migration has already been completed
+        if (get_option('ahgmh_migration_002_completed', false)) {
+            return true;
+        }
+
+        // Check if migration file exists
+        $migration_file = AHGMH_PLUGIN_DIR . 'migrations/002_migrate_existing_data.php';
+        if (!file_exists($migration_file)) {
+            error_log('HGMH Migration 002: Migration file not found at ' . $migration_file);
+            return false;
+        }
+
+        // Load the migration file
+        require_once $migration_file;
+
+        // Check if class exists
+        if (!class_exists('HGMH_Migration_002')) {
+            error_log('HGMH Migration 002: HGMH_Migration_002 class not found');
+            return false;
+        }
+
+        // Instantiate and run the migration
+        $migration = new HGMH_Migration_002();
+        $result = $migration->up();
+
+        // Track completion if successful
+        if ($result) {
+            update_option('ahgmh_migration_002_completed', true);
+            error_log('HGMH Migration 002: Successfully completed and marked as done');
+        } else {
+            error_log('HGMH Migration 002: Migration failed');
+        }
+
+        return $result;
+    }
+
     /**
      * Create the Jagdbezirk configuration table
      */
