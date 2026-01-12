@@ -30,6 +30,7 @@ define('AHGMH_DB_VERSION', '4');
 
 // Include required files
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-migration-manager.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
