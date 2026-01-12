@@ -59,15 +59,28 @@ class AHGMH_Compliance_View {
     }
 
     /**
-     * Render filter bar with species and meldegruppe dropdowns
+     * Render filter bar with species, meldegruppe, and season dropdowns
      *
      * @param array $species_list Available species
      * @param array $meldegruppen Available meldegruppen
      * @param array $current_filters Currently applied filters
      */
     private function render_filter_bar($species_list, $meldegruppen, $current_filters) {
+        $hunting_seasons = $this->get_hunting_seasons();
         ?>
         <div class="ahgmh-compliance-filters">
+            <div class="filter-group">
+                <label for="compliance-season-filter"><?php echo esc_html__('Jagdjahr:', 'abschussplan-hgmh'); ?></label>
+                <select id="compliance-season-filter" name="season" class="regular-text">
+                    <option value=""><?php echo esc_html__('Aktuelles Jagdjahr', 'abschussplan-hgmh'); ?></option>
+                    <?php foreach ($hunting_seasons as $season_key => $season_label): ?>
+                        <option value="<?php echo esc_attr($season_key); ?>" <?php selected($current_filters['season'], $season_key); ?>>
+                            <?php echo esc_html($season_label); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
             <div class="filter-group">
                 <label for="compliance-species-filter"><?php echo esc_html__('Wildart:', 'abschussplan-hgmh'); ?></label>
                 <select id="compliance-species-filter" name="species" class="regular-text">
@@ -274,6 +287,7 @@ class AHGMH_Compliance_View {
         jQuery(document).ready(function($) {
             // Apply filters
             $('#apply-compliance-filters').on('click', function() {
+                var season = $('#compliance-season-filter').val();
                 var species = $('#compliance-species-filter').val();
                 var meldegruppe = $('#compliance-meldegruppe-filter').val();
 
@@ -283,6 +297,7 @@ class AHGMH_Compliance_View {
                     data: {
                         action: 'ahgmh_compliance_filter',
                         nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>',
+                        season: season,
                         species: species,
                         meldegruppe: meldegruppe
                     },
@@ -403,5 +418,41 @@ class AHGMH_Compliance_View {
         ];
 
         return isset($labels[$status]) ? $labels[$status] : $labels['good'];
+    }
+
+    /**
+     * Get available hunting seasons for filter dropdown
+     * German hunting season runs from April 1 to March 31 of the following year
+     *
+     * @return array Hunting seasons with keys (YYYY-YYYY) and labels
+     */
+    private function get_hunting_seasons() {
+        $seasons = [];
+        $current_year = intval(date('Y'));
+        $current_month = intval(date('m'));
+
+        // Determine the current hunting season
+        // If before April, we're still in the previous season
+        if ($current_month < 4) {
+            $current_season_start = $current_year - 1;
+        } else {
+            $current_season_start = $current_year;
+        }
+
+        // Generate last 5 hunting seasons
+        for ($i = 0; $i < 5; $i++) {
+            $season_start_year = $current_season_start - $i;
+            $season_end_year = $season_start_year + 1;
+            $season_key = $season_start_year . '-' . $season_end_year;
+            $season_label = sprintf(
+                __('Jagdjahr %d/%d', 'abschussplan-hgmh'),
+                $season_start_year,
+                $season_end_year
+            );
+
+            $seasons[$season_key] = $season_label;
+        }
+
+        return $seasons;
     }
 }
