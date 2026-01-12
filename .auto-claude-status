@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "008-email-service",
+  "state": "planning",
+  "subtasks": {
+    "completed": 0,
+    "total": 0,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Email Service Core",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 2,
+    "started_at": "2026-01-13T00:02:23.698748"
+  },
+  "last_update": "2026-01-13T00:06:53.798498"
+}

@@ -55,6 +55,9 @@ class AHGMH_Database_Handler {
 
         // Create page views tracking table
         $this->create_page_views_table();
+
+        // Create email log table
+        $this->create_email_log_table();
     }
     
     /**
@@ -124,6 +127,32 @@ class AHGMH_Database_Handler {
             KEY shortcode_name (shortcode_name),
             KEY user_id (user_id),
             KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+     * Create the email log table
+     */
+    public function create_email_log_table() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'ahgmh_email_log';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            email_type varchar(100) NOT NULL,
+            recipient varchar(255) NOT NULL,
+            subject text NOT NULL,
+            sent_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            submission_id bigint(20) DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY email_type (email_type),
+            KEY submission_id (submission_id),
+            KEY sent_at (sent_at)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
