@@ -258,6 +258,12 @@ class AHGMH_Reports_View {
                 </label>
 
                 <label class="ahgmh-output-format-option">
+                    <input type="radio" name="output_format" value="pdf">
+                    <span class="dashicons dashicons-pdf"></span>
+                    <?php echo esc_html__('PDF herunterladen', 'abschussplan-hgmh'); ?>
+                </label>
+
+                <label class="ahgmh-output-format-option">
                     <input type="radio" name="output_format" value="email">
                     <span class="dashicons dashicons-email"></span>
                     <?php echo esc_html__('Per E-Mail senden', 'abschussplan-hgmh'); ?>
@@ -593,6 +599,8 @@ class AHGMH_Reports_View {
                         this.previewReport(data);
                     } else if (outputFormat === 'csv') {
                         this.downloadCSV(data);
+                    } else if (outputFormat === 'pdf') {
+                        this.downloadPDF(data);
                     } else if (outputFormat === 'email') {
                         this.emailReport(data);
                     }
@@ -720,6 +728,38 @@ class AHGMH_Reports_View {
                     $('#report-preview-container').html(
                         '<div class="ahgmh-reports-success">' +
                         '<?php echo esc_js(__('CSV-Download wurde gestartet.', 'abschussplan-hgmh')); ?>' +
+                        '</div>'
+                    );
+                },
+
+                downloadPDF: function(data) {
+                    var $btn = $('#generate-report-btn');
+
+                    // Create form for PDF download
+                    var form = $('<form>', {
+                        method: 'POST',
+                        action: ajaxurl
+                    });
+
+                    // Add data as hidden fields
+                    data.action = 'ahgmh_download_report_pdf';
+                    $.each(data, function(key, value) {
+                        form.append($('<input>', {
+                            type: 'hidden',
+                            name: key,
+                            value: value
+                        }));
+                    });
+
+                    // Submit form
+                    $('body').append(form);
+                    form.submit();
+                    form.remove();
+
+                    // Show success message
+                    $('#report-preview-container').html(
+                        '<div class="ahgmh-reports-success">' +
+                        '<?php echo esc_js(__('PDF-Download wurde gestartet.', 'abschussplan-hgmh')); ?>' +
                         '</div>'
                     );
                 },

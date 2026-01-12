@@ -45,6 +45,7 @@ class AHGMH_Reports_Controller {
         add_action('wp_ajax_ahgmh_generate_report', array($this, 'ajax_generate_report'));
         add_action('wp_ajax_ahgmh_preview_report', array($this, 'ajax_preview_report'));
         add_action('wp_ajax_ahgmh_download_report_csv', array($this, 'ajax_download_csv'));
+        add_action('wp_ajax_ahgmh_download_report_pdf', array($this, 'ajax_download_pdf'));
         add_action('wp_ajax_ahgmh_email_report', array($this, 'ajax_email_report'));
     }
 
@@ -221,6 +222,89 @@ class AHGMH_Reports_Controller {
         } catch (Exception $e) {
             error_log('AHGMH CSV Download Error: ' . $e->getMessage());
             wp_send_json_error($e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX handler for PDF download
+     */
+    public function ajax_download_pdf() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        try {
+            // Get and validate parameters
+            $report_type = isset($_POST['report_type']) ? sanitize_text_field($_POST['report_type']) : '';
+
+            // Validate report type
+            $valid_types = ['seasonal', 'date_range', 'compliance', 'trend'];
+            if (!in_array($report_type, $valid_types)) {
+                throw new Exception(__('Ungültiger Berichtstyp', 'abschussplan-hgmh'));
+            }
+
+            // Get filters
+            $filters = $this->get_filters_from_request();
+
+            // Validate date ranges
+            $dates = $this->get_dates_from_request($report_type);
+            if (isset($dates['error'])) {
+                throw new Exception($dates['error']);
+            }
+
+            // Generate report with PDF format
+            $report = $this->generate_report($report_type, $dates, $filters, 'pdf');
+
+            if (isset($report['error'])) {
+                throw new Exception($report['message']);
+            }
+
+            if (!isset($report['pdf_html'])) {
+                throw new Exception(__('PDF-HTML konnte nicht generiert werden', 'abschussplan-hgmh'));
+            }
+
+            // Load PDF service
+            require_once AHGMH_PLUGIN_DIR . 'admin/services/class-pdf-service.php';
+
+            // Check if DOMPDF is available
+            if (!class_exists('Dompdf\Dompdf')) {
+                throw new Exception(__('PDF-Bibliothek nicht verfügbar. Bitte installieren Sie Composer-Abhängigkeiten.', 'abschussplan-hgmh'));
+            }
+
+            // Initialize PDF service
+            $pdf_service = new AHGMH_PDF_Service([
+                'page_size' => 'A4',
+                'orientation' => 'portrait'
+            ]);
+
+            // Check PDF service status
+            $status = $pdf_service->check_status();
+            if (!$status['available']) {
+                throw new Exception($status['message']);
+            }
+
+            // Generate secure filename
+            $filename = $this->generate_filename($report_type, 'pdf');
+            $filename_without_ext = preg_replace('/\.pdf$/i', '', $filename);
+
+            // Stream PDF for download (handles headers and output)
+            $result = $pdf_service->stream_pdf($report['pdf_html'], $filename_without_ext);
+
+            if (!$result) {
+                throw new Exception(__('PDF konnte nicht erstellt werden', 'abschussplan-hgmh'));
+            }
+
+            // Exit after streaming (stream_pdf sends headers and outputs PDF)
+            exit;
+
+        } catch (Exception $e) {
+            error_log('AHGMH PDF Download Error: ' . $e->getMessage());
+
+            // Send JSON error if headers not sent yet
+            if (!headers_sent()) {
+                wp_send_json_error($e->getMessage());
+            } else {
+                echo 'Error: ' . esc_html($e->getMessage());
+                exit;
+            }
         }
     }
 
