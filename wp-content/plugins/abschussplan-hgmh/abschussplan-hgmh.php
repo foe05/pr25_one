@@ -35,6 +35,7 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-activity-logger.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
