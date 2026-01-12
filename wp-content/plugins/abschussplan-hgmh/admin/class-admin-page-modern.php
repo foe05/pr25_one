@@ -99,7 +99,17 @@ class AHGMH_Admin_Page_Modern {
             'abschussplan-hgmh-obleute',
             array($this, 'render_obmann_management')
         );
-        
+
+        // Migrations (Migrationen)
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Migrationen', 'abschussplan-hgmh'),
+            __('🔄 Migrationen', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-migrations',
+            array($this, 'render_migrations')
+        );
+
         // Settings (Einstellungen)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -350,6 +360,31 @@ class AHGMH_Admin_Page_Modern {
                         $this->render_data_overview();
                 }
                 ?>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render migrations page
+     */
+    public function render_migrations() {
+        ?>
+        <div class="wrap ahgmh-admin-modern">
+            <h1 class="ahgmh-page-title">
+                <span class="dashicons dashicons-update"></span>
+                <?php echo esc_html__('Migrationen', 'abschussplan-hgmh'); ?>
+            </h1>
+
+            <div class="ahgmh-content-wrapper">
+                <div class="ahgmh-card">
+                    <div class="ahgmh-card-header">
+                        <h2><?php echo esc_html__('Datenbank-Migrationen', 'abschussplan-hgmh'); ?></h2>
+                    </div>
+                    <div class="ahgmh-card-body">
+                        <p><?php echo esc_html__('Migration Manager wird hier angezeigt.', 'abschussplan-hgmh'); ?></p>
+                    </div>
+                </div>
             </div>
         </div>
         <?php
