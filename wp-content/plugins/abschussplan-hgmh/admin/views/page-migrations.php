@@ -193,7 +193,7 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'ahgmh_run_migration',
                 target_version: version,
-                nonce: '<?php echo wp_create_nonce('ahgmh_migration'); ?>'
+                nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
             },
             success: function(response) {
                 if (response.success) {
@@ -247,7 +247,7 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'ahgmh_rollback_migration',
                 target_version: version,
-                nonce: '<?php echo wp_create_nonce('ahgmh_migration'); ?>'
+                nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
             },
             success: function(response) {
                 if (response.success) {
@@ -297,7 +297,7 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'ahgmh_run_migration',
                 target_version: null,
-                nonce: '<?php echo wp_create_nonce('ahgmh_migration'); ?>'
+                nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
             },
             success: function(response) {
                 if (response.success) {
@@ -347,7 +347,7 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'ahgmh_rollback_migration',
                 target_version: 0,
-                nonce: '<?php echo wp_create_nonce('ahgmh_migration'); ?>'
+                nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
             },
             success: function(response) {
                 if (response.success) {

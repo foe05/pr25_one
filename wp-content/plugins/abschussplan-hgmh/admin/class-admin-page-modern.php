@@ -374,25 +374,13 @@ class AHGMH_Admin_Page_Modern {
      * Render migrations page
      */
     public function render_migrations() {
-        ?>
-        <div class="wrap ahgmh-admin-modern">
-            <h1 class="ahgmh-page-title">
-                <span class="dashicons dashicons-update"></span>
-                <?php echo esc_html__('Migrationen', 'abschussplan-hgmh'); ?>
-            </h1>
+        // Initialize migration manager
+        $migration_manager = new AHGMH_Migration_Manager();
+        $current_version = $migration_manager->get_current_version();
+        $migrations = $migration_manager->get_available_migrations();
 
-            <div class="ahgmh-content-wrapper">
-                <div class="ahgmh-card">
-                    <div class="ahgmh-card-header">
-                        <h2><?php echo esc_html__('Datenbank-Migrationen', 'abschussplan-hgmh'); ?></h2>
-                    </div>
-                    <div class="ahgmh-card-body">
-                        <p><?php echo esc_html__('Migration Manager wird hier angezeigt.', 'abschussplan-hgmh'); ?></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php
+        // Include the migrations view
+        include plugin_dir_path(__FILE__) . 'views/page-migrations.php';
     }
 
     /**
