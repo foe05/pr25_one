@@ -1,0 +1,10 @@
+{
+  "discovered_files": {
+    "wp-content/plugins/abschussplan-hgmh/admin/services/class-bulk-operations-service.php": {
+      "description": "Created bulk operations service with batch processing for large datasets. Includes bulk_update, bulk_delete, mass_assign_meldegruppe methods. All operations validate inputs, sanitize data, and process records in configurable batches (default 100, range 10-500) to prevent timeouts. Returns detailed results with success/failure counts and failed record IDs.",
+      "category": "service",
+      "discovered_at": "2026-01-12T10:31:00.576538+00:00"
+    }
+  },
+  "last_updated": "2026-01-12T10:31:00.576625+00:00"
+}

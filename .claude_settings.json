@@ -1,0 +1,34 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/.auto-claude/specs/005-bulk-operations-import/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/.auto-claude/specs/005-bulk-operations-import/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/.auto-claude/specs/005-bulk-operations-import/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}

@@ -46,6 +46,8 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-column-mapper.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-ljv-template-detector.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-validator.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-bulk-operations-service.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
@@ -58,6 +60,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-import-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-bulk-operations-controller.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
 
@@ -155,6 +158,9 @@ class Abschussplan_HGMH {
 
             // Initialize import controller
             new AHGMH_Import_Controller();
+
+            // Initialize bulk operations controller
+            new AHGMH_Bulk_Operations_Controller();
 
             // New modular controller disabled until issues resolved
             // $this->admin_controller = new AHGMH_Admin_Controller();

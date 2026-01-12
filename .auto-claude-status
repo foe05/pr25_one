@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "005-bulk-operations-import",
+  "state": "building",
+  "subtasks": {
+    "completed": 0,
+    "total": 21,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Bulk Operations System",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 4,
+    "started_at": "2026-01-12T11:20:04.198524"
+  },
+  "last_update": "2026-01-12T11:31:16.684372"
+}
