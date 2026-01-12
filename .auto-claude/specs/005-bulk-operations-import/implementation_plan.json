@@ -85,8 +85,8 @@
             "Returns confidence score for mappings",
             "Supports manual mapping override"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "AHGMH_Column_Mapper class fully implemented with comprehensive auto-detection logic. All acceptance criteria met: 1) Auto-detects common German column names (Datum, Wildart, Kategorie, Meldegruppe, Jagdbezirk, WUS-Nummer, Bemerkung) with extensive variation matching. 2) Matches variations using normalized string comparison, exact/contains matching, and Levenshtein similarity. 3) Identifies date, number, and text columns through pattern analysis of sample data. 4) Returns individual and overall confidence scores, weighted by field importance (required fields weighted 2x). 5) Supports manual mapping override via merge_mappings and validate_mapping methods. Additional features: String normalization with umlaut handling, field definitions with labels/types, validation for required fields. Committed in 819d3bc."
         },
         {
           "subtask_id": "2.2",
