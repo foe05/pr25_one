@@ -1,0 +1,545 @@
+{
+  "feature": "Advanced Reporting & Compliance Tools",
+  "description": "Comprehensive reporting suite including seasonal summaries, compliance dashboards, trend analysis, and regulatory document generation with scheduled email delivery.",
+  "created_at": "2026-01-11T17:28:38.481Z",
+  "updated_at": "2026-01-12T10:19:53.617Z",
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "estimated_hours": 24,
+  "tech_stack": {
+    "backend": "PHP 7.4+",
+    "framework": "WordPress Plugin",
+    "database": "MySQL/MariaDB",
+    "pdf_library": "DOMPDF",
+    "email": "WordPress wp_mail()",
+    "scheduling": "WP Cron",
+    "frontend": "Bootstrap 5.3"
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Report Data Service Layer",
+      "description": "Create the core service layer for aggregating and processing report data",
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "1.1",
+          "title": "Create Report Service Class",
+          "description": "Create AHGMH_Report_Service class in admin/services/ following existing service patterns. Implement methods for seasonal data aggregation, date range filtering, and statistical calculations.",
+          "estimated_hours": 3,
+          "status": "completed",
+          "priority": "high",
+          "dependencies": [],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/services/class-report-service.php"
+          ],
+          "acceptance_criteria": [
+            "Service class follows existing naming conventions and patterns",
+            "Implements get_seasonal_data(), get_date_range_data(), get_compliance_data() methods",
+            "Uses prepared statements for all database queries",
+            "Implements caching with transients for expensive operations",
+            "Returns sanitized data arrays"
+          ],
+          "notes": "Created AHGMH_Report_Service class with methods for seasonal data aggregation (get_seasonal_data), date range filtering (get_date_range_data), and compliance calculations (get_compliance_data). Implements caching with transients, prepared statements for all queries, error handling, and data sanitization following existing service patterns.",
+          "updated_at": "2026-01-12T08:09:27.882037+00:00"
+        },
+        {
+          "id": "1.2",
+          "title": "Implement Compliance Calculation Logic",
+          "description": "Add compliance calculation methods to compare actual vs. planned harvests per species, category, and meldegruppe. Include status determination (green/yellow/red).",
+          "estimated_hours": 2,
+          "status": "completed",
+          "priority": "high",
+          "dependencies": [
+            "1.1"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/services/class-report-service.php"
+          ],
+          "acceptance_criteria": [
+            "Calculates compliance percentage per category",
+            "Supports both meldegruppen-specific and hegegemeinschaft-total modes",
+            "Returns status indicators (good/warning/critical/exceeded)",
+            "Handles edge cases (zero limits, null values)"
+          ],
+          "notes": "Enhanced compliance calculation methods in AHGMH_Report_Service with get_compliance_by_meldegruppe() for detailed meldegruppe-level breakdown, get_compliance_summary() for overall compliance across all species, and get_remaining_capacity() for remaining harvest capacity calculations. All methods support filtering by species, category, and meldegruppe, include status determination (good/warning/critical/exceeded), handle edge cases properly, and implement caching with transients.",
+          "updated_at": "2026-01-12T08:14:11.196551+00:00"
+        },
+        {
+          "id": "1.3",
+          "title": "Implement Trend Analysis Methods",
+          "description": "Add methods for year-over-year comparisons, monthly trends, and seasonal patterns analysis.",
+          "estimated_hours": 2,
+          "status": "completed",
+          "priority": "medium",
+          "dependencies": [
+            "1.1"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/services/class-report-service.php"
+          ],
+          "acceptance_criteria": [
+            "Compare current vs. previous hunting seasons",
+            "Calculate monthly submission rates",
+            "Identify peak activity periods",
+            "Support configurable date ranges"
+          ],
+          "notes": "Implemented trend analysis methods in AHGMH_Report_Service:\n- get_year_over_year_comparison(): Compares current vs previous seasons with harvest/submission changes and detailed breakdowns\n- get_monthly_trends(): Calculates month-over-month submission rates and trend directions (increasing/decreasing/stable)\n- get_seasonal_patterns(): Identifies peak activity periods by month and weekday with 80% threshold analysis\n- Supporting methods: calculate_year_over_year_comparison(), calculate_monthly_trends(), calculate_seasonal_patterns(), identify_peak_periods(), compare_breakdowns()\n- Updated clear_cache() to include new transient keys\n- All methods follow existing patterns with caching (10min), prepared statements, error handling, and data sanitization",
+          "updated_at": "2026-01-12T08:17:57.271925+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Compliance Dashboard",
+      "description": "Create a dedicated compliance status dashboard with visual indicators",
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "2.1",
+          "title": "Create Compliance Controller",
+          "description": "Create AHGMH_Compliance_Controller class for handling compliance dashboard requests and AJAX actions.",
+          "estimated_hours": 2,
+          "status": "completed",
+          "priority": "high",
+          "dependencies": [
+            "1.2"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/controllers/class-compliance-controller.php"
+          ],
+          "acceptance_criteria": [
+            "Registers admin menu page",
+            "Handles AJAX refresh requests",
+            "Implements proper nonce verification",
+            "Follows existing controller patterns"
+          ],
+          "notes": "Created AHGMH_Compliance_Controller class with full implementation:\n- Handles AJAX refresh requests via ajax_compliance_refresh() method\n- Handles AJAX filter requests via ajax_compliance_filter() method\n- Implements proper nonce verification using AHGMH_Validation_Service::verify_ajax_request()\n- Follows existing controller patterns (matches Dashboard_Controller)\n- Integrates with AHGMH_Report_Service for compliance data retrieval\n- Includes complete render() method with Bootstrap 5 styled HTML\n- Implements helper methods for rendering summary, details, and meldegruppe breakdown\n- Includes inline JavaScript for AJAX operations\n- Proper error handling and data sanitization throughout",
+          "updated_at": "2026-01-12T10:22:38.622258+00:00"
+        },
+        {
+          "id": "2.2",
+          "title": "Create Compliance View",
+          "description": "Create AHGMH_Compliance_View class for rendering the compliance dashboard UI with Bootstrap styling.",
+          "estimated_hours": 3,
+          "status": "completed",
+          "priority": "high",
+          "dependencies": [
+            "2.1"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/views/class-compliance-view.php"
+          ],
+          "acceptance_criteria": [
+            "Displays overall compliance status per species",
+            "Shows category-level progress bars with color coding",
+            "Includes meldegruppe breakdown table",
+            "Responsive design using Bootstrap grid",
+            "Shows last update timestamp"
+          ],
+          "notes": "Created AHGMH_Compliance_View class with full Bootstrap 5.3 styling implementation:\n- Displays overall compliance status per species with summary cards\n- Shows category-level progress bars with color coding (good/warning/critical/exceeded)\n- Includes meldegruppe breakdown table with responsive Bootstrap styling\n- Responsive design using Bootstrap grid system (row/col-md-*)\n- Shows last update timestamp\n- Includes filter controls for species and meldegruppe\n- AJAX operations for filtering and refresh without page reload\n- Follows existing view patterns (Dashboard_View, Wildart_View)\n- Controller updated to use view class following MVC separation\n- All rendering logic moved from controller to view\n- Uses Bootstrap 5.3 components: progress bars, badges, tables, cards\n- Color-coded status indicators using Bootstrap contextual classes",
+          "updated_at": "2026-01-12T10:28:05.028176+00:00"
+        },
+        {
+          "id": "2.3",
+          "title": "Add Compliance Filter Controls",
+          "description": "Implement species and meldegruppe filter dropdowns for the compliance dashboard.",
+          "estimated_hours": 1.5,
+          "status": "completed",
+          "priority": "medium",
+          "dependencies": [
+            "2.2"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/views/class-compliance-view.php",
+            "wp-content/plugins/abschussplan-hgmh/admin/controllers/class-compliance-controller.php"
+          ],
+          "acceptance_criteria": [
+            "Filter by species (Wildart)",
+            "Filter by meldegruppe",
+            "Filter by hunting season",
+            "AJAX-based filter updates without page reload"
+          ],
+          "notes": "Implemented species, meldegruppe, and hunting season filter dropdowns for compliance dashboard:\n- Added hunting season filter dropdown (Jagdjahr) with last 5 hunting seasons\n- German hunting season runs April 1 - March 31 of following year\n- Updated AJAX handlers to include season parameter\n- Added get_hunting_seasons() method to view class\n- Added parse_season_to_dates() helper method to controller\n- All three filters working via AJAX without page reload\n- Follows Bootstrap 5.3 styling patterns\n- Proper sanitization and validation implemented\n- Committed with descriptive message",
+          "updated_at": "2026-01-12T10:32:36.054678+00:00"
+        },
+        {
+          "id": "2.4",
+          "title": "Integrate Compliance into Main Plugin",
+          "description": "Register the compliance controller and view in the main plugin file, add menu item.",
+          "estimated_hours": 0.5,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "2.2"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+          ],
+          "acceptance_criteria": [
+            "Compliance controller loaded in admin",
+            "Menu item added under plugin menu",
+            "Proper capability checks"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Report Generation",
+      "description": "Implement report generators for seasonal summaries and custom date ranges",
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "3.1",
+          "title": "Create Report Generator Service",
+          "description": "Create AHGMH_Report_Generator_Service for generating formatted report data structures (HTML, CSV, PDF-ready).",
+          "estimated_hours": 3,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "1.1",
+            "1.2"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/services/class-report-generator-service.php"
+          ],
+          "acceptance_criteria": [
+            "Generate seasonal summary reports",
+            "Generate custom date range reports",
+            "Generate compliance reports",
+            "Support multiple output formats (array, HTML, CSV)",
+            "Include report metadata (generated date, filters applied)"
+          ]
+        },
+        {
+          "id": "3.2",
+          "title": "Create Reports Controller",
+          "description": "Create AHGMH_Reports_Controller for handling report generation requests and downloads.",
+          "estimated_hours": 2,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "3.1"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/controllers/class-reports-controller.php"
+          ],
+          "acceptance_criteria": [
+            "Handle report generation requests",
+            "Validate date ranges and filters",
+            "Trigger report download/email",
+            "Show generation status"
+          ]
+        },
+        {
+          "id": "3.3",
+          "title": "Create Reports View",
+          "description": "Create AHGMH_Reports_View for the report generation interface with date pickers and filter options.",
+          "estimated_hours": 2.5,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "3.2"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/views/class-reports-view.php"
+          ],
+          "acceptance_criteria": [
+            "Date range picker for custom reports",
+            "Seasonal report quick buttons (current season, last season)",
+            "Species and meldegruppe filters",
+            "Report type selection (summary, detailed, compliance)",
+            "Output format selection (view, download, email)"
+          ]
+        },
+        {
+          "id": "3.4",
+          "title": "Integrate Reports into Main Plugin",
+          "description": "Register the reports controller and view in the main plugin file.",
+          "estimated_hours": 0.5,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "3.3"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+          ],
+          "acceptance_criteria": [
+            "Reports controller loaded in admin",
+            "Menu item added under plugin menu",
+            "Proper capability checks"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "PDF Export",
+      "description": "Implement professional PDF export with formatting",
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "4.1",
+          "title": "Integrate PDF Library",
+          "description": "Integrate DOMPDF library for PDF generation. Create wrapper class for PDF operations.",
+          "estimated_hours": 2,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/services/class-pdf-service.php",
+            "wp-content/plugins/abschussplan-hgmh/composer.json"
+          ],
+          "acceptance_criteria": [
+            "DOMPDF library properly integrated via Composer",
+            "Wrapper class for easy PDF generation",
+            "Handles UTF-8 German characters properly",
+            "Configurable page size and orientation"
+          ]
+        },
+        {
+          "id": "4.2",
+          "title": "Create PDF Report Templates",
+          "description": "Create HTML templates for PDF reports with professional formatting.",
+          "estimated_hours": 3,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "4.1"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/templates/pdf/report-seasonal.php",
+            "wp-content/plugins/abschussplan-hgmh/templates/pdf/report-compliance.php",
+            "wp-content/plugins/abschussplan-hgmh/templates/pdf/report-header.php",
+            "wp-content/plugins/abschussplan-hgmh/assets/css/pdf-styles.css"
+          ],
+          "acceptance_criteria": [
+            "Professional header with association name/logo",
+            "Clear table formatting",
+            "Color-coded status indicators work in PDF",
+            "Footer with page numbers and generation date",
+            "Proper German date and number formatting"
+          ]
+        },
+        {
+          "id": "4.3",
+          "title": "Implement PDF Export Endpoint",
+          "description": "Add PDF export endpoint to Reports Controller with proper download handling.",
+          "estimated_hours": 1.5,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "4.1",
+            "4.2",
+            "3.1"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/controllers/class-reports-controller.php"
+          ],
+          "acceptance_criteria": [
+            "Generate PDF from report data",
+            "Proper Content-Type headers for download",
+            "Secure filename generation",
+            "Handle large reports efficiently"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Scheduled Reports & Email Delivery",
+      "description": "Implement WP Cron scheduled reports with email delivery",
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "5.1",
+          "title": "Create Email Service",
+          "description": "Create AHGMH_Email_Service for sending reports via WordPress mail.",
+          "estimated_hours": 2,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "4.3"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/services/class-email-service.php"
+          ],
+          "acceptance_criteria": [
+            "Send emails with PDF attachments",
+            "HTML email templates",
+            "Handle multiple recipients",
+            "Error logging for failed sends",
+            "Email queue for bulk sending"
+          ]
+        },
+        {
+          "id": "5.2",
+          "title": "Create Scheduler Service",
+          "description": "Create AHGMH_Scheduler_Service for managing scheduled report jobs using WP Cron.",
+          "estimated_hours": 2.5,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "5.1"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/services/class-scheduler-service.php"
+          ],
+          "acceptance_criteria": [
+            "Schedule weekly reports",
+            "Schedule monthly reports",
+            "Custom schedule support",
+            "Schedule management (enable/disable/delete)",
+            "Track last run and next run times"
+          ]
+        },
+        {
+          "id": "5.3",
+          "title": "Create Schedule Settings UI",
+          "description": "Create settings interface for configuring scheduled reports.",
+          "estimated_hours": 2,
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [
+            "5.2"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/views/class-schedule-settings-view.php",
+            "wp-content/plugins/abschussplan-hgmh/admin/controllers/class-schedule-controller.php"
+          ],
+          "acceptance_criteria": [
+            "Configure report schedule (daily/weekly/monthly)",
+            "Set report type and filters",
+            "Manage recipient email addresses",
+            "Test email button",
+            "View schedule history"
+          ]
+        },
+        {
+          "id": "5.4",
+          "title": "Implement Cron Hooks",
+          "description": "Register WP Cron hooks for scheduled report generation and email delivery.",
+          "estimated_hours": 1,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "5.2"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+          ],
+          "acceptance_criteria": [
+            "Cron hooks registered on plugin activation",
+            "Cron hooks cleaned up on deactivation",
+            "Custom cron intervals for weekly/monthly",
+            "Error handling and logging"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-6",
+      "name": "Testing & Polish",
+      "description": "Testing, styling, and final integration",
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "6.1",
+          "title": "Add Admin CSS Styles",
+          "description": "Add CSS styles for report and compliance views.",
+          "estimated_hours": 1.5,
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [
+            "2.2",
+            "3.3"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/assets/admin-reports.css"
+          ],
+          "acceptance_criteria": [
+            "Consistent styling with existing admin pages",
+            "Responsive design",
+            "Print-friendly styles",
+            "Status color scheme (green/yellow/red)"
+          ]
+        },
+        {
+          "id": "6.2",
+          "title": "Add Admin JavaScript",
+          "description": "Add JavaScript for interactive report generation and AJAX operations.",
+          "estimated_hours": 1.5,
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [
+            "2.3",
+            "3.3"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/admin/assets/admin-reports.js"
+          ],
+          "acceptance_criteria": [
+            "Date picker initialization",
+            "AJAX form submission",
+            "Loading indicators",
+            "Filter change handlers",
+            "Download triggers"
+          ]
+        },
+        {
+          "id": "6.3",
+          "title": "Add German Translations",
+          "description": "Add German translations for all new strings.",
+          "estimated_hours": 1,
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [
+            "2.2",
+            "3.3",
+            "5.3"
+          ],
+          "files": [
+            "wp-content/plugins/abschussplan-hgmh/languages/abschussplan-hgmh-de_DE.po"
+          ],
+          "acceptance_criteria": [
+            "All new strings translated to German",
+            "Proper pluralization",
+            "Date format localization"
+          ]
+        },
+        {
+          "id": "6.4",
+          "title": "Integration Testing",
+          "description": "Test complete workflows for report generation and scheduling.",
+          "estimated_hours": 2,
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [
+            "5.4",
+            "6.1",
+            "6.2"
+          ],
+          "files": [],
+          "acceptance_criteria": [
+            "Seasonal report generation works",
+            "Custom date range reports work",
+            "Compliance dashboard displays correctly",
+            "PDF export downloads properly",
+            "Scheduled emails are sent",
+            "All filters work correctly"
+          ]
+        }
+      ]
+    }
+  ],
+  "qa_signoff": {
+    "status": "pending",
+    "tests_passed": "",
+    "issues": "",
+    "signed_off_at": null
+  },
+  "recoveryNote": "Task recovered from stuck state at 2026-01-12T10:19:53.476Z",
+  "last_updated": "2026-01-12T10:32:36.054798+00:00"
+}

@@ -79,7 +79,17 @@ class AHGMH_Admin_Page_Modern {
             'abschussplan-hgmh',
             array($this, 'render_dashboard')
         );
-        
+
+        // Compliance Dashboard
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Compliance Dashboard', 'abschussplan-hgmh'),
+            __('✓ Compliance', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-compliance',
+            array($this, 'render_compliance_dashboard')
+        );
+
         // Data Management (Meldungen)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -89,7 +99,7 @@ class AHGMH_Admin_Page_Modern {
             'abschussplan-hgmh-data',
             array($this, 'render_data_management')
         );
-        
+
         // Obmann Management (Obleute)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -99,7 +109,7 @@ class AHGMH_Admin_Page_Modern {
             'abschussplan-hgmh-obleute',
             array($this, 'render_obmann_management')
         );
-        
+
         // Settings (Einstellungen)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -292,6 +302,14 @@ class AHGMH_Admin_Page_Modern {
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Render compliance dashboard page
+     */
+    public function render_compliance_dashboard() {
+        $compliance_controller = new AHGMH_Compliance_Controller();
+        $compliance_controller->render();
     }
 
     /**

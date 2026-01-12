@@ -43,9 +43,11 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-report-service.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-compliance-view.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-dashboard-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-data-controller.php';
@@ -54,6 +56,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-compliance-controller.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
 
