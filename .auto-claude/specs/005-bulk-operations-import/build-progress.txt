@@ -97,3 +97,83 @@ Additional features:
 - Configurable retention period (1-365 days)
 
 Commit: 763d1eb
+========================================
+Date: 2026-01-12
+Subtask: 5.3 - Create Undo Controller and UI
+Status: COMPLETED
+========================================
+
+Changes Made:
+1. Created wp-content/plugins/abschussplan-hgmh/admin/controllers/class-undo-controller.php:
+   - Implemented AHGMH_Undo_Controller class with AJAX handlers
+   - ajax_undo_operation(): Reverts changes from logged operations
+     * Validates log_id parameter
+     * Checks if operation can be undone via can_undo()
+     * Calls undo_service->undo_operation() to restore state
+     * Returns detailed results with restored count and failures
+   - ajax_get_recent_operations(): Returns paginated list of undoable operations
+     * Supports limit and offset parameters for pagination
+     * Validates pagination parameters (limit: 1-100, offset: >= 0)
+     * Formats operations with can_undo status for UI display
+   - Follows existing controller patterns with nonce/capability verification
+
+2. Modified wp-content/plugins/abschussplan-hgmh/admin/controllers/class-bulk-operations-controller.php:
+   - Added undo_service property to controller
+   - Integrated undo logging into bulk_update():
+     * Captures records snapshot before update
+     * Logs operation with description
+     * Compares old/new values and logs changes
+     * Returns log_id in success response
+   - Integrated undo logging into bulk_delete():
+     * Captures records snapshot before deletion
+     * Logs operation with description
+     * Logs all fields of deleted records for restoration
+     * Returns log_id in success response
+   - Integrated undo logging into mass_assign():
+     * Captures records snapshot before assignment
+     * Logs operation with jagdbezirk in description
+     * Logs jagdbezirk field changes with old/new values
+     * Returns log_id in success response
+
+3. Modified wp-content/plugins/abschussplan-hgmh/admin/assets/admin-modern.js:
+   - Added showUndoNotification() function:
+     * Displays success message with undo button
+     * Removes any existing undo notifications first
+     * Undo button has data-log-id attribute for tracking
+     * Notification stays visible for 10 seconds (vs 3 for normal)
+     * Handles undo button click to trigger handleUndo()
+   - Added handleUndo() function:
+     * Shows confirmation dialog before execution
+     * Displays loading notification during AJAX call
+     * Calls ahgmh_undo_operation AJAX action with log_id
+     * Shows success message and reloads page on success
+     * Shows error message on failure
+   - Updated handleBulkDelete() to use showUndoNotification()
+     * Checks for log_id in response data
+     * Falls back to regular notification if log_id missing
+   - Updated handleBulkAssign() to use showUndoNotification()
+     * Checks for log_id in response data
+     * Falls back to regular notification if log_id missing
+
+4. Modified wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php:
+   - Added require_once for class-undo-service.php in services section
+   - Added require_once for class-undo-controller.php in controllers section
+   - Instantiated AHGMH_Undo_Controller in admin context initialization
+
+Implementation Details:
+- Undo controller follows WordPress AJAX patterns with proper error handling
+- All bulk operations now log changes before execution for undo capability
+- Undo notifications are visually distinct with prominent undo button
+- Undo confirmation prevents accidental restoration
+- Page reload after undo ensures UI shows current state
+- German language strings used throughout for i18n consistency
+
+All acceptance criteria met:
+✓ ajax_undo_operation reverts last operation
+✓ Undo notification shown after bulk operations
+✓ Undo button available for recent operations
+✓ Confirmation before undo execution
+✓ Success/failure feedback after undo
+
+Commit: 9a2eb14
+

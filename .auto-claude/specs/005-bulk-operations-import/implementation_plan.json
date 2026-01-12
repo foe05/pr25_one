@@ -297,8 +297,8 @@
             "Confirmation before undo execution",
             "Success/failure feedback after undo"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "AHGMH_Undo_Controller fully implemented with comprehensive undo functionality: ajax_undo_operation reverts changes from logged operations with validation, ajax_get_recent_operations returns paginated list of undoable operations. Integrated undo logging into all bulk operations (bulk_update, bulk_delete, mass_assign) - each operation captures before/after state and returns log_id for undo tracking. Added showUndoNotification() and handleUndo() functions to admin-modern.js. Undo notifications display for 10 seconds with prominent 'Rückgängig machen' button. Confirmation dialog before executing undo operation. Success/failure feedback with automatic page reload to show restored data. Registered undo service and controller in main plugin file. All acceptance criteria met and committed (9a2eb14)."
         }
       ]
     },
