@@ -394,6 +394,303 @@ class AHGMH_Report_Service {
     }
 
     /**
+     * Get detailed compliance by meldegruppe
+     *
+     * @param string $species Species to analyze
+     * @return array Meldegruppe compliance breakdown
+     */
+    public function get_compliance_by_meldegruppe($species = '') {
+        $cache_key = 'ahgmh_compliance_by_mg_' . md5($species);
+        $cached = get_transient($cache_key);
+
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $data = $this->calculate_compliance_by_meldegruppe($species);
+        set_transient($cache_key, $data, $this->cache_timeout);
+
+        return $data;
+    }
+
+    /**
+     * Calculate compliance by meldegruppe
+     *
+     * @param string $species
+     * @return array
+     */
+    private function calculate_compliance_by_meldegruppe($species) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+
+        try {
+            $meldegruppen_data = [];
+
+            // Get all species if none specified
+            $species_list = !empty($species) ? [$species] : get_option('ahgmh_species', ['Rotwild', 'Damwild']);
+
+            // Get all configured meldegruppen
+            $meldegruppen = get_option('ahgmh_meldegruppen', []);
+
+            foreach ($species_list as $current_species) {
+                // Get categories for this species
+                $categories_key = 'ahgmh_categories_' . sanitize_key($current_species);
+                $categories = get_option($categories_key, []);
+
+                // Get all limits for this species
+                $all_limits = get_option('ahgmh_wildart_limits', []);
+                $species_limits = isset($all_limits[$current_species]) ? $all_limits[$current_species] : [];
+
+                foreach ($meldegruppen as $meldegruppe) {
+                    $meldegruppe_compliance = [
+                        'meldegruppe' => $meldegruppe,
+                        'species' => $current_species,
+                        'categories' => [],
+                        'total' => [
+                            'current' => 0,
+                            'limit' => 0,
+                            'remaining' => 0,
+                            'percentage' => 0,
+                            'status' => 'good'
+                        ]
+                    ];
+
+                    foreach ($categories as $category) {
+                        // Get current count for this meldegruppe
+                        $count_query = "SELECT SUM(anzahl) FROM $table_name
+                                       WHERE art = %s AND kategorie = %s AND meldegruppe = %s";
+                        $current_count = $wpdb->get_var($wpdb->prepare($count_query, [$current_species, $category, $meldegruppe]));
+                        $current_count = absint($current_count);
+
+                        // Get limit for this meldegruppe and category
+                        $category_limit = 0;
+                        if (isset($species_limits[$meldegruppe][$category])) {
+                            $category_limit = absint($species_limits[$meldegruppe][$category]);
+                        }
+
+                        // Calculate percentage, remaining, and status
+                        $percentage = $category_limit > 0 ? ($current_count / $category_limit) * 100 : 0;
+                        $remaining = max(0, $category_limit - $current_count);
+                        $status = $this->get_compliance_status($percentage);
+
+                        $meldegruppe_compliance['categories'][$category] = [
+                            'current' => $current_count,
+                            'limit' => $category_limit,
+                            'remaining' => $remaining,
+                            'percentage' => round($percentage, 1),
+                            'status' => $status
+                        ];
+
+                        // Add to totals
+                        $meldegruppe_compliance['total']['current'] += $current_count;
+                        $meldegruppe_compliance['total']['limit'] += $category_limit;
+                    }
+
+                    // Calculate total percentage, remaining, and status
+                    if ($meldegruppe_compliance['total']['limit'] > 0) {
+                        $total_percentage = ($meldegruppe_compliance['total']['current'] / $meldegruppe_compliance['total']['limit']) * 100;
+                        $meldegruppe_compliance['total']['percentage'] = round($total_percentage, 1);
+                        $meldegruppe_compliance['total']['remaining'] = max(0, $meldegruppe_compliance['total']['limit'] - $meldegruppe_compliance['total']['current']);
+                        $meldegruppe_compliance['total']['status'] = $this->get_compliance_status($total_percentage);
+                    }
+
+                    $meldegruppen_data[] = $meldegruppe_compliance;
+                }
+            }
+
+            return [
+                'meldegruppen' => $meldegruppen_data,
+                'filters' => [
+                    'species' => $species
+                ],
+                'generated_at' => current_time('mysql')
+            ];
+
+        } catch (Exception $e) {
+            return $this->get_fallback_data();
+        }
+    }
+
+    /**
+     * Get compliance summary across all species
+     *
+     * @return array Overall compliance summary
+     */
+    public function get_compliance_summary() {
+        $cache_key = 'ahgmh_compliance_summary';
+        $cached = get_transient($cache_key);
+
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $data = $this->calculate_compliance_summary();
+        set_transient($cache_key, $data, $this->cache_timeout);
+
+        return $data;
+    }
+
+    /**
+     * Calculate compliance summary
+     *
+     * @return array
+     */
+    private function calculate_compliance_summary() {
+        try {
+            $species_list = get_option('ahgmh_species', ['Rotwild', 'Damwild']);
+            $summary = [
+                'overall' => [
+                    'total_current' => 0,
+                    'total_limit' => 0,
+                    'total_remaining' => 0,
+                    'percentage' => 0,
+                    'status' => 'good'
+                ],
+                'by_species' => [],
+                'status_counts' => [
+                    'good' => 0,
+                    'warning' => 0,
+                    'critical' => 0,
+                    'exceeded' => 0
+                ]
+            ];
+
+            foreach ($species_list as $species) {
+                $compliance_data = $this->calculate_compliance_data($species, '');
+
+                if (isset($compliance_data['compliance'][0])) {
+                    $species_data = $compliance_data['compliance'][0];
+
+                    // Add to overall totals
+                    $summary['overall']['total_current'] += $species_data['total']['current'];
+                    $summary['overall']['total_limit'] += $species_data['total']['limit'];
+
+                    // Calculate remaining
+                    $remaining = max(0, $species_data['total']['limit'] - $species_data['total']['current']);
+
+                    // Store species summary
+                    $summary['by_species'][$species] = [
+                        'current' => $species_data['total']['current'],
+                        'limit' => $species_data['total']['limit'],
+                        'remaining' => $remaining,
+                        'percentage' => $species_data['total']['percentage'],
+                        'status' => $species_data['total']['status']
+                    ];
+
+                    // Count statuses
+                    $status = $species_data['total']['status'];
+                    if (isset($summary['status_counts'][$status])) {
+                        $summary['status_counts'][$status]++;
+                    }
+                }
+            }
+
+            // Calculate overall percentage and status
+            if ($summary['overall']['total_limit'] > 0) {
+                $overall_percentage = ($summary['overall']['total_current'] / $summary['overall']['total_limit']) * 100;
+                $summary['overall']['percentage'] = round($overall_percentage, 1);
+                $summary['overall']['total_remaining'] = max(0, $summary['overall']['total_limit'] - $summary['overall']['total_current']);
+                $summary['overall']['status'] = $this->get_compliance_status($overall_percentage);
+            }
+
+            $summary['generated_at'] = current_time('mysql');
+
+            return $summary;
+
+        } catch (Exception $e) {
+            return $this->get_fallback_data();
+        }
+    }
+
+    /**
+     * Get remaining harvest capacity for a species/category
+     *
+     * @param string $species Species name
+     * @param string $category Category name (optional)
+     * @param string $meldegruppe Meldegruppe (optional)
+     * @return array Remaining capacity data
+     */
+    public function get_remaining_capacity($species, $category = '', $meldegruppe = '') {
+        $cache_key = 'ahgmh_remaining_capacity_' . md5($species . $category . $meldegruppe);
+        $cached = get_transient($cache_key);
+
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $data = $this->calculate_remaining_capacity($species, $category, $meldegruppe);
+        set_transient($cache_key, $data, $this->cache_timeout);
+
+        return $data;
+    }
+
+    /**
+     * Calculate remaining capacity
+     *
+     * @param string $species
+     * @param string $category
+     * @param string $meldegruppe
+     * @return array
+     */
+    private function calculate_remaining_capacity($species, $category, $meldegruppe) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+
+        try {
+            // Get limits
+            $limits = $this->get_species_limits($species, $meldegruppe);
+
+            $capacity_data = [];
+
+            // If specific category requested
+            if (!empty($category)) {
+                $categories = [$category];
+            } else {
+                // Get all categories for species
+                $categories_key = 'ahgmh_categories_' . sanitize_key($species);
+                $categories = get_option($categories_key, []);
+            }
+
+            foreach ($categories as $cat) {
+                // Get current count
+                $count_query = "SELECT SUM(anzahl) FROM $table_name WHERE art = %s AND kategorie = %s";
+                $query_params = [$species, $cat];
+
+                if (!empty($meldegruppe)) {
+                    $count_query .= " AND meldegruppe = %s";
+                    $query_params[] = $meldegruppe;
+                }
+
+                $current_count = $wpdb->get_var($wpdb->prepare($count_query, $query_params));
+                $current_count = absint($current_count);
+
+                $limit = isset($limits[$cat]) ? absint($limits[$cat]) : 0;
+                $remaining = max(0, $limit - $current_count);
+                $percentage = $limit > 0 ? ($current_count / $limit) * 100 : 0;
+
+                $capacity_data[$cat] = [
+                    'current' => $current_count,
+                    'limit' => $limit,
+                    'remaining' => $remaining,
+                    'percentage' => round($percentage, 1),
+                    'status' => $this->get_compliance_status($percentage),
+                    'can_harvest' => $remaining > 0
+                ];
+            }
+
+            return [
+                'species' => $species,
+                'meldegruppe' => $meldegruppe,
+                'capacity' => $capacity_data,
+                'generated_at' => current_time('mysql')
+            ];
+
+        } catch (Exception $e) {
+            return $this->get_fallback_data();
+        }
+    }
+
+    /**
      * Sanitize breakdown array
      *
      * @param array $breakdown
@@ -485,15 +782,21 @@ class AHGMH_Report_Service {
     public function clear_cache() {
         global $wpdb;
 
-        // Delete all transients starting with ahgmh_seasonal_data_, ahgmh_daterange_data_, ahgmh_compliance_data_
+        // Delete all transients related to reports and compliance
         $wpdb->query(
             "DELETE FROM {$wpdb->options}
              WHERE option_name LIKE '_transient_ahgmh_seasonal_data_%'
                 OR option_name LIKE '_transient_ahgmh_daterange_data_%'
                 OR option_name LIKE '_transient_ahgmh_compliance_data_%'
+                OR option_name LIKE '_transient_ahgmh_compliance_by_mg_%'
+                OR option_name LIKE '_transient_ahgmh_compliance_summary%'
+                OR option_name LIKE '_transient_ahgmh_remaining_capacity_%'
                 OR option_name LIKE '_transient_timeout_ahgmh_seasonal_data_%'
                 OR option_name LIKE '_transient_timeout_ahgmh_daterange_data_%'
-                OR option_name LIKE '_transient_timeout_ahgmh_compliance_data_%'"
+                OR option_name LIKE '_transient_timeout_ahgmh_compliance_data_%'
+                OR option_name LIKE '_transient_timeout_ahgmh_compliance_by_mg_%'
+                OR option_name LIKE '_transient_timeout_ahgmh_compliance_summary%'
+                OR option_name LIKE '_transient_timeout_ahgmh_remaining_capacity_%'"
         );
     }
 }
