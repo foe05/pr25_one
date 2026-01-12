@@ -55,6 +55,9 @@ class AHGMH_Database_Handler {
 
         // Create page views tracking table
         $this->create_page_views_table();
+
+        // Create activity log table
+        $this->create_activity_log_table();
     }
     
     /**
@@ -124,6 +127,32 @@ class AHGMH_Database_Handler {
             KEY shortcode_name (shortcode_name),
             KEY user_id (user_id),
             KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+     * Create activity log table for tracking user activities
+     */
+    public function create_activity_log_table() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'ahgmh_activity_log';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL,
+            action varchar(50) NOT NULL,
+            context longtext,
+            ip_hash varchar(64),
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY user_id_idx (user_id),
+            KEY action_idx (action),
+            KEY created_at_idx (created_at)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
