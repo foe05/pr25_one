@@ -143,8 +143,8 @@
             "Shows preview of first 5 rows",
             "Shows validation errors/warnings inline"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "✅ Import View class fully implemented with all required features: File upload dropzone with drag-and-drop support, supported file types display (CSV, XLSX, LJV templates), column mapping interface with dropdowns for all fields (datum, wildart, kategorie, meldegruppe, jagdbezirk, wus_nummer, bemerkung), preview table showing first 5 rows with scrollable container, validation errors/warnings inline display, four-step workflow (Upload → Mapping → Preview → Complete), progress indicators for upload and import operations, follows existing view patterns, uses WordPress escaping and translation functions, all UI text in German. Committed as ce88192."
         },
         {
           "subtask_id": "3.2",
