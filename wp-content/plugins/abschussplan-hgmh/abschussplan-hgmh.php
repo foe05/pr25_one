@@ -44,6 +44,8 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-column-mapper.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-ljv-template-detector.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
