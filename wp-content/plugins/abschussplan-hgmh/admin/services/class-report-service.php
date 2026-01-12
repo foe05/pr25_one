@@ -777,6 +777,504 @@ class AHGMH_Report_Service {
     }
 
     /**
+     * Get year-over-year comparison between current and previous hunting seasons
+     *
+     * @param string $current_season_start Current season start date (Y-m-d)
+     * @param string $current_season_end Current season end date (Y-m-d)
+     * @param string $previous_season_start Previous season start date (Y-m-d)
+     * @param string $previous_season_end Previous season end date (Y-m-d)
+     * @param string $species Optional species filter
+     * @param string $meldegruppe Optional meldegruppe filter
+     * @return array Year-over-year comparison data
+     */
+    public function get_year_over_year_comparison($current_season_start, $current_season_end, $previous_season_start, $previous_season_end, $species = '', $meldegruppe = '') {
+        $cache_key = 'ahgmh_yoy_comparison_' . md5($current_season_start . $current_season_end . $previous_season_start . $previous_season_end . $species . $meldegruppe);
+        $cached = get_transient($cache_key);
+
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $data = $this->calculate_year_over_year_comparison($current_season_start, $current_season_end, $previous_season_start, $previous_season_end, $species, $meldegruppe);
+        set_transient($cache_key, $data, $this->cache_timeout);
+
+        return $data;
+    }
+
+    /**
+     * Calculate year-over-year comparison
+     *
+     * @param string $current_season_start
+     * @param string $current_season_end
+     * @param string $previous_season_start
+     * @param string $previous_season_end
+     * @param string $species
+     * @param string $meldegruppe
+     * @return array
+     */
+    private function calculate_year_over_year_comparison($current_season_start, $current_season_end, $previous_season_start, $previous_season_end, $species, $meldegruppe) {
+        try {
+            // Get current season data
+            $current_data = $this->calculate_seasonal_data($current_season_start, $current_season_end, $species, $meldegruppe);
+
+            // Get previous season data
+            $previous_data = $this->calculate_seasonal_data($previous_season_start, $previous_season_end, $species, $meldegruppe);
+
+            // Calculate changes
+            $current_harvests = $current_data['summary']['total_harvests'];
+            $previous_harvests = $previous_data['summary']['total_harvests'];
+            $harvest_change = $current_harvests - $previous_harvests;
+            $harvest_change_percent = $previous_harvests > 0 ? (($harvest_change / $previous_harvests) * 100) : 0;
+
+            $current_submissions = $current_data['summary']['total_submissions'];
+            $previous_submissions = $previous_data['summary']['total_submissions'];
+            $submission_change = $current_submissions - $previous_submissions;
+            $submission_change_percent = $previous_submissions > 0 ? (($submission_change / $previous_submissions) * 100) : 0;
+
+            // Compare species breakdowns
+            $species_comparison = $this->compare_breakdowns(
+                $current_data['species_breakdown'],
+                $previous_data['species_breakdown']
+            );
+
+            // Compare category breakdowns
+            $category_comparison = $this->compare_breakdowns(
+                $current_data['category_breakdown'],
+                $previous_data['category_breakdown']
+            );
+
+            // Compare meldegruppe breakdowns
+            $meldegruppe_comparison = $this->compare_breakdowns(
+                $current_data['meldegruppe_breakdown'],
+                $previous_data['meldegruppe_breakdown']
+            );
+
+            return [
+                'current_season' => [
+                    'period' => $current_data['period'],
+                    'total_harvests' => $current_harvests,
+                    'total_submissions' => $current_submissions
+                ],
+                'previous_season' => [
+                    'period' => $previous_data['period'],
+                    'total_harvests' => $previous_harvests,
+                    'total_submissions' => $previous_submissions
+                ],
+                'changes' => [
+                    'harvest_change' => $harvest_change,
+                    'harvest_change_percent' => round($harvest_change_percent, 1),
+                    'submission_change' => $submission_change,
+                    'submission_change_percent' => round($submission_change_percent, 1)
+                ],
+                'comparisons' => [
+                    'species' => $species_comparison,
+                    'categories' => $category_comparison,
+                    'meldegruppen' => $meldegruppe_comparison
+                ],
+                'filters' => [
+                    'species' => $species,
+                    'meldegruppe' => $meldegruppe
+                ],
+                'generated_at' => current_time('mysql')
+            ];
+
+        } catch (Exception $e) {
+            return $this->get_fallback_data();
+        }
+    }
+
+    /**
+     * Get monthly trends and submission rates
+     *
+     * @param string $start_date Start date (Y-m-d)
+     * @param string $end_date End date (Y-m-d)
+     * @param string $species Optional species filter
+     * @param string $meldegruppe Optional meldegruppe filter
+     * @return array Monthly trends data
+     */
+    public function get_monthly_trends($start_date, $end_date, $species = '', $meldegruppe = '') {
+        $cache_key = 'ahgmh_monthly_trends_' . md5($start_date . $end_date . $species . $meldegruppe);
+        $cached = get_transient($cache_key);
+
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $data = $this->calculate_monthly_trends($start_date, $end_date, $species, $meldegruppe);
+        set_transient($cache_key, $data, $this->cache_timeout);
+
+        return $data;
+    }
+
+    /**
+     * Calculate monthly trends
+     *
+     * @param string $start_date
+     * @param string $end_date
+     * @param string $species
+     * @param string $meldegruppe
+     * @return array
+     */
+    private function calculate_monthly_trends($start_date, $end_date, $species, $meldegruppe) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+
+        try {
+            // Build WHERE clause
+            $where_conditions = ["datum >= %s", "datum <= %s"];
+            $where_values = [$start_date, $end_date];
+
+            if (!empty($species)) {
+                $where_conditions[] = "art = %s";
+                $where_values[] = $species;
+            }
+
+            if (!empty($meldegruppe)) {
+                $where_conditions[] = "meldegruppe = %s";
+                $where_values[] = $meldegruppe;
+            }
+
+            $where_clause = implode(' AND ', $where_conditions);
+
+            // Get monthly aggregations
+            $monthly_query = "SELECT
+                                DATE_FORMAT(datum, '%%Y-%%m') as month,
+                                COUNT(*) as submission_count,
+                                SUM(anzahl) as harvest_count,
+                                COUNT(DISTINCT art) as species_count,
+                                COUNT(DISTINCT meldegruppe) as meldegruppe_count
+                             FROM $table_name
+                             WHERE $where_clause
+                             GROUP BY DATE_FORMAT(datum, '%%Y-%%m')
+                             ORDER BY month ASC";
+            $monthly_data = $wpdb->get_results($wpdb->prepare($monthly_query, $where_values));
+
+            // Calculate trends (month-over-month changes)
+            $trends = [];
+            $previous_month = null;
+
+            foreach ($monthly_data as $current_month) {
+                $month_trend = [
+                    'month' => esc_html($current_month->month),
+                    'submission_count' => absint($current_month->submission_count),
+                    'harvest_count' => absint($current_month->harvest_count),
+                    'species_count' => absint($current_month->species_count),
+                    'meldegruppe_count' => absint($current_month->meldegruppe_count),
+                    'submission_rate' => 0,
+                    'harvest_rate' => 0,
+                    'trend' => 'stable'
+                ];
+
+                if ($previous_month !== null) {
+                    // Calculate submission rate change
+                    $submission_change = absint($current_month->submission_count) - absint($previous_month->submission_count);
+                    $submission_rate = absint($previous_month->submission_count) > 0
+                        ? ($submission_change / absint($previous_month->submission_count)) * 100
+                        : 0;
+
+                    // Calculate harvest rate change
+                    $harvest_change = absint($current_month->harvest_count) - absint($previous_month->harvest_count);
+                    $harvest_rate = absint($previous_month->harvest_count) > 0
+                        ? ($harvest_change / absint($previous_month->harvest_count)) * 100
+                        : 0;
+
+                    $month_trend['submission_rate'] = round($submission_rate, 1);
+                    $month_trend['harvest_rate'] = round($harvest_rate, 1);
+
+                    // Determine trend direction
+                    $avg_rate = ($submission_rate + $harvest_rate) / 2;
+                    if ($avg_rate > 10) {
+                        $month_trend['trend'] = 'increasing';
+                    } elseif ($avg_rate < -10) {
+                        $month_trend['trend'] = 'decreasing';
+                    } else {
+                        $month_trend['trend'] = 'stable';
+                    }
+                }
+
+                $trends[] = $month_trend;
+                $previous_month = $current_month;
+            }
+
+            // Calculate overall statistics
+            $total_submissions = array_sum(array_column($trends, 'submission_count'));
+            $total_harvests = array_sum(array_column($trends, 'harvest_count'));
+            $avg_submissions_per_month = count($trends) > 0 ? $total_submissions / count($trends) : 0;
+            $avg_harvests_per_month = count($trends) > 0 ? $total_harvests / count($trends) : 0;
+
+            return [
+                'period' => [
+                    'start' => $start_date,
+                    'end' => $end_date
+                ],
+                'monthly_trends' => $trends,
+                'statistics' => [
+                    'total_months' => count($trends),
+                    'total_submissions' => $total_submissions,
+                    'total_harvests' => $total_harvests,
+                    'avg_submissions_per_month' => round($avg_submissions_per_month, 1),
+                    'avg_harvests_per_month' => round($avg_harvests_per_month, 1)
+                ],
+                'filters' => [
+                    'species' => $species,
+                    'meldegruppe' => $meldegruppe
+                ],
+                'generated_at' => current_time('mysql')
+            ];
+
+        } catch (Exception $e) {
+            return $this->get_fallback_data();
+        }
+    }
+
+    /**
+     * Get seasonal patterns and peak activity periods
+     *
+     * @param string $start_date Start date (Y-m-d)
+     * @param string $end_date End date (Y-m-d)
+     * @param string $species Optional species filter
+     * @param string $meldegruppe Optional meldegruppe filter
+     * @return array Seasonal patterns data
+     */
+    public function get_seasonal_patterns($start_date, $end_date, $species = '', $meldegruppe = '') {
+        $cache_key = 'ahgmh_seasonal_patterns_' . md5($start_date . $end_date . $species . $meldegruppe);
+        $cached = get_transient($cache_key);
+
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $data = $this->calculate_seasonal_patterns($start_date, $end_date, $species, $meldegruppe);
+        set_transient($cache_key, $data, $this->cache_timeout);
+
+        return $data;
+    }
+
+    /**
+     * Calculate seasonal patterns
+     *
+     * @param string $start_date
+     * @param string $end_date
+     * @param string $species
+     * @param string $meldegruppe
+     * @return array
+     */
+    private function calculate_seasonal_patterns($start_date, $end_date, $species, $meldegruppe) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+
+        try {
+            // Build WHERE clause
+            $where_conditions = ["datum >= %s", "datum <= %s"];
+            $where_values = [$start_date, $end_date];
+
+            if (!empty($species)) {
+                $where_conditions[] = "art = %s";
+                $where_values[] = $species;
+            }
+
+            if (!empty($meldegruppe)) {
+                $where_conditions[] = "meldegruppe = %s";
+                $where_values[] = $meldegruppe;
+            }
+
+            $where_clause = implode(' AND ', $where_conditions);
+
+            // Get activity by month (regardless of year)
+            $month_pattern_query = "SELECT
+                                      DATE_FORMAT(datum, '%%m') as month_number,
+                                      MONTHNAME(datum) as month_name,
+                                      COUNT(*) as submission_count,
+                                      SUM(anzahl) as harvest_count
+                                   FROM $table_name
+                                   WHERE $where_clause
+                                   GROUP BY DATE_FORMAT(datum, '%%m'), MONTHNAME(datum)
+                                   ORDER BY month_number ASC";
+            $month_patterns = $wpdb->get_results($wpdb->prepare($month_pattern_query, $where_values));
+
+            // Get activity by day of week
+            $weekday_pattern_query = "SELECT
+                                        DAYOFWEEK(datum) as weekday_number,
+                                        DAYNAME(datum) as weekday_name,
+                                        COUNT(*) as submission_count,
+                                        SUM(anzahl) as harvest_count
+                                      FROM $table_name
+                                      WHERE $where_clause
+                                      GROUP BY DAYOFWEEK(datum), DAYNAME(datum)
+                                      ORDER BY weekday_number ASC";
+            $weekday_patterns = $wpdb->get_results($wpdb->prepare($weekday_pattern_query, $where_values));
+
+            // Identify peak periods
+            $peaks = $this->identify_peak_periods($month_patterns, $weekday_patterns);
+
+            // Sanitize monthly patterns
+            $sanitized_months = [];
+            foreach ($month_patterns as $pattern) {
+                $sanitized_months[] = [
+                    'month_number' => esc_html($pattern->month_number),
+                    'month_name' => esc_html($pattern->month_name),
+                    'submission_count' => absint($pattern->submission_count),
+                    'harvest_count' => absint($pattern->harvest_count)
+                ];
+            }
+
+            // Sanitize weekday patterns
+            $sanitized_weekdays = [];
+            foreach ($weekday_patterns as $pattern) {
+                $sanitized_weekdays[] = [
+                    'weekday_number' => absint($pattern->weekday_number),
+                    'weekday_name' => esc_html($pattern->weekday_name),
+                    'submission_count' => absint($pattern->submission_count),
+                    'harvest_count' => absint($pattern->harvest_count)
+                ];
+            }
+
+            return [
+                'period' => [
+                    'start' => $start_date,
+                    'end' => $end_date
+                ],
+                'monthly_patterns' => $sanitized_months,
+                'weekday_patterns' => $sanitized_weekdays,
+                'peak_periods' => $peaks,
+                'filters' => [
+                    'species' => $species,
+                    'meldegruppe' => $meldegruppe
+                ],
+                'generated_at' => current_time('mysql')
+            ];
+
+        } catch (Exception $e) {
+            return $this->get_fallback_data();
+        }
+    }
+
+    /**
+     * Identify peak activity periods from patterns
+     *
+     * @param array $month_patterns Monthly patterns
+     * @param array $weekday_patterns Weekday patterns
+     * @return array Peak periods data
+     */
+    private function identify_peak_periods($month_patterns, $weekday_patterns) {
+        $peaks = [
+            'peak_months' => [],
+            'peak_weekdays' => [],
+            'peak_month' => null,
+            'peak_weekday' => null
+        ];
+
+        // Find peak month(s)
+        if (!empty($month_patterns)) {
+            $max_harvest = 0;
+            foreach ($month_patterns as $pattern) {
+                $harvest_count = absint($pattern->harvest_count);
+                if ($harvest_count > $max_harvest) {
+                    $max_harvest = $harvest_count;
+                }
+            }
+
+            // Get months with harvests >= 80% of peak
+            $threshold = $max_harvest * 0.8;
+            foreach ($month_patterns as $pattern) {
+                $harvest_count = absint($pattern->harvest_count);
+                if ($harvest_count >= $threshold && $harvest_count > 0) {
+                    $peaks['peak_months'][] = [
+                        'month_name' => esc_html($pattern->month_name),
+                        'harvest_count' => $harvest_count,
+                        'is_peak' => $harvest_count === $max_harvest
+                    ];
+
+                    if ($harvest_count === $max_harvest && $peaks['peak_month'] === null) {
+                        $peaks['peak_month'] = esc_html($pattern->month_name);
+                    }
+                }
+            }
+        }
+
+        // Find peak weekday(s)
+        if (!empty($weekday_patterns)) {
+            $max_harvest = 0;
+            foreach ($weekday_patterns as $pattern) {
+                $harvest_count = absint($pattern->harvest_count);
+                if ($harvest_count > $max_harvest) {
+                    $max_harvest = $harvest_count;
+                }
+            }
+
+            // Get weekdays with harvests >= 80% of peak
+            $threshold = $max_harvest * 0.8;
+            foreach ($weekday_patterns as $pattern) {
+                $harvest_count = absint($pattern->harvest_count);
+                if ($harvest_count >= $threshold && $harvest_count > 0) {
+                    $peaks['peak_weekdays'][] = [
+                        'weekday_name' => esc_html($pattern->weekday_name),
+                        'harvest_count' => $harvest_count,
+                        'is_peak' => $harvest_count === $max_harvest
+                    ];
+
+                    if ($harvest_count === $max_harvest && $peaks['peak_weekday'] === null) {
+                        $peaks['peak_weekday'] = esc_html($pattern->weekday_name);
+                    }
+                }
+            }
+        }
+
+        return $peaks;
+    }
+
+    /**
+     * Compare two breakdown arrays and calculate differences
+     *
+     * @param array $current_breakdown Current period breakdown
+     * @param array $previous_breakdown Previous period breakdown
+     * @return array Comparison with changes
+     */
+    private function compare_breakdowns($current_breakdown, $previous_breakdown) {
+        $comparison = [];
+
+        // Create lookup for previous data
+        $previous_lookup = [];
+        foreach ($previous_breakdown as $item) {
+            $previous_lookup[$item['name']] = $item['count'];
+        }
+
+        // Compare current with previous
+        foreach ($current_breakdown as $item) {
+            $name = $item['name'];
+            $current_count = $item['count'];
+            $previous_count = isset($previous_lookup[$name]) ? $previous_lookup[$name] : 0;
+
+            $change = $current_count - $previous_count;
+            $change_percent = $previous_count > 0 ? (($change / $previous_count) * 100) : 0;
+
+            $comparison[] = [
+                'name' => $name,
+                'current' => $current_count,
+                'previous' => $previous_count,
+                'change' => $change,
+                'change_percent' => round($change_percent, 1)
+            ];
+
+            // Remove from previous lookup
+            unset($previous_lookup[$name]);
+        }
+
+        // Add items that only exist in previous (now at zero)
+        foreach ($previous_lookup as $name => $previous_count) {
+            $comparison[] = [
+                'name' => $name,
+                'current' => 0,
+                'previous' => $previous_count,
+                'change' => -$previous_count,
+                'change_percent' => -100.0
+            ];
+        }
+
+        return $comparison;
+    }
+
+    /**
      * Clear all report caches
      */
     public function clear_cache() {
@@ -791,12 +1289,18 @@ class AHGMH_Report_Service {
                 OR option_name LIKE '_transient_ahgmh_compliance_by_mg_%'
                 OR option_name LIKE '_transient_ahgmh_compliance_summary%'
                 OR option_name LIKE '_transient_ahgmh_remaining_capacity_%'
+                OR option_name LIKE '_transient_ahgmh_yoy_comparison_%'
+                OR option_name LIKE '_transient_ahgmh_monthly_trends_%'
+                OR option_name LIKE '_transient_ahgmh_seasonal_patterns_%'
                 OR option_name LIKE '_transient_timeout_ahgmh_seasonal_data_%'
                 OR option_name LIKE '_transient_timeout_ahgmh_daterange_data_%'
                 OR option_name LIKE '_transient_timeout_ahgmh_compliance_data_%'
                 OR option_name LIKE '_transient_timeout_ahgmh_compliance_by_mg_%'
                 OR option_name LIKE '_transient_timeout_ahgmh_compliance_summary%'
-                OR option_name LIKE '_transient_timeout_ahgmh_remaining_capacity_%'"
+                OR option_name LIKE '_transient_timeout_ahgmh_remaining_capacity_%'
+                OR option_name LIKE '_transient_timeout_ahgmh_yoy_comparison_%'
+                OR option_name LIKE '_transient_timeout_ahgmh_monthly_trends_%'
+                OR option_name LIKE '_transient_timeout_ahgmh_seasonal_patterns_%'"
         );
     }
 }
