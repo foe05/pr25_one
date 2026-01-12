@@ -143,6 +143,90 @@ class AHGMH_Activity_Logger {
     }
 
     /**
+     * Get Obmann performance statistics
+     *
+     * @param int|null $obmann_id Optional Obmann user ID to filter by
+     * @return array Performance statistics grouped by user
+     */
+    public function get_obmann_performance_stats($obmann_id = null) {
+        global $wpdb;
+
+        // Build WHERE clause for Obmann actions
+        $where_clauses = array();
+        $where_values = array();
+
+        // Filter for Obmann-related actions
+        $where_clauses[] = "action IN ('submission_approve', 'submission_reject', 'submission_edit')";
+
+        // Filter by specific Obmann if provided
+        if ($obmann_id !== null) {
+            $where_clauses[] = 'user_id = %d';
+            $where_values[] = intval($obmann_id);
+        }
+
+        $where_sql = implode(' AND ', $where_clauses);
+
+        // Get performance stats grouped by user and action
+        $query = "
+            SELECT
+                user_id,
+                action,
+                COUNT(*) as count
+            FROM {$this->table_name}
+            WHERE {$where_sql}
+            GROUP BY user_id, action
+            ORDER BY user_id, action
+        ";
+
+        if (!empty($where_values)) {
+            $query = $wpdb->prepare($query, $where_values);
+        }
+
+        $results = $wpdb->get_results($query, ARRAY_A);
+
+        // Process results into user-grouped format
+        $stats_by_user = array();
+
+        foreach ($results as $row) {
+            $user_id = intval($row['user_id']);
+
+            if (!isset($stats_by_user[$user_id])) {
+                // Get user display name
+                $user = get_userdata($user_id);
+                $display_name = $user ? $user->display_name : 'Unknown User';
+
+                $stats_by_user[$user_id] = array(
+                    'user_id' => $user_id,
+                    'display_name' => $display_name,
+                    'approved_count' => 0,
+                    'rejected_count' => 0,
+                    'edited_count' => 0,
+                    'total_submissions' => 0
+                );
+            }
+
+            // Map action to count
+            $count = intval($row['count']);
+            switch ($row['action']) {
+                case 'submission_approve':
+                    $stats_by_user[$user_id]['approved_count'] = $count;
+                    break;
+                case 'submission_reject':
+                    $stats_by_user[$user_id]['rejected_count'] = $count;
+                    break;
+                case 'submission_edit':
+                    $stats_by_user[$user_id]['edited_count'] = $count;
+                    break;
+            }
+
+            $stats_by_user[$user_id]['total_submissions'] += $count;
+        }
+
+        // Convert to indexed array for consistent return format
+        return array_values($stats_by_user);
+    }
+
+    /**
      * Get IP address from request
      *
      * @return string|null IP address or null if not available
