@@ -47,3 +47,53 @@ All acceptance criteria met:
 ✓ Index on created_at for efficient cleanup
 
 Commit: 0e87976
+
+========================================
+Date: 2026-01-12
+Subtask: 5.2 - Create Undo Service
+Status: COMPLETED
+========================================
+
+Changes Made:
+1. Created wp-content/plugins/abschussplan-hgmh/admin/services/class-undo-service.php:
+   - Implemented AHGMH_Undo_Service class for operation logging and undo functionality
+   - Core methods implemented:
+     * log_operation() - Logs operation metadata to ahgmh_operation_logs table
+     * log_record_change() - Logs individual field changes to ahgmh_operation_log_details table
+     * log_bulk_changes() - Efficiently logs multiple changes at once
+     * get_records_snapshot() - Captures record state before operations for comparison
+     * undo_operation() - Restores previous values from logged changes
+     * restore_deleted_record() - Re-inserts deleted records with original IDs
+     * get_recent_operations() - Returns paginated list of undo-able operations
+     * get_operation() - Gets detailed information about specific operation
+     * cleanup_old_logs() - Removes logs beyond retention period
+     * can_undo() - Validates if operation is within retention and has changes
+   - Configurable retention period (default 30 days, range 1-365 days)
+   - Handles all operation types: import, bulk_update, bulk_delete, mass_assign
+   - Special handling for delete operations (re-insertion with original ID)
+
+Implementation Details:
+- Follows WordPress coding standards and existing service patterns
+- Uses German language strings for i18n (__() function)
+- Proper sanitization with sanitize_text_field() and intval()
+- Comprehensive error handling with detailed return arrays
+- Efficient database queries using prepared statements
+- Groups changes by record ID for batch restoration
+- Indexes snapshot records by ID for fast lookups
+- Returns detailed operation results with success/failure counts
+
+All acceptance criteria met:
+✓ log_operation stores operation details (type, user_id, affected_count, description, timestamp)
+✓ log_record_change stores before/after values (field_name, old_value, new_value)
+✓ undo_operation restores previous values (handles updates and deletes)
+✓ cleanup_old_logs removes logs older than 30 days (configurable retention)
+✓ get_recent_operations returns undo-able operations (with pagination)
+
+Additional features:
+- log_bulk_changes for efficient batch logging
+- get_records_snapshot for state capture before operations
+- restore_deleted_record for undo of delete operations
+- can_undo for validation before undo attempts
+- Configurable retention period (1-365 days)
+
+Commit: 763d1eb
