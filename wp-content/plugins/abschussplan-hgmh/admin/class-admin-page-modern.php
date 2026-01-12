@@ -90,6 +90,16 @@ class AHGMH_Admin_Page_Modern {
             array($this, 'render_compliance_dashboard')
         );
 
+        // Reports
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Reports', 'abschussplan-hgmh'),
+            __('📊 Reports', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-reports',
+            array($this, 'render_reports')
+        );
+
         // Data Management (Meldungen)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -310,6 +320,14 @@ class AHGMH_Admin_Page_Modern {
     public function render_compliance_dashboard() {
         $compliance_controller = new AHGMH_Compliance_Controller();
         $compliance_controller->render();
+    }
+
+    /**
+     * Render reports page
+     */
+    public function render_reports() {
+        $reports_controller = new AHGMH_Reports_Controller();
+        $reports_controller->render();
     }
 
     /**
