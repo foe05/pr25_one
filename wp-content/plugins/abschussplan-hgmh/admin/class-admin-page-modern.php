@@ -99,7 +99,17 @@ class AHGMH_Admin_Page_Modern {
             'abschussplan-hgmh-obleute',
             array($this, 'render_obmann_management')
         );
-        
+
+        // Import (Daten importieren)
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Daten importieren', 'abschussplan-hgmh'),
+            __('📥 Import', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-import',
+            array($this, 'render_import')
+        );
+
         // Settings (Einstellungen)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -4719,7 +4729,16 @@ class AHGMH_Admin_Page_Modern {
         
         <?php
     }
-    
+
+    /**
+     * Render Import page
+     */
+    public function render_import() {
+        // Instantiate the Import View class and render the page
+        $import_view = new AHGMH_Import_View();
+        $import_view->render_import_page();
+    }
+
     /**
      * Render Admin CSV Export Interface
      */

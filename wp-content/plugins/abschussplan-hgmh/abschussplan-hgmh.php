@@ -52,6 +52,7 @@ if (is_admin()) {
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-import-view.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-dashboard-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-data-controller.php';
