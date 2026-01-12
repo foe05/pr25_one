@@ -337,8 +337,8 @@
             "Field mapping options passed to JS",
             "No conflicts with other admin pages"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "Import asset enqueuing implemented successfully. Added conditional loading of import.css and import.js only on import page (when hook contains 'abschussplan-hgmh-import'). Import CSS depends on main admin CSS. Import JS depends on jQuery and main admin JS. Localized import script with ahgmh_import object containing AJAX URL/nonce, max file size (10 MB), supported types (csv, xlsx), field labels (all 7 fields with German translations), required fields array (datum, wildart, kategorie), and comprehensive localized strings for UI messages. No conflicts with other admin pages. All acceptance criteria met. Committed: cdf0978"
         },
         {
           "subtask_id": "6.3",

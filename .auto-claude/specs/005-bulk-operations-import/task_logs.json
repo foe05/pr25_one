@@ -1,7 +1,7 @@
 {
   "spec_id": "005-bulk-operations-import",
   "created_at": "2026-01-12T10:20:04.200523+00:00",
-  "updated_at": "2026-01-12T10:59:28.096996+00:00",
+  "updated_at": "2026-01-12T11:00:49.592372+00:00",
   "phases": {
     "planning": {
       "phase": "planning",
@@ -4830,6 +4830,180 @@
           "phase": "coding",
           "tool_name": "Bash",
           "tool_input": "cd . && git add -A && git status"
+        },
+        {
+          "timestamp": "2026-01-12T10:59:31.066438+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "Auf Branch auto-claude/005-bulk-operations-import\nZum Commit vorgemerkte Änderungen:\n  (benutzen Sie \"git restore --staged <Datei>...\" zum Entfernen aus der Staging-Area)\n\tgeändert:       .auto-claude-status\n\tgeändert:       .auto-claude/specs/005-bulk-operations-import/implementation_plan.json\n\tgeändert:       .auto-claude/specs/005-bulk-operations-import/task_logs.json\n\tgeändert:       wp-content/plugins/abschussplan-hgmh/admin/class-admin-page-modern.php",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:59:39.739385+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git commit -m \"auto-claude: 6.2 - Register and ...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git commit -m \"auto-claude: 6.2 - Register and ..."
+        },
+        {
+          "timestamp": "2026-01-12T10:59:41.998801+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "[auto-claude/005-bulk-operations-import cdf0978] auto-claude: 6.2 - Register and enqueue import JS/CSS only on import page\n 4 files changed, 1098 insertions(+), 6 deletions(-)",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:59:45.837653+00:00",
+          "type": "text",
+          "content": "Now let me update the implementation plan to mark this subtask as completed:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:59:48.566287+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__update_subtask_status]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status"
+        },
+        {
+          "timestamp": "2026-01-12T10:59:48.805207+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__update_subtask_status] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:59:53.094186+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...bulk-operations-import/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...bulk-operations-import/implementation_plan.json"
+        },
+        {
+          "timestamp": "2026-01-12T10:59:53.222032+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "   327→        {\n   328→          \"subtask_id\": \"6.2\",\n   329→          \"title\": \"Enqueue Import Assets\",\n   330→          \"description\": \"Register and enqueue import JS/CSS only on import page. Pass necessary localization data.\",\n   331→          \"file_paths\": [\n   332→            \"wp-content/plugins/abschussplan-hgmh/admin/class-admin-page-modern.php\"\n   333→          ],\n   334→          \"acceptance_criteria\": [\n   335→            \"Import JS/CSS only loaded on import page\",\n   336→            \"AJAX URL and nonce localized to JS\",\n   337→            \"Field mapping options passed to JS\",\n   338→            \"No conflicts with other admin pages\"\n   339→          ],\n   340→          \"status\": \"pending\",\n   341→          \"notes\": \"\"\n   342→        },\n   343→        {\n   344→          \"subtask_id\": \"6.3\",\n   345→          \"title\": \"Register All New Controllers\",\n   346→          \"description\": \"Ensure all new controllers (Import, Bulk Operations, Undo) are properly instantiated and registered in the plugin initialization.\",\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:59:57.518389+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd .auto-claude/specs/005-bulk-operations-impor...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd .auto-claude/specs/005-bulk-operations-impor..."
+        },
+        {
+          "timestamp": "2026-01-12T10:59:58.320285+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "328:          \"subtask_id\": \"6.2\",",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T11:00:06.357325+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...bulk-operations-import/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...bulk-operations-import/implementation_plan.json"
+        },
+        {
+          "timestamp": "2026-01-12T11:00:06.478123+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Error: <tool_use_error>File does not exist. Current working directory: /home/foe/9_sideprojects/GITHUB/pr25",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "<tool_use_error>File does not exist. Current working directory: /home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/.auto-claude/specs/005-bulk-operations-import</tool_use_error>",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T11:00:10.549406+00:00",
+          "type": "tool_start",
+          "content": "[Bash] pwd",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "pwd"
+        },
+        {
+          "timestamp": "2026-01-12T11:00:11.551159+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/005-bulk-operations-import/.auto-claude/specs/005-bulk-operations-import",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T11:00:20.190914+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ./implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "./implementation_plan.json"
+        },
+        {
+          "timestamp": "2026-01-12T11:00:20.470593+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "The file ./implementation_plan.json has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n   323→          ],\n   324→          \"status\": \"completed\",\n   325→          \"notes\": \"Import submenu item successfully added to admin menu with proper capability checks (manage_options). Menu item positioned between Obleute and Einstellungen using emoji icon 📥 Import. Render method created to instantiate AHGMH_Import_View class. Import View class included in main plugin file. All changes committed (1f748f1).\"\n   326→        },\n   327→        {\n   328→          \"subtask_id\": \"6.2\",\n   329→          \"title\": \"Enqueue Import Assets\",\n   330→          \"description\": \"Register and enqueue import JS/CSS only on import page. Pass necessary localization data.\",\n   331→          \"file_paths\": [\n   332→            \"wp-content/plugins/abschussplan-hgmh/admin/class-admin-page-modern.php\"\n   333→          ],\n   334→          \"acceptance_criteria\": [\n   335→            \"Import JS/CSS only loaded on import page\",\n   336→            \"AJAX URL and nonce localized to JS\",\n   337→            \"Field mapping options passed to JS\",\n   338→            \"No conflicts with other admin pages\"\n   339→          ],\n   340→          \"status\": \"completed\",\n   341→          \"notes\": \"Import asset enqueuing implemented successfully. Added conditional loading of import.css and import.js only on import page (when hook contains 'abschussplan-hgmh-import'). Import CSS depends on main admin CSS. Import JS depends on jQuery and main admin JS. Localized import script with ahgmh_import object containing AJAX URL/nonce, max file size (10 MB), supported types (csv, xlsx), field labels (all 7 fields with German translations), required fields array (datum, wildart, kategorie), and comprehensive localized strings for UI messages. No conflicts with other admin pages. All acceptance criteria met. Committed: cdf0978\"\n   342→        },\n   343→        {\n   344→          \"subtask_id\": \"6.3\",\n   345→          \"title\": \"Register All New Controllers\",\n   346→          \"description\": \"Ensure all new controllers (Import, Bulk Operations, Undo) are properly instantiated and registered in the plugin initialization.\",",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T11:00:23.960009+00:00",
+          "type": "tool_start",
+          "content": "[Read] ./build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "./build-progress.txt"
+        },
+        {
+          "timestamp": "2026-01-12T11:00:24.094636+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "     1→\n     2→========================================\n     3→Date: 2026-01-12\n     4→Subtask: 5.1 - Create Operation Log Table\n     5→Status: COMPLETED\n     6→========================================\n     7→\n     8→Changes Made:\n     9→1. Modified wp-content/plugins/abschussplan-hgmh/includes/class-database-handler.php:\n    10→   - Added create_operation_log_tables() method to create two tables for undo functionality\n    11→   - Created ahgmh_operation_logs table with columns:\n    12→     * id (bigint AUTO_INCREMENT PRIMARY KEY)\n    13→     * operation_type (varchar 50) - Type of operation (bulk_delete, bulk_update, import, etc.)\n    14→     * user_id (bigint) - WordPress user who performed the operation\n    15→     * affected_count (int) - Number of records affected by the operation\n    16→     * description (text) - Human-readable description of the operation\n    17→     * created_at (datetime) - Timestamp of when operation was performed\n    18→   - Created ahgmh_operation_log_details table with columns:\n    19→     * id (bigint AUTO_INCREMENT PRIMARY KEY)\n    20→     * log_id (bigint) - Foreign key to ahgmh_operation_logs\n    21→     * record_id (bigint) - ID of the affected record in submissions table\n    22→     * field_name (varchar 100) - Name of the field that was changed\n    23→     * old_value (text) - Previous value before the operation\n    24→     * new_value (text) - New value after the operation\n    25→   - Added indexes for efficient querying:\n    26→     * user_id, operation_type, created_at on operation_logs table\n    27→     * log_id, record_id on operation_log_details table\n    28→   - Integrated create_operation_log_tables() into main create_table() method\n    29→   - Updated cleanup_database() to drop both new tables on plugin uninstall\n    30→\n    31→Implementation Details:\n    32→- Follows WordPress dbDelta standards for table creation\n    33→- Uses proper charset_collate from $wpdb->get_charset_collate()\n    34→- Tables designed to support undo functionality for:\n    35→  * Bulk delete operations\n    36→  * Bulk update operations\n    37→  * Mass assignment operations\n    38→  * Import operations\n    39→- created_at index enables efficient cleanup of old logs (30-day retention policy)\n    40→- log_id index enables fast retrieval of all changes for a specific operation\n    41→- record_id index enables fast lookup of all changes to a specific record\n    42→\n    43→All acceptance criteria met:\n    44→✓ create_operation_log_table method added (named create_operation_log_tables)\n    45→✓ Table stores: operation_id (as 'id'), operation_type, user_id, created_at\n    46→✓ Related table stores: log_id, record_id, field_name, old_value, new_value\n    47→✓ Index on created_at for efficient cleanup\n    48→\n    49→Commit: 0e87976\n    50→\n    51→========================================\n    52→Date: 2026-01-12\n    53→Subtask: 5.2 - Create Undo Service\n    54→Status: COMPLETED\n    55→========================================\n    56→\n    57→Changes Made:\n    58→1. Created wp-content/plugins/abschussplan-hgmh/admin/services/class-undo-service.php:\n    59→   - Implemented AHGMH_Undo_Service class for operation logging and undo functionality\n    60→   - Core methods implemented:\n    61→     * log_operation() - Logs operation metadata to ahgmh_operation_logs table\n    62→     * log_record_change() - Logs individual field changes to ahgmh_operation_log_details table\n    63→     * log_bulk_changes() - Efficiently logs multiple changes at once\n    64→     * get_records_snapshot() - Captures record state before operations for comparison\n    65→     * undo_operation() - Restores previous values from logged changes\n    66→     * restore_deleted_record() - Re-inserts deleted records with original IDs\n    67→     * get_recent_operations() - Returns paginated list of undo-able operations\n    68→     * get_operation() - Gets detailed information about specific operation\n    69→     * cleanup_old_logs() - Removes logs beyond retention period\n    70→     * can_undo() - Validates if operation is within retention and has changes\n    71→   - Configurable retention period (default 30 days, range 1-365 days)\n    72→   - Handles all operation types: import, bulk_update, bulk_delete, mass_assign\n    73→   - Special handling for delete operations (re-insertion with original ID)\n    74→\n    75→Implementation Details:\n    76→- Follows WordPress coding standards and existing service patterns\n    77→- Uses German language strings for i18n (__() function)\n    78→- Proper sanitization with sanitize_text_field() and intval()\n    79→- Comprehensive error handling with detailed return arrays\n    80→- Efficient database queries using prepared statements\n    81→- Groups changes by record ID for batch restoration\n    82→- Indexes snapshot records by ID for fast lookups\n    83→- Returns detailed operation results with success/failure counts\n    84→\n    85→All acceptance criteria met:\n    86→✓ log_operation stores operation details (type, user_id, affected_count, description, timestamp)\n    87→✓ log_record_change stores before/after values (field_name, old_value, new_value)\n    88→✓ undo_operation restores previous values (handles updates and deletes)\n    89→✓ cleanup_old_logs removes logs older than 30 days (configurable retention)\n    90→✓ get_recent_operations returns undo-able operations (with pagination)\n    91→\n    92→Additional features:\n    93→- log_bulk_changes for efficient batch logging\n    94→- get_records_snapshot for state capture before operations\n    95→- restore_deleted_record for undo of delete operations\n    96→- can_undo for validation before undo attempts\n    97→- Configurable retention period (1-365 days)\n    98→\n    99→Commit: 763d1eb\n   100→========================================\n   101→Date: 2026-01-12\n   102→Subtask: 5.3 - Create Undo Controller and UI\n   103→Status: COMPLETED\n   104→========================================\n   105→\n   106→Changes Made:\n   107→1. Created wp-content/plugins/abschussplan-hgmh/admin/controllers/class-undo-controller.php:\n   108→   - Implemented AHGMH_Undo_Controller class with AJAX handlers\n   109→   - ajax_undo_operation(): Reverts changes from logged operations\n   110→     * Validates log_id parameter\n   111→     * Checks if operation can be undone via can_undo()\n   112→     * Calls undo_service->undo_operation() to restore state\n   113→     * Returns detailed results with restored count and failures\n   114→   - ajax_get_recent_operations(): Returns paginated list of undoable operations\n   115→     * Supports limit and offset parameters for pagination\n   116→     * Validates pagination parameters (limit: 1-100, offset: >= 0)\n   117→     * Formats operations with can_undo status for UI display\n   118→   - Follows existing controller patterns with nonce/capability verification\n   119→\n   120→2. Modified wp-content/plugins/abschussplan-hgmh/admin/controllers/class-bulk-operations-controller.php:\n   121→   - Added undo_service property to controller\n   122→   - Integrated undo logging into bulk_update():\n   123→     * Captures records snapshot before update\n   124→     * Logs operation with description\n   125→     * Compares old/new values and logs changes\n   126→     * Returns log_id in success response\n   127→   - Integrated undo logging into bulk_delete():\n   128→     * Captures records snapshot before deletion\n   129→     * Logs operation with description\n   130→     * Logs all fields of deleted records for restoration\n   131→     * Returns log_id in success response\n   132→   - Integrated undo logging into mass_assign():\n   133→     * Captures records snapshot before assignment\n   134→     * Logs operation with jagdbezirk in description\n   135→     * Logs jagdbezirk field changes with old/new values\n   136→     * Returns log_id in success response\n   137→\n   138→3. Modified wp-content/plugins/abschussplan-hgmh/admin/assets/admin-modern.js:\n   139→   - Added showUndoNotification() function:\n   140→     * Displays success message with undo button\n   141→     * Removes any existing undo notifications first\n   142→     * Undo button has data-log-id attribute for tracking\n   143→     * Notification stays visible for 10 seconds (vs 3 for normal)\n   144→     * Handles undo button click to trigger handleUndo()\n   145→   - Added handleUndo() function:\n   146→     * Shows confirmation dialog before execution\n   147→     * Displays loading notification during AJAX call\n   148→     * Calls ahgmh_undo_operation AJAX action with log_id\n   149→     * Shows success message and reloads page on success\n   150→     * Shows error message on failure\n   151→   - Updated handleBulkDelete() to use showUndoNotification()\n   152→     * Checks for log_id in response data\n   153→     * Falls back to regular notification if log_id missing\n   154→   - Updated handleBulkAssign() to use showUndoNotification()\n   155→     * Checks for log_id in response data\n   156→     * Falls back to regular notification if log_id missing\n   157→\n   158→4. Modified wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php:\n   159→   - Added require_once for class-undo-service.php in services section\n   160→   - Added require_once for class-undo-controller.php in controllers section\n   161→   - Instantiated AHGMH_Undo_Controller in admin context initialization\n   162→\n   163→Implementation Details:\n   164→- Undo controller follows WordPress AJAX patterns with proper error handling\n   165→- All bulk operations now log changes before execution for undo capability\n   166→- Undo notifications are visually distinct with prominent undo button\n   167→- Undo confirmation prevents accidental restoration\n   168→- Page reload after undo ensures UI shows current state\n   169→- German language strings used throughout for i18n consistency\n   170→\n   171→All acceptance criteria met:\n   172→✓ ajax_undo_operation reverts last operation\n   173→✓ Undo notification shown after bulk operations\n   174→✓ Undo button available for recent operations\n   175→✓ Confirmation before undo execution\n   176→✓ Success/failure feedback after undo\n   177→\n   178→Commit: 9a2eb14\n   179→\n   180→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. Y\n\n... [truncated - full output was 10473 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T11:00:42.039328+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cat >> ./build-progress.txt << 'EOF'\n==========...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cat >> ./build-progress.txt << 'EOF'\n==========..."
+        },
+        {
+          "timestamp": "2026-01-12T11:00:43.251311+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T11:00:49.592092+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd /home/foe/9_sideprojects/GITHUB/pr25_one/.wo...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd /home/foe/9_sideprojects/GITHUB/pr25_one/.wo..."
         }
       ]
     },
