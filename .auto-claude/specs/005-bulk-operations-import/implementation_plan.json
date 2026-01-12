@@ -45,8 +45,8 @@
             "All handlers verify nonce and user capability",
             "Proper error handling with translatable messages"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "AHGMH_Import_Controller class created with complete AJAX handler implementation. All acceptance criteria met: ajax_upload_file handles multipart file uploads with security validation, ajax_get_preview returns sample data with detected columns (up to 20 rows max), ajax_execute_import processes column mapping and imports data to database. Security: All handlers use verify_ajax_request() for nonce/capability verification. Error handling: Comprehensive try-catch blocks with translatable German messages. Features: Duplicate WUS detection, date format parsing, input sanitization, automatic file cleanup. Already committed in 7e288a0."
         },
         {
           "subtask_id": "1.3",
