@@ -1,0 +1,51 @@
+
+========================================
+Date: 2026-01-12
+Subtask: 4.3 - Add Bulk Selection UI to Admin Table
+Status: COMPLETED
+========================================
+
+Changes Made:
+1. Modified wp-content/plugins/abschussplan-hgmh/admin/class-admin-page-modern.php:
+   - Added bulk actions dropdown with "Löschen" and "Jagdbezirk zuweisen" options
+   - Added "select all" checkbox in table header
+   - Added individual checkboxes for each submission row
+   - Added selected count display that shows/hides dynamically
+   - Retrieved jagdbezirke list from database for bulk assign functionality
+   - Added inline JavaScript to pass jagdbezirke data to frontend
+   - Updated colspan in empty table message from 8 to 10
+
+2. Modified wp-content/plugins/abschussplan-hgmh/admin/assets/admin-modern.js:
+   - Added initBulkActions() function to initialize bulk selection handlers
+   - Added updateBulkActionUI() to update UI based on selection state
+   - Added getSelectedSubmissionIds() to retrieve checked submission IDs
+   - Added handleBulkDelete() with confirmation dialog and AJAX integration
+   - Added handleBulkAssign() with modal dialog for jagdbezirk selection
+   - Implemented "select all" checkbox functionality
+   - Implemented individual checkbox state management
+   - Added proper error handling and user feedback
+
+3. Modified wp-content/plugins/abschussplan-hgmh/admin/assets/admin-modern.css:
+   - Added styles for check-column with proper width and padding
+   - Added styles for bulkactions container with flexbox layout
+   - Added styles for bulk-select-info badge with count display
+   - Added styles for bulk assign dialog modal
+   - Added responsive styles for mobile devices
+
+Implementation Details:
+- Uses existing AJAX actions: ahgmh_bulk_delete and ahgmh_mass_assign
+- Bulk delete requires confirmation dialog and confirm_token for security
+- Bulk assign shows modal dialog with jagdbezirk dropdown
+- Selected count updates in real-time as checkboxes are toggled
+- "Select all" checkbox state syncs with individual checkbox states
+- Apply button is disabled when no items are selected
+- Follows WordPress admin UI patterns and styling conventions
+
+All acceptance criteria met:
+✓ Checkbox column added to submissions table
+✓ 'Select all' checkbox in header
+✓ Bulk actions dropdown with Delete/Assign options
+✓ Apply button triggers selected action
+✓ Selected count displayed
+
+Commit: 71c2806

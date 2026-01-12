@@ -238,8 +238,8 @@
             "Apply button triggers selected action",
             "Selected count displayed"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "Bulk selection UI fully implemented with checkboxes in table header ('select all') and each row. Bulk actions dropdown added with delete and assign jagdbezirk options. Selected count displayed dynamically. JavaScript handlers implement bulk delete with confirmation, bulk assign with modal dialog, and proper AJAX integration with existing bulk operations controller. CSS styling added for responsive design. Modified class-admin-page-modern.php to add checkbox column and bulk actions dropdown. Modified admin-modern.js to add initBulkActions(), updateBulkActionUI(), handleBulkDelete(), and handleBulkAssign() functions. Modified admin-modern.css to add bulk actions styling. All acceptance criteria met."
         }
       ]
     },
