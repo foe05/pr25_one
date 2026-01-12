@@ -175,6 +175,58 @@ class AHGMH_Admin_Page_Modern {
                 )
             );
         }
+
+        // Enqueue import assets only on import page
+        if (strpos($hook, 'abschussplan-hgmh-import') !== false) {
+            wp_enqueue_style(
+                'ahgmh-import',
+                AHGMH_PLUGIN_URL . 'admin/assets/import.css',
+                array('ahgmh-admin-modern'),
+                AHGMH_PLUGIN_VERSION
+            );
+
+            wp_enqueue_script(
+                'ahgmh-import',
+                AHGMH_PLUGIN_URL . 'admin/assets/import.js',
+                array('jquery', 'ahgmh-admin-modern'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+
+            // Localize import script with field mapping data
+            wp_localize_script(
+                'ahgmh-import',
+                'ahgmh_import',
+                array(
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('ahgmh_admin_nonce'),
+                    'max_file_size' => 10 * 1024 * 1024, // 10 MB in bytes
+                    'supported_types' => array('csv', 'xlsx'),
+                    'field_labels' => array(
+                        'datum' => __('Datum', 'abschussplan-hgmh'),
+                        'wildart' => __('Wildart', 'abschussplan-hgmh'),
+                        'kategorie' => __('Kategorie', 'abschussplan-hgmh'),
+                        'meldegruppe' => __('Meldegruppe', 'abschussplan-hgmh'),
+                        'jagdbezirk' => __('Jagdbezirk', 'abschussplan-hgmh'),
+                        'wus_nummer' => __('WUS-Nummer', 'abschussplan-hgmh'),
+                        'bemerkung' => __('Bemerkung', 'abschussplan-hgmh'),
+                    ),
+                    'required_fields' => array('datum', 'wildart', 'kategorie'),
+                    'strings' => array(
+                        'uploading' => __('Hochladen...', 'abschussplan-hgmh'),
+                        'processing' => __('Verarbeite Daten...', 'abschussplan-hgmh'),
+                        'importing' => __('Importiere...', 'abschussplan-hgmh'),
+                        'validating' => __('Validiere Daten...', 'abschussplan-hgmh'),
+                        'error_upload' => __('Fehler beim Hochladen der Datei.', 'abschussplan-hgmh'),
+                        'error_invalid_type' => __('Ungültiger Dateityp. Bitte laden Sie eine CSV- oder Excel-Datei (.xlsx) hoch.', 'abschussplan-hgmh'),
+                        'error_file_too_large' => __('Datei zu groß. Maximum: 10 MB.', 'abschussplan-hgmh'),
+                        'error_network' => __('Netzwerkfehler. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh'),
+                        'success_import' => __('Import erfolgreich abgeschlossen!', 'abschussplan-hgmh'),
+                        'confirm_import' => __('Möchten Sie die Import-Vorgang wirklich starten?', 'abschussplan-hgmh'),
+                    )
+                )
+            );
+        }
     }
 
     /**
