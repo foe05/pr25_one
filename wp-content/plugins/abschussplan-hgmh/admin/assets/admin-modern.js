@@ -870,6 +870,38 @@
     }
 
     /**
+     * Show undo notification with undo button
+     */
+    function showUndoNotification(message, logId) {
+        // Remove any existing undo notifications
+        $('.ahgmh-undo-notification').remove();
+
+        var notification = $('<div class="ahgmh-notification ahgmh-undo-notification ahgmh-notification-success">' +
+            message +
+            ' <button class="button button-small ahgmh-undo-btn" data-log-id="' + logId + '" style="margin-left: 10px;">Rückgängig machen</button>' +
+            '</div>');
+        $('body').append(notification);
+
+        setTimeout(function () {
+            notification.addClass('show');
+        }, 100);
+
+        // Keep undo notification longer (10 seconds)
+        setTimeout(function () {
+            notification.removeClass('show');
+            setTimeout(function () {
+                notification.remove();
+            }, 300);
+        }, 10000);
+
+        // Handle undo button click
+        notification.find('.ahgmh-undo-btn').on('click', function() {
+            handleUndo(logId);
+            notification.remove();
+        });
+    }
+
+    /**
      * Hide notification
      */
     function hideNotification() {
@@ -1424,7 +1456,12 @@
             },
             success: function(response) {
                 if (response.success) {
-                    showNotification(response.data.deleted_count + ' Meldung(en) erfolgreich gelöscht!', 'success');
+                    // Show undo notification with undo button
+                    if (response.data.log_id) {
+                        showUndoNotification(response.data.deleted_count + ' Meldung(en) erfolgreich gelöscht!', response.data.log_id);
+                    } else {
+                        showNotification(response.data.deleted_count + ' Meldung(en) erfolgreich gelöscht!', 'success');
+                    }
 
                     // Remove deleted rows from table
                     ids.forEach(function(id) {
@@ -1516,7 +1553,12 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        showNotification(response.data.updated_count + ' Meldung(en) erfolgreich zugewiesen!', 'success');
+                        // Show undo notification with undo button
+                        if (response.data.log_id) {
+                            showUndoNotification(response.data.updated_count + ' Meldung(en) erfolgreich zugewiesen!', response.data.log_id);
+                        } else {
+                            showNotification(response.data.updated_count + ' Meldung(en) erfolgreich zugewiesen!', 'success');
+                        }
 
                         // Close dialog
                         $('.ahgmh-bulk-assign-dialog, .ahgmh-bulk-assign-overlay').remove();
@@ -1535,6 +1577,43 @@
                     $('.ahgmh-confirm-bulk-assign').prop('disabled', false).text('Zuweisen');
                 }
             });
+        });
+    }
+
+    /**
+     * Handle undo operation
+     */
+    function handleUndo(logId) {
+        if (!confirm('Möchten Sie diese Operation wirklich rückgängig machen?')) {
+            return;
+        }
+
+        // Show loading notification
+        showNotification('Mache rückgängig...', 'info');
+
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_undo_operation',
+                nonce: ahgmh_admin.nonce,
+                log_id: logId
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+
+                    // Reload page to show restored data
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showNotification('Fehler beim Rückgängigmachen: ' + (response.data.message || 'Unbekannter Fehler'), 'error');
+                }
+            },
+            error: function() {
+                showNotification('Netzwerkfehler beim Rückgängigmachen', 'error');
+            }
         });
     }
 

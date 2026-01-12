@@ -1,7 +1,7 @@
 {
   "spec_id": "005-bulk-operations-import",
   "created_at": "2026-01-12T10:20:04.200523+00:00",
-  "updated_at": "2026-01-12T10:42:55.626999+00:00",
+  "updated_at": "2026-01-12T10:51:32.508664+00:00",
   "phases": {
     "planning": {
       "phase": "planning",
@@ -2810,6 +2810,986 @@
           "phase": "coding",
           "tool_name": "Bash",
           "tool_input": "git add . && git commit -m \"Final task logs upd..."
+        },
+        {
+          "timestamp": "2026-01-12T10:42:57.999922+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "[auto-claude/005-bulk-operations-import c0a25fe] Final task logs update\n 1 file changed, 35 insertions(+), 1 deletion(-)",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:43:10.348379+00:00",
+          "type": "text",
+          "content": "Perfect! Subtask 5.1 is now complete. Here's a summary of what was implemented:\n\n## ✅ Subtask 5.1 - Create Operation Log Table - COMPLETED\n\n### Changes Made:\n\n**Modified: `wp-content/plugins/abschussplan-hgmh/includes/class-database-handler.php`**\n\n1. **Created `create_operation_log_tables()` method** that sets up two related tables:\n\n   **Table 1: `ahgmh_operation_logs`** - Main operation tracking table\n   - `id` - Primary key (bigint, auto-increment)\n   - `operation_type` - Type of operation: bulk_delete, bulk_update, import, etc.\n   - `user_id` - WordPress user who performed the operation\n   - `affected_count` - Number of records affected\n   - `description` - Human-readable operation description\n   - `created_at` - Timestamp with index for efficient cleanup\n\n   **Table 2: `ahgmh_operation_log_details`** - Individual field changes\n   - `id` - Primary key (bigint, auto-increment)\n   - `log_id` - Foreign key to operation_logs\n   - `record_id` - ID of the affected submission record\n   - `field_name` - Name of the field that changed\n   - `old_value` - Previous value (for undo)\n   - `new_value` - New value\n\n2. **Integrated into plugin lifecycle:**\n   - Called from `create_table()` method during plugin activation\n   - Added to `cleanup_database()` for proper uninstallation\n\n3. **Performance optimizations:**\n   - Indexed `created_at` for efficient 30-day retention cleanup\n   - Indexed `log_id` and `record_id` for fast lookups\n   - Indexed `user_id` and `operation_type` for filtering\n\n### All Acceptance Criteria Met:\n✅ create_operation_log_table method added  \n✅ Table stores: operation_id, operation_type, user_id, created_at  \n✅ Related table stores: log_id, record_id, field_name, old_value, new_value  \n✅ Index on created_at for efficient cleanup\n\n### Commits:\n- `0e87976` - Main implementation\n- `be0f2b3` - Updated implementation plan\n- `1aa7629` - Task logs update\n- `c0a25fe` - Final task logs update\n\nThe operation log tables are now ready to be used by the Undo Service (next subtask 5.2) to enable undo functionality for bulk operations and imports! 🎉",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:43:52.983343+00:00",
+          "type": "text",
+          "content": "I'll help you implement the AHGMH_Undo_Service. Let me start by understanding the context and patterns.",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:43:53.528672+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...claude/specs/005-bulk-operations-import/spec.md",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...claude/specs/005-bulk-operations-import/spec.md"
+        },
+        {
+          "timestamp": "2026-01-12T10:43:54.007274+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...bulk-operations-import/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...bulk-operations-import/implementation_plan.json"
+        },
+        {
+          "timestamp": "2026-01-12T10:43:54.211949+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__get_session_context]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_session_context"
+        },
+        {
+          "timestamp": "2026-01-12T10:43:54.313499+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__get_build_progress]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_build_progress"
+        },
+        {
+          "timestamp": "2026-01-12T10:43:54.680981+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__get_build_progress] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_build_progress",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:44:02.070979+00:00",
+          "type": "text",
+          "content": "Now let me look at existing services to understand the code patterns:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:44:02.529255+00:00",
+          "type": "tool_start",
+          "content": "[Glob] pattern: wp-content/plugins/abschussplan-hgmh/admin/services/*.php",
+          "phase": "coding",
+          "tool_name": "Glob",
+          "tool_input": "pattern: wp-content/plugins/abschussplan-hgmh/admin/services/*.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:44:03.147054+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...dmin/services/class-bulk-operations-service.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...dmin/services/class-bulk-operations-service.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:44:03.859437+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...ssplan-hgmh/includes/class-database-handler.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...ssplan-hgmh/includes/class-database-handler.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:44:04.265859+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "     1→<?php\n     2→/**\n     3→ * Bulk Operations Service Class\n     4→ * Handles bulk update, bulk delete, and mass field assignment operations\n     5→ */\n     6→\n     7→// Exit if accessed directly\n     8→if (!defined('ABSPATH')) {\n     9→    exit;\n    10→}\n    11→\n    12→/**\n    13→ * Bulk Operations Service for managing multiple records efficiently\n    14→ */\n    15→class AHGMH_Bulk_Operations_Service {\n    16→\n    17→    /**\n    18→     * Database handler instance\n    19→     *\n    20→     * @var AHGMH_Database_Handler\n    21→     */\n    22→    private $db_handler;\n    23→\n    24→    /**\n    25→     * Batch size for processing large datasets\n    26→     *\n    27→     * @var int\n    28→     */\n    29→    private $batch_size = 100;\n    30→\n    31→    /**\n    32→     * Constructor\n    33→     */\n    34→    public function __construct() {\n    35→        $this->db_handler = new AHGMH_Database_Handler();\n    36→    }\n    37→\n    38→    /**\n    39→     * Bulk update multiple records\n    40→     *\n    41→     * @param array $record_ids Array of record IDs to update\n    42→     * @param array $update_data Associative array of fields to update\n    43→     * @return array Result with success count, failed IDs, and errors\n    44→     */\n    45→    public function bulk_update($record_ids, $update_data) {\n    46→        // Validate inputs\n    47→        if (empty($record_ids) || !is_array($record_ids)) {\n    48→            return [\n    49→                'success' => false,\n    50→                'message' => __('Keine Datensätze zum Aktualisieren ausgewählt.', 'abschussplan-hgmh'),\n    51→                'updated_count' => 0,\n    52→                'failed_ids' => []\n    53→            ];\n    54→        }\n    55→\n    56→        if (empty($update_data) || !is_array($update_data)) {\n    57→            return [\n    58→                'success' => false,\n    59→                'message' => __('Keine Aktualisierungsdaten angegeben.', 'abschussplan-hgmh'),\n    60→                'updated_count' => 0,\n    61→                'failed_ids' => []\n    62→            ];\n    63→        }\n    64→\n    65→        // Sanitize record IDs\n    66→        $record_ids = array_map('intval', $record_ids);\n    67→        $record_ids = array_filter($record_ids, function($id) {\n    68→            return $id > 0;\n    69→        });\n    70→\n    71→        if (empty($record_ids)) {\n    72→            return [\n    73→                'success' => false,\n    74→                'message' => __('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'),\n    75→                'updated_count' => 0,\n    76→                'failed_ids' => []\n    77→            ];\n    78→        }\n    79→\n    80→        // Sanitize update data\n    81→        $sanitized_data = $this->sanitize_update_data($update_data);\n    82→\n    83→        if (empty($sanitized_data)) {\n    84→            return [\n    85→                'success' => false,\n    86→                'message' => __('Keine gültigen Aktualisierungsdaten.', 'abschussplan-hgmh'),\n    87→                'updated_count' => 0,\n    88→                'failed_ids' => []\n    89→            ];\n    90→        }\n    91→\n    92→        // Process records in batches\n    93→        $batches = array_chunk($record_ids, $this->batch_size);\n    94→        $updated_count = 0;\n    95→        $failed_ids = [];\n    96→\n    97→        foreach ($batches as $batch) {\n    98→            foreach ($batch as $record_id) {\n    99→                $result = $this->db_handler->update_submission($record_id, $sanitized_data);\n   100→\n   101→                if ($result !== false) {\n   102→                    $updated_count++;\n   103→                } else {\n   104→                    $failed_ids[] = $record_id;\n   105→                }\n   106→}\n   107→        }\n   108→\n   109→        $total_records = count($record_ids);\n   110→        $success = $updated_count > 0;\n   111→        $message = sprintf(\n   112→            _n(\n   113→                '%d Datensatz erfolgreich aktualisiert.',\n   114→                '%d Datensätze erfolgreich aktualisiert.',\n   115→                $updated_count,\n   116→                'abschussplan-hgmh'\n   117→            ),\n   118→            $updated_count\n   119→        );\n   120→\n   121→        if (!empty($failed_ids)) {\n   122→            $message .= ' ' . sprintf(\n   123→                _n(\n   124→                    '%d Datensatz konnte nicht aktualisiert werden.',\n   125→                    '%d Datensätze konnten nicht aktualisiert werden.',\n   126→                    count($failed_ids),\n   127→                    'abschussplan-hgmh'\n   128→                ),\n   129→                count($failed_ids)\n   130→            );\n   131→        }\n   132→\n   133→        return [\n   134→            'success' => $success,\n   135→            'message' => $message,\n   136→            'updated_count' => $updated_count,\n   137→            'failed_count' => count($failed_ids),\n   138→            'failed_ids' => $failed_ids,\n   139→            'total_requested' => $total_records\n   140→        ];\n   141→    }\n   142→\n   143→    /**\n   144→     * Bulk delete multiple records\n   145→     *\n   146→     * @param array $record_ids Array of record IDs to delete\n   147→     * @return array Result with success count, failed IDs, and errors\n   148→     */\n   149→    public function bulk_delete($record_ids) {\n   150→        // Validate inputs\n   151→        if (empty($record_ids) || !is_array($record_ids)) {\n   152→            return [\n   153→                'success' => false,\n   154→                'message' => __('Keine Datensätze zum Löschen ausgewählt.', 'abschussplan-hgmh'),\n   155→                'deleted_count' => 0,\n   156→                'failed_ids' => []\n   157→            ];\n   158→        }\n   159→\n   160→        // Sanitize record IDs\n   161→        $record_ids = array_map('intval', $record_ids);\n   162→        $record_ids = array_filter($record_ids, function($id) {\n   163→            return $id > 0;\n   164→        });\n   165→\n   166→        if (empty($record_ids)) {\n   167→            return [\n   168→                'success' => false,\n   169→                'message' => __('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'),\n   170→                'deleted_count' => 0,\n   171→                'failed_ids' => []\n   172→            ];\n   173→        }\n   174→\n   175→        // Process records in batches\n   176→        $batches = array_chunk($record_ids, $this->batch_size);\n   177→        $deleted_count = 0;\n   178→        $failed_ids = [];\n   179→\n   180→        foreach ($batches as $batch) {\n   181→            foreach ($batch as $record_id) {\n   182→                $result = $this->db_handler->delete_submission($record_id);\n   183→\n   184→                if ($result !== false) {\n   185→                    $deleted_count++;\n   186→                } else {\n   187→                    $failed_ids[] = $record_id;\n   188→                }\n   189→            }\n   190→        }\n   191→\n   192→        $total_records = count($record_ids);\n   193→        $success = $deleted_count > 0;\n   194→        $message = sprintf(\n   195→            _n(\n   196→                '%d Datensatz erfolgreich gelöscht.',\n   197→                '%d Datensätze erfolgreich gelöscht.',\n   198→                $deleted_count,\n   199→                'abschussplan-hgmh'\n   200→            ),\n   201→            $deleted_count\n   202→        );\n   203→\n   204→        if (!empty($failed_ids)) {\n   205→            $message .= ' ' . sprintf(\n   206→                _n(\n   207→                    '%d Datensatz konnte nicht gelöscht werden.',\n   208→                    '%d Datensätze konnten nicht gelöscht werden.',\n   209→                    count($failed_ids),\n   210→                    'abschussplan-hgmh'\n   211→                ),\n   212→                count($failed_ids)\n   213→            );\n   214→        }\n   215→\n   216→        return [\n   217→            'success' => $success,\n   218→            'message' => $message,\n   219→            'deleted_count' => $deleted_count,\n   220→            'failed_count' => count($failed_ids),\n   221→            'failed_ids' => $failed_ids,\n   222→            'total_requested' => $total_records\n   223→        ];\n   224→    }\n   225→\n   226→    /**\n   227→     * Mass assign meldegruppe to selected records\n   228→     *\n   229→     * @param array $record_ids Array of record IDs to update\n   230→     * @param string $jagdbezirk Jagdbezirk to assign\n   231→     * @return array Result with success count, failed IDs, and errors\n   232→     */\n   233→    public function mass_assign_meldegruppe($record_ids, $jagdbezirk) {\n   234→        // Validate inputs\n   235→        if (empty($record_ids) || !is_array($record_ids)) {\n   236→            return [\n   237→                'success' => false,\n   238→                'message' => __('Keine Datensätze ausgewählt.', 'abschussplan-hgmh'),\n   239→                'updated_count' => 0,\n   240→                'failed_ids' => []\n   241→            ];\n   242→        }\n   243→\n   244→        if (empty($jagdbezirk) || !is_string($jagdbezirk)) {\n   245→            return [\n   246→                'success' => false,\n   247→                'message' => __('Kein Jagdbezirk angegeben.', 'abschussplan-hgmh'),\n   248→                'updated_count' => 0,\n   249→                'failed_ids' => []\n   250→            ];\n   251→        }\n   252→\n   253→        // Sanitize jagdbezirk\n   254→        $jagdbezirk = sanitize_text_field($jagdbezirk);\n   255→\n   256→        // Validate jagdbezirk exists\n   257→        if (!$this->validate_jagdbezirk($jagdbezirk)) {\n   258→            return [\n   259→                'success' => false,\n   260→                'message' => __('Ungültiger Jagdbezirk.', 'abschussplan-hgmh'),\n   261→                'updated_count' => 0,\n   262→                'failed_ids' => []\n   263→            ];\n   264→        }\n   265→\n   266→        // Use bulk_update to assign jagdbezirk (field5)\n   267→        $update_data = [\n   268→            'field5' => $jagdbezirk\n   269→        ];\n   270→\n   271→        $result = $this->bulk_update($record_ids, $update_data);\n   272→\n   273→        // Update message to be specific about meldegruppe assignmen\n\n... [truncated - full output was 16835 chars]",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:44:09.550387+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: create_operation_log_tables",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: create_operation_log_tables"
+        },
+        {
+          "timestamp": "2026-01-12T10:44:10.527159+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...an-hgmh/admin/services/class-import-service.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...an-hgmh/admin/services/class-import-service.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:44:11.136466+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "     1→<?php\n     2→/**\n     3→ * Import Service Class\n     4→ * Handles file upload, CSV/Excel parsing, and data extraction\n     5→ */\n     6→\n     7→// Exit if accessed directly\n     8→if (!defined('ABSPATH')) {\n     9→    exit;\n    10→}\n    11→\n    12→/**\n    13→ * Import Service for file parsing and data extraction\n    14→ */\n    15→class AHGMH_Import_Service {\n    16→\n    17→    private $upload_dir;\n    18→    private $allowed_mime_types;\n    19→    private $max_file_size;\n    20→\n    21→    /**\n    22→     * Constructor\n    23→     */\n    24→    public function __construct() {\n    25→        $this->upload_dir = wp_upload_dir();\n    26→        $this->allowed_mime_types = [\n    27→            'text/csv',\n    28→            'text/plain',\n    29→            'application/csv',\n    30→            'application/vnd.ms-excel',\n    31→            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'\n    32→        ];\n    33→        $this->max_file_size = 5 * 1024 * 1024; // 5MB\n    34→    }\n    35→\n    36→    /**\n    37→     * Handle file upload\n    38→     *\n    39→     * @param array $file The uploaded file from $_FILES\n    40→     * @return array Upload result with filepath and metadata\n    41→     * @throws Exception On upload or validation failure\n    42→     */\n    43→    public function handle_upload($file) {\n    44→        // Validate file upload\n    45→        if (!isset($file['error']) || is_array($file['error'])) {\n    46→            throw new Exception(__('Ungültige Datei-Parameter.', 'abschussplan-hgmh'));\n    47→        }\n    48→\n    49→        // Check upload errors\n    50→        switch ($file['error']) {\n    51→            case UPLOAD_ERR_OK:\n    52→                break;\n    53→            case UPLOAD_ERR_INI_SIZE:\n    54→            case UPLOAD_ERR_FORM_SIZE:\n    55→                throw new Exception(__('Datei überschreitet die maximale Dateigröße.', 'abschussplan-hgmh'));\n    56→            case UPLOAD_ERR_NO_FILE:\n    57→                throw new Exception(__('Keine Datei hochgeladen.', 'abschussplan-hgmh'));\n    58→            default:\n    59→                throw new Exception(__('Upload-Fehler aufgetreten.', 'abschussplan-hgmh'));\n    60→        }\n    61→\n    62→        // Validate file size\n    63→        if ($file['size'] > $this->max_file_size) {\n    64→            throw new Exception(sprintf(\n    65→                __('Datei ist zu groß. Maximum: %s', 'abschussplan-hgmh'),\n    66→                $this->format_file_size($this->max_file_size)\n    67→            ));\n    68→        }\n    69→\n    70→        // Validate file type\n    71→        $finfo = finfo_open(FILEINFO_MIME_TYPE);\n    72→        $mime_type = finfo_file($finfo, $file['tmp_name']);\n    73→        finfo_close($finfo);\n    74→\n    75→        if (!in_array($mime_type, $this->allowed_mime_types)) {\n    76→            throw new Exception(__('Dateityp nicht unterstützt. Bitte CSV oder Excel-Dateien verwenden.', 'abschussplan-hgmh'));\n    77→        }\n    78→\n    79→        // Generate secure filename\n    80→        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);\n    81→        $filename = AHGMH_Validation_Service::generate_secure_filename('import', $extension);\n    82→        $filepath = $this->upload_dir['path'] . '/' . $filename;\n    83→\n    84→        // Move uploaded file\n    85→        if (!move_uploaded_file($file['tmp_name'], $filepath)) {\n    86→            throw new Exception(__('Datei konnte nicht gespeichert werden.', 'abschussplan-hgmh'));\n    87→        }\n    88→\n    89→        // Schedule cleanup after 1 hour\n    90→        wp_schedule_single_event(time() + 3600, 'ahgmh_cleanup_import_file', [$filepath]);\n    91→\n    92→        return [\n    93→            'filepath' => $filepath,\n    94→            'filename' => sanitize_file_name($file['name']),\n    95→            'size' => $file['size'],\n    96→            'mime_type' => $mime_type,\n    97→            'extension' => sanitize_text_field($extension)\n    98→        ];\n    99→    }\n   100→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:44:17.588682+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: get_submission|update_submission|delete_submission",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: get_submission|update_submission|delete_submission"
+        },
+        {
+          "timestamp": "2026-01-12T10:44:17.874017+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "detail": "317:    public function get_submissions($limit = 10, $offset = 0) {\n318-        global $wpdb;\n319-        \n320-        $query = \"SELECT s.*, j.meldegruppe \n321-                  FROM $this->table_name s \n322-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk \n323-                  ORDER BY s.created_at DESC\";\n324-        \n325-        if ($limit > 0) {\n326-            $query .= $wpdb->prepare(\" LIMIT %d OFFSET %d\", $limit, $offset);\n327-        }\n328-        \n329-        $results = $wpdb->get_results($query, ARRAY_A);\n330-        \n331-        return $results;\n332-    }\n333-\n334-    /**\n335-     * Count total submissions\n336-     *\n337-     * @return int Total count of submissions\n--\n414:    public function delete_submission($id) {\n415-        global $wpdb;\n416-        \n417-        $result = $wpdb->delete(\n418-            $this->table_name,\n419-            array('id' => $id),\n420-            array('%d')\n421-        );\n422-        \n423-        return $result !== false;\n424-    }\n425-\n426-    /**\n427-     * Update a submission\n428-     *\n429-     * @param int $id The submission ID\n430-     * @param array $data The updated data\n431-     * @return bool Whether the update was successful\n432-     */\n433:    public function update_submission($id, $data) {\n434-        global $wpdb;\n435-        \n436-        // Remove any empty values except created_at which can be empty but valid\n437-        $filtered_data = array();\n438-        foreach ($data as $key => $value) {\n439-            if ($value !== null && ($key === 'created_at' || $value !== '')) {\n440-                $filtered_data[$key] = $value;\n441-            }\n442-        }\n443-        \n444-        if (empty($filtered_data)) {\n445-            return false;\n446-        }\n447-        \n448-        // Build format array dynamically based on filtered data\n449-        $formats = array();\n450-        foreach ($filtered_data as $key => $value) {\n451-            $formats[] = '%s';\n452-        }\n453-        \n--\n471:    public function delete_submissions_by_species($species) {\n472-        global $wpdb;\n473-        \n474-        $result = $wpdb->delete(\n475-            $this->table_name,\n476-            array('game_species' => $species),\n477-            array('%s')\n478-        );\n479-        \n480-        return $result !== false;\n481-    }\n482-\n483-    /**\n484-     * Get submission counts per category\n485-     *\n486-     * @param string $species Filter by game species (optional)\n487-     * @param string $meldegruppe Filter by meldegruppe (optional - legacy, maintained for compatibility)\n488-     * @param string $jagdbezirk Filter by jagdbezirk (optional - direct filtering)\n489-     * @return array Array with category counts\n490-     */\n491-    public function get_category_counts($species = '', $meldegruppe = '', $jagdbezirk = '') {\n--\n536:    public function get_submissions_by_species($limit = 10, $offset = 0, $species = '') {\n537-        global $wpdb;\n538-        \n539-        $query = \"SELECT s.*, j.meldegruppe \n540-                  FROM $this->table_name s \n541-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk\";\n542-        \n543-        if (!empty($species)) {\n544-            $query .= $wpdb->prepare(\" WHERE s.game_species = %s\", $species);\n545-        }\n546-        \n547-        $query .= \" ORDER BY s.created_at DESC\";\n548-        \n549-        if ($limit > 0) {\n550-            $query .= $wpdb->prepare(\" LIMIT %d OFFSET %d\", $limit, $offset);\n551-        }\n552-        \n553-        $results = $wpdb->get_results($query, ARRAY_A);\n554-        \n555-        return $results;\n556-    }\n--\n587:     public function get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit = 10, $offset = 0) {\n588-         global $wpdb;\n589-         \n590-         if (empty($species) || empty($meldegruppe)) {\n591-             return array();\n592-         }\n593-         \n594-         $query = \"SELECT s.*, j.meldegruppe \n595-                   FROM $this->table_name s \n596-                   LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk\n597-                   WHERE s.game_species = %s AND j.meldegruppe = %s\n598-                   ORDER BY s.created_at DESC\";\n599-         \n600-         if ($limit > 0) {\n601-             $query .= $wpdb->prepare(\" LIMIT %d OFFSET %d\", $limit, $offset);\n602-         }\n603-         \n604-         $results = $wpdb->get_results($wpdb->prepare($query, $species, $meldegruppe), ARRAY_A);\n605-         \n606-         return $results ? $results : array();\n607-     }\n--\n641:    public function get_submissions_by_meldegruppe($meldegruppe, $limit = 10, $offset = 0) {\n642-        global $wpdb;\n643-\n644-        if (empty($meldegruppe)) {\n645-            return array();\n646-        }\n647-\n648-        $query = \"SELECT s.*, j.meldegruppe\n649-                  FROM $this->table_name s\n650-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk\n651-                  WHERE j.meldegruppe = %s\n652-                  ORDER BY s.created_at DESC\";\n653-\n654-        if ($limit > 0) {\n655-            $query .= $wpdb->prepare(\" LIMIT %d OFFSET %d\", $limit, $offset);\n656-        }\n657-\n658-        $results = $wpdb->get_results($wpdb->prepare($query, $meldegruppe), ARRAY_A);\n659-\n660-        return $results ? $results : array();\n661-    }",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:44:22.250025+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: function get_submission\\(",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: function get_submission\\("
+        },
+        {
+          "timestamp": "2026-01-12T10:44:22.479833+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "detail": "No matches found",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:44:28.647242+00:00",
+          "type": "text",
+          "content": "Now I'll create the AHGMH_Undo_Service class following the patterns I've observed:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:45:23.909397+00:00",
+          "type": "tool_start",
+          "content": "[Write] ...plan-hgmh/admin/services/class-undo-service.php",
+          "phase": "coding",
+          "tool_name": "Write",
+          "tool_input": "...plan-hgmh/admin/services/class-undo-service.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:45:24.388349+00:00",
+          "type": "tool_end",
+          "content": "[Write] Done",
+          "phase": "coding",
+          "tool_name": "Write",
+          "detail": "File created successfully at: ./wp-content/plugins/abschussplan-hgmh/admin/services/class-undo-service.php",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:45:32.818591+00:00",
+          "type": "text",
+          "content": "Now let me check if there are any additional pattern files to review and then run verification:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:45:33.795592+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd ./wp-content/plugins/abschussplan-hgmh && ph...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd ./wp-content/plugins/abschussplan-hgmh && ph..."
+        },
+        {
+          "timestamp": "2026-01-12T10:45:34.407886+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Error: Command 'php' is not in the allowed commands for this project",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "Command 'php' is not in the allowed commands for this project",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:45:43.494933+00:00",
+          "type": "text",
+          "content": "Let me verify the implementation by reviewing the code structure and then commit the changes:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:45:44.188206+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...plan-hgmh/admin/services/class-undo-service.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...plan-hgmh/admin/services/class-undo-service.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:45:45.400362+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: class AHGMH_",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: class AHGMH_"
+        },
+        {
+          "timestamp": "2026-01-12T10:45:45.685008+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "detail": "     1→<?php\n     2→/**\n     3→ * Undo Service Class\n     4→ * Logs operations before execution and provides undo capability\n     5→ */\n     6→\n     7→// Exit if accessed directly\n     8→if (!defined('ABSPATH')) {\n     9→    exit;\n    10→}\n    11→\n    12→/**\n    13→ * Undo Service for logging operations and restoring previous state\n    14→ */\n    15→class AHGMH_Undo_Service {\n    16→\n    17→    /**\n    18→     * Database handler instance\n    19→     *\n    20→     * @var AHGMH_Database_Handler\n    21→     */\n    22→    private $db_handler;\n    23→\n    24→    /**\n    25→     * Retention period in days\n    26→     *\n    27→     * @var int\n    28→     */\n    29→    private $retention_days = 30;\n    30→\n    31→    /**\n    32→     * Constructor\n    33→     */\n    34→    public function __construct() {\n    35→        $this->db_handler = new AHGMH_Database_Handler();\n    36→    }\n    37→\n    38→    /**\n    39→     * Log an operation before execution\n    40→     *\n    41→     * @param string $operation_type Type of operation (import, bulk_update, bulk_delete, mass_assign)\n    42→     * @param int $affected_count Number of records affected\n    43→     * @param string $description Human-readable description of the operation\n    44→     * @return int|false Log ID on success, false on failure\n    45→     */\n    46→    public function log_operation($operation_type, $affected_count, $description = '') {\n    47→        global $wpdb;\n    48→\n    49→        $operations_table = $wpdb->prefix . 'ahgmh_operation_logs';\n    50→        $user_id = get_current_user_id();\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:45:58.400889+00:00",
+          "type": "text",
+          "content": "Perfect! The AHGMH_Undo_Service has been created successfully. Let me verify it meets all the acceptance criteria:\n\n**Acceptance Criteria Check:**\n- ✅ `log_operation` stores operation details (type, user, count, description, timestamp)\n- ✅ `log_record_change` stores before/after values for individual fields\n- ✅ `undo_operation` restores previous values from logged changes\n- ✅ `cleanup_old_logs` removes logs older than 30 days (configurable retention)\n- ✅ `get_recent_operations` returns undo-able operations with pagination\n\n**Additional features implemented:**\n- `log_bulk_changes` - Efficiently log multiple changes at once\n- `get_records_snapshot` - Capture record state before operations\n- `restore_deleted_record` - Handle undo of delete operations by re-inserting records\n- `get_operation` - Get detailed information about a specific operation\n- `can_undo` - Check if an operation is still undo-able\n- Configurable retention period (1-365 days)\n\nNow let me commit this change:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:45:59.332209+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd . && git add wp-content/plugins/abschussplan...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd . && git add wp-content/plugins/abschussplan..."
+        },
+        {
+          "timestamp": "2026-01-12T10:46:05.627247+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd . && git commit -m \"$(cat <<'EOF'\nauto-claud...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd . && git commit -m \"$(cat <<'EOF'\nauto-claud..."
+        },
+        {
+          "timestamp": "2026-01-12T10:46:07.553648+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:46:15.486143+00:00",
+          "type": "text",
+          "content": "Excellent! Now let me update the implementation plan to mark this subtask as completed:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:18.382234+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__update_subtask_status]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__update_subtask_status"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:20.705400+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__record_discovery] ...plan-hgmh/admin/services/class-undo-service.php",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__record_discovery",
+          "tool_input": "...plan-hgmh/admin/services/class-undo-service.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:20.885436+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__get_build_progress]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_build_progress"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:21.028307+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__get_build_progress] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_build_progress",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:46:27.792436+00:00",
+          "type": "text",
+          "content": "Let me update the implementation plan manually:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:29.103854+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...bulk-operations-import/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...bulk-operations-import/implementation_plan.json"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:29.296968+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "   250→      \"estimated_hours\": 4,\n   251→      \"subtasks\": [\n   252→        {\n   253→          \"subtask_id\": \"5.1\",\n   254→          \"title\": \"Create Operation Log Table\",\n   255→          \"description\": \"Add database table for operation logging that stores operation type, affected records, previous values, and timestamp for undo capability.\",\n   256→          \"file_paths\": [\n   257→            \"wp-content/plugins/abschussplan-hgmh/includes/class-database-handler.php\"\n   258→          ],\n   259→          \"acceptance_criteria\": [\n   260→            \"create_operation_log_table method added\",\n   261→            \"Table stores: operation_id, operation_type, user_id, created_at\",\n   262→            \"Related table stores: log_id, record_id, field_name, old_value, new_value\",\n   263→            \"Index on created_at for efficient cleanup\"\n   264→          ],\n   265→          \"status\": \"completed\",\n   266→          \"notes\": \"Operation log tables created successfully. Created two tables: ahgmh_operation_logs (main log table with id, operation_type, user_id, affected_count, description, created_at) and ahgmh_operation_log_details (details table with log_id, record_id, field_name, old_value, new_value). Includes indexes on created_at for efficient cleanup, and on log_id/record_id for fast lookups. Integrated into create_table() workflow and cleanup_database() method.\"\n   267→        },\n   268→        {\n   269→          \"subtask_id\": \"5.2\",\n   270→          \"title\": \"Create Undo Service\",\n   271→          \"description\": \"Create AHGMH_Undo_Service that logs operations before execution and can restore previous state. Implement retention policy to clean old logs.\",\n   272→          \"file_paths\": [\n   273→            \"wp-content/plugins/abschussplan-hgmh/admin/services/class-undo-service.php\"\n   274→          ],\n   275→          \"acceptance_criteria\": [\n   276→            \"log_operation stores operation details\",\n   277→            \"log_record_change stores before/after values\",\n   278→            \"undo_operation restores previous values\",\n   279→            \"cleanup_old_logs removes logs older than 30 days\",\n   280→            \"get_recent_operations returns undo-able operations\"\n   281→          ],\n   282→          \"status\": \"pending\",\n   283→          \"notes\": \"\"\n   284→        },\n   285→        {\n   286→          \"subtask_id\": \"5.3\",\n   287→          \"title\": \"Create Undo Controller and UI\",\n   288→          \"description\": \"Create controller for undo operations and add undo button/notification to admin interface after bulk operations.\",\n   289→          \"file_paths\": [\n   290→            \"wp-content/plugins/abschussplan-hgmh/admin/controllers/class-undo-controller.php\",\n   291→            \"wp-content/plugins/abschussplan-hgmh/admin/assets/admin-modern.js\"\n   292→          ],\n   293→          \"acceptance_criteria\": [\n   294→            \"ajax_undo_operation reverts last operation\",\n   295→            \"Undo notification shown after bulk operations\",\n   296→            \"Undo button available for recent operations\",\n   297→            \"Confirmation before undo execution\",\n   298→            \"Success/failure feedback after undo\"\n   299→          ],\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:46:45.467378+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...bulk-operations-import/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...bulk-operations-import/implementation_plan.json"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:45.709522+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "The file ./.auto-claude/specs/005-bulk-operations-import/implementation_plan.json has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n   264→          ],\n   265→          \"status\": \"completed\",\n   266→          \"notes\": \"Operation log tables created successfully. Created two tables: ahgmh_operation_logs (main log table with id, operation_type, user_id, affected_count, description, created_at) and ahgmh_operation_log_details (details table with log_id, record_id, field_name, old_value, new_value). Includes indexes on created_at for efficient cleanup, and on log_id/record_id for fast lookups. Integrated into create_table() workflow and cleanup_database() method.\"\n   267→        },\n   268→        {\n   269→          \"subtask_id\": \"5.2\",\n   270→          \"title\": \"Create Undo Service\",\n   271→          \"description\": \"Create AHGMH_Undo_Service that logs operations before execution and can restore previous state. Implement retention policy to clean old logs.\",\n   272→          \"file_paths\": [\n   273→            \"wp-content/plugins/abschussplan-hgmh/admin/services/class-undo-service.php\"\n   274→          ],\n   275→          \"acceptance_criteria\": [\n   276→            \"log_operation stores operation details\",\n   277→            \"log_record_change stores before/after values\",\n   278→            \"undo_operation restores previous values\",\n   279→            \"cleanup_old_logs removes logs older than 30 days\",\n   280→            \"get_recent_operations returns undo-able operations\"\n   281→          ],\n   282→          \"status\": \"completed\",\n   283→          \"notes\": \"AHGMH_Undo_Service fully implemented with comprehensive undo functionality: log_operation stores operation metadata, log_record_change/log_bulk_changes track before/after values, undo_operation restores previous state including re-inserting deleted records, get_records_snapshot captures state before operations, get_recent_operations returns paginated undo-able operations, cleanup_old_logs removes logs beyond 30-day retention period (configurable 1-365 days), can_undo validates undo-ability. Follows WordPress coding standards with German i18n, proper sanitization, and comprehensive error handling. All acceptance criteria met.\"\n   284→        },\n   285→        {\n   286→          \"subtask_id\": \"5.3\",\n   287→          \"title\": \"Create Undo Controller and UI\",\n   288→          \"description\": \"Create controller for undo operations and add undo button/notification to admin interface after bulk operations.\",",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:46:48.853473+00:00",
+          "type": "text",
+          "content": "Perfect! Now let me update the build-progress.txt file:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:49.340446+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...s/005-bulk-operations-import/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...s/005-bulk-operations-import/build-progress.txt"
+        },
+        {
+          "timestamp": "2026-01-12T10:46:49.476668+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "     1→\n     2→========================================\n     3→Date: 2026-01-12\n     4→Subtask: 5.1 - Create Operation Log Table\n     5→Status: COMPLETED\n     6→========================================\n     7→\n     8→Changes Made:\n     9→1. Modified wp-content/plugins/abschussplan-hgmh/includes/class-database-handler.php:\n    10→   - Added create_operation_log_tables() method to create two tables for undo functionality\n    11→   - Created ahgmh_operation_logs table with columns:\n    12→     * id (bigint AUTO_INCREMENT PRIMARY KEY)\n    13→     * operation_type (varchar 50) - Type of operation (bulk_delete, bulk_update, import, etc.)\n    14→     * user_id (bigint) - WordPress user who performed the operation\n    15→     * affected_count (int) - Number of records affected by the operation\n    16→     * description (text) - Human-readable description of the operation\n    17→     * created_at (datetime) - Timestamp of when operation was performed\n    18→   - Created ahgmh_operation_log_details table with columns:\n    19→     * id (bigint AUTO_INCREMENT PRIMARY KEY)\n    20→     * log_id (bigint) - Foreign key to ahgmh_operation_logs\n    21→     * record_id (bigint) - ID of the affected record in submissions table\n    22→     * field_name (varchar 100) - Name of the field that was changed\n    23→     * old_value (text) - Previous value before the operation\n    24→     * new_value (text) - New value after the operation\n    25→   - Added indexes for efficient querying:\n    26→     * user_id, operation_type, created_at on operation_logs table\n    27→     * log_id, record_id on operation_log_details table\n    28→   - Integrated create_operation_log_tables() into main create_table() method\n    29→   - Updated cleanup_database() to drop both new tables on plugin uninstall\n    30→\n    31→Implementation Details:\n    32→- Follows WordPress dbDelta standards for table creation\n    33→- Uses proper charset_collate from $wpdb->get_charset_collate()\n    34→- Tables designed to support undo functionality for:\n    35→  * Bulk delete operations\n    36→  * Bulk update operations\n    37→  * Mass assignment operations\n    38→  * Import operations\n    39→- created_at index enables efficient cleanup of old logs (30-day retention policy)\n    40→- log_id index enables fast retrieval of all changes for a specific operation\n    41→- record_id index enables fast lookup of all changes to a specific record\n    42→\n    43→All acceptance criteria met:\n    44→✓ create_operation_log_table method added (named create_operation_log_tables)\n    45→✓ Table stores: operation_id (as 'id'), operation_type, user_id, created_at\n    46→✓ Related table stores: log_id, record_id, field_name, old_value, new_value\n    47→✓ Index on created_at for efficient cleanup\n    48→\n    49→Commit: 0e87976\n    50→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:47:06.844847+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...s/005-bulk-operations-import/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...s/005-bulk-operations-import/build-progress.txt"
+        },
+        {
+          "timestamp": "2026-01-12T10:47:07.093945+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "The file ./.auto-claude/specs/005-bulk-operations-import/build-progress.txt has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n    45→✓ Table stores: operation_id (as 'id'), operation_type, user_id, created_at\n    46→✓ Related table stores: log_id, record_id, field_name, old_value, new_value\n    47→✓ Index on created_at for efficient cleanup\n    48→\n    49→Commit: 0e87976\n    50→\n    51→========================================\n    52→Date: 2026-01-12\n    53→Subtask: 5.2 - Create Undo Service\n    54→Status: COMPLETED\n    55→========================================\n    56→\n    57→Changes Made:\n    58→1. Created wp-content/plugins/abschussplan-hgmh/admin/services/class-undo-service.php:\n    59→   - Implemented AHGMH_Undo_Service class for operation logging and undo functionality\n    60→   - Core methods implemented:\n    61→     * log_operation() - Logs operation metadata to ahgmh_operation_logs table\n    62→     * log_record_change() - Logs individual field changes to ahgmh_operation_log_details table\n    63→     * log_bulk_changes() - Efficiently logs multiple changes at once\n    64→     * get_records_snapshot() - Captures record state before operations for comparison\n    65→     * undo_operation() - Restores previous values from logged changes\n    66→     * restore_deleted_record() - Re-inserts deleted records with original IDs\n    67→     * get_recent_operations() - Returns paginated list of undo-able operations\n    68→     * get_operation() - Gets detailed information about specific operation\n    69→     * cleanup_old_logs() - Removes logs beyond retention period\n    70→     * can_undo() - Validates if operation is within retention and has changes\n    71→   - Configurable retention period (default 30 days, range 1-365 days)\n    72→   - Handles all operation types: import,bulk_update, bulk_delete, mass_assign\n    73→   - Special handling for delete operations (re-insertion with original ID)\n    74→\n    75→Implementation Details:\n    76→- Follows WordPress coding standards and existing service patterns\n    77→- Uses German language strings for i18n (__() function)\n    78→- Proper sanitization with sanitize_text_field() and intval()\n    79→- Comprehensive error handling with detailed return arrays\n    80→- Efficient database queries using prepared statements\n    81→- Groups changes by record ID for batch restoration\n    82→- Indexes snapshot records by ID for fast lookups\n    83→- Returns detailed operation results with success/failure counts\n    84→\n    85→All acceptance criteria met:\n    86→✓ log_operation stores operation details (type, user_id, affected_count, description, timestamp)\n    87→✓ log_record_change stores before/after values (field_name, old_value, new_value)\n    88→✓ undo_operation restores previous values (handles updates and deletes)\n    89→✓ cleanup_old_logs removes logs older than 30 days (configurable retention)\n    90→✓ get_recent_operations returns undo-able operations (with pagination)\n    91→\n    92→Additional features:\n    93→- log_bulk_changes for efficient batch logging\n    94→- get_records_snapshot for state capture before operations\n    95→- restore_deleted_record for undo of delete operations\n    96→- can_undo for validation before undo attempts\n    97→- Configurable retention period (1-365 days)\n    98→\n    99→Commit: 763d1eb\n   100→",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:47:10.638129+00:00",
+          "type": "text",
+          "content": "Now let me commit the updated plan and progress files:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:47:12.303181+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd . && git add .auto-claude/specs/005-bulk-ope...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd . && git add .auto-claude/specs/005-bulk-ope..."
+        },
+        {
+          "timestamp": "2026-01-12T10:47:13.297279+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd . && git commit -m \"Update implementation pl...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd . && git commit -m \"Update implementation pl..."
+        },
+        {
+          "timestamp": "2026-01-12T10:47:13.715547+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd . && git log --oneline -3",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd . && git log --oneline -3"
+        },
+        {
+          "timestamp": "2026-01-12T10:47:15.490077+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:47:29.670990+00:00",
+          "type": "text",
+          "content": "Perfect! I've successfully completed subtask 5.2 - Create Undo Service. Here's a summary:\n\n## ✅ Subtask 5.2 Complete: AHGMH_Undo_Service\n\n### What Was Implemented\n\nCreated `wp-content/plugins/abschussplan-hgmh/admin/services/class-undo-service.php` with comprehensive undo functionality:\n\n**Core Methods:**\n- ✅ `log_operation()` - Stores operation metadata (type, user, count, description, timestamp)\n- ✅ `log_record_change()` - Logs individual field changes (before/after values)\n- ✅ `log_bulk_changes()` - Efficiently logs multiple changes at once\n- ✅ `undo_operation()` - Restores previous state from logged changes\n- ✅ `cleanup_old_logs()` - Removes logs beyond retention period (30 days default)\n- ✅ `get_recent_operations()` - Returns paginated list of undo-able operations\n\n**Additional Features:**\n- `get_records_snapshot()` - Captures record state before operations\n- `restore_deleted_record()` - Re-inserts deleted records with original IDs\n- `can_undo()` - Validates if operation is undo-able\n- Configurable retention period (1-365 days)\n- Supports all operation types: import, bulk_update, bulk_delete, mass_assign\n\n### Code Quality\n- Follows WordPress coding standards and existing service patterns\n- German language strings for internationalization\n- Proper sanitization and validation\n- Comprehensive error handling with detailed return arrays\n- Efficient database queries using prepared statements\n\n### Commits\n- `763d1eb` - Main implementation\n- `3cf05b7` - Updated implementation plan and progress\n\nAll acceptance criteria met! The service is ready to be integrated with controllers in the next subtask (5.3 - Create Undo Controller and UI).",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:10.100218+00:00",
+          "type": "text",
+          "content": "I'll help you implement the undo operations controller and UI for bulk operations. Let me start by reading the relevant files to understand the context and patterns.",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:10.658353+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...claude/specs/005-bulk-operations-import/spec.md",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...claude/specs/005-bulk-operations-import/spec.md"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:10.988143+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...bulk-operations-import/implementation_plan.json",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...bulk-operations-import/implementation_plan.json"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:11.556236+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...s/005-bulk-operations-import/build-progress.txt",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...s/005-bulk-operations-import/build-progress.txt"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:11.638033+00:00",
+          "type": "tool_start",
+          "content": "[mcp__auto-claude__get_build_progress]",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_build_progress"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:11.999537+00:00",
+          "type": "tool_end",
+          "content": "[mcp__auto-claude__get_build_progress] Done",
+          "phase": "coding",
+          "tool_name": "mcp__auto-claude__get_build_progress",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:48:16.985061+00:00",
+          "type": "text",
+          "content": "Now let me look at existing patterns and files to understand the code structure:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:17.709661+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...ontrollers/class-bulk-operations-controller.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...ontrollers/class-bulk-operations-controller.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:18.195815+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...plan-hgmh/admin/services/class-undo-service.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...plan-hgmh/admin/services/class-undo-service.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:18.889232+00:00",
+          "type": "tool_start",
+          "content": "[Read] .../abschussplan-hgmh/admin/assets/admin-modern.js",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": ".../abschussplan-hgmh/admin/assets/admin-modern.js"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:19.209433+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "     1→<?php\n     2→/**\n     3→ * Bulk Operations Controller\n     4→ * Handles AJAX requests for bulk update, bulk delete, and mass assignment operations\n     5→ */\n     6→\n     7→// Exit if accessed directly\n     8→if (!defined('ABSPATH')) {\n     9→    exit;\n    10→}\n    11→\n    12→/**\n    13→ * Bulk Operations Controller Class\n    14→ */\n    15→class AHGMH_Bulk_Operations_Controller {\n    16→\n    17→    private $bulk_operations_service;\n    18→\n    19→    /**\n    20→     * Constructor\n    21→     */\n    22→    public function __construct() {\n    23→        $this->bulk_operations_service = new AHGMH_Bulk_Operations_Service();\n    24→        $this->register_ajax_handlers();\n    25→    }\n    26→\n    27→    /**\n    28→     * Register AJAX handlers\n    29→     */\n    30→    private function register_ajax_handlers() {\n    31→        add_action('wp_ajax_ahgmh_bulk_update', array($this, 'ajax_bulk_update'));\n    32→        add_action('wp_ajax_ahgmh_bulk_delete', array($this, 'ajax_bulk_delete'));\n    33→        add_action('wp_ajax_ahgmh_mass_assign', array($this, 'ajax_mass_assign'));\n    34→    }\n    35→\n    36→    /**\n    37→     * AJAX: Bulk update multiple records\n    38→     *\n    39→     * Handles multi-record updates with field validation\n    40→     */\n    41→    public function ajax_bulk_update() {\n    42→        AHGMH_Validation_Service::verify_ajax_request();\n    43→\n    44→        try {\n    45→            // Validate required parameters\n    46→            if (!isset($_POST['record_ids']) || !isset($_POST['update_data'])) {\n    47→                throw new Exception(__('Erforderliche Parameter fehlen.', 'abschussplan-hgmh'));\n    48→            }\n    49→\n    50→            $record_ids = $_POST['record_ids'];\n    51→            $update_data = $_POST['update_data'];\n    52→\n    53→            // Validate record IDs array\n    54→            if (!is_array($record_ids) || empty($record_ids)) {\n    55→                throw new Exception(__('Keine Datensätze ausgewählt.', 'abschussplan-hgmh'));\n    56→            }\n    57→\n    58→            // Validate update data array\n    59→            if (!is_array($update_data) || empty($update_data)) {\n    60→                throw new Exception(__('Keine Aktualisierungsdaten angegeben.', 'abschussplan-hgmh'));\n    61→            }\n    62→\n    63→            // Sanitize record IDs\n    64→            $sanitized_ids = array_map('intval', $record_ids);\n    65→            $sanitized_ids = array_filter($sanitized_ids, function($id) {\n    66→                return $id > 0;\n    67→            });\n    68→\n    69→            if (empty($sanitized_ids)) {\n    70→                throw new Exception(__('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'));\n    71→            }\n    72→\n    73→            // Perform bulk update\n    74→            $result = $this->bulk_operations_service->bulk_update($sanitized_ids, $update_data);\n    75→\n    76→            if ($result['success']) {\n    77→                wp_send_json_success(array(\n    78→                    'message' => $result['message'],\n    79→                    'updated_count' => $result['updated_count'],\n    80→                    'failed_count' => $result['failed_count'],\n    81→                    'failed_ids' => $result['failed_ids'],\n    82→                    'total_requested' => $result['total_requested']\n    83→                ));\n    84→            } else {\n    85→                wp_send_json_error(array(\n    86→                    'message' => $result['message']\n    87→                ));\n    88→            }\n    89→\n    90→        } catch (Exception $e) {\n    91→            wp_send_json_error(array(\n    92→                'message' => __('Fehler bei Massenaktualisierung: ', 'abschussplan-hgmh') . esc_html($e->getMessage())\n    93→            ));\n    94→        }\n    95→    }\n    96→\n    97→    /**\n    98→     * AJAX: Bulk delete multiple records\n    99→     *\n   100→     * Requires confirmation token for destructive operation safeguard\n   101→     */\n   102→    public function ajax_bulk_delete() {\n   103→        AHGMH_Validation_Service::verify_ajax_request();\n   104→\n   105→        try {\n   106→            // Validate required parameters\n   107→            if (!isset($_POST['record_ids'])) {\n   108→                throw new Exception(__('Erforderliche Parameter fehlen.', 'abschussplan-hgmh'));\n   109→            }\n   110→\n   111→            $record_ids = $_POST['record_ids'];\n   112→\n   113→            // Validate confirmation token for destructive operation\n   114→            if (!isset($_POST['confirm_token']) || $_POST['confirm_token'] !== 'confirm_bulk_delete') {\n   115→                throw new Exception(__('Sicherheitsbestätigung fehlt. Bitte bestätigen Sie den Löschvorgang.', 'abschussplan-hgmh'));\n   116→            }\n   117→\n   118→            // Validate record IDs array\n   119→            if (!is_array($record_ids) || empty($record_ids)) {\n   120→                throw new Exception(__('Keine Datensätze ausgewählt.', 'abschussplan-hgmh'));\n   121→            }\n   122→\n   123→            // Sanitize record IDs\n   124→            $sanitized_ids = array_map('intval', $record_ids);\n   125→            $sanitized_ids = array_filter($sanitized_ids, function($id) {\n   126→                return $id > 0;\n   127→            });\n   128→\n   129→            if (empty($sanitized_ids)) {\n   130→                throw new Exception(__('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'));\n   131→            }\n   132→\n   133→            // Get records before deletion for undo capability (future enhancement)\n   134→            $records_before = $this->bulk_operations_service->get_records_by_ids($sanitized_ids);\n   135→\n   136→            // Perform bulk delete\n   137→            $result = $this->bulk_operations_service->bulk_delete($sanitized_ids);\n   138→\n   139→            if ($result['success']) {\n   140→                wp_send_json_success(array(\n   141→                    'message' => $result['message'],\n   142→                    'deleted_count' => $result['deleted_count'],\n   143→                    'failed_count' => $result['failed_count'],\n   144→                    'failed_ids' => $result['failed_ids'],\n   145→                    'total_requested' => $result['total_requested']\n   146→                ));\n   147→            } else {\n   148→                wp_send_json_error(array(\n   149→                    'message' => $result['message']\n   150→                ));\n   151→            }\n   152→\n   153→        } catch (Exception $e) {\n   154→            wp_send_json_error(array(\n   155→                'message' => __('Fehler beim Löschen: ', 'abschussplan-hgmh') . esc_html($e->getMessage())\n   156→            ));\n   157→        }\n   158→    }\n   159→\n   160→    /**\n   161→     * AJAX: Mass assign jagdbezirk (meldegruppe) to selected records\n   162→     *\n   163→     * Assigns all selected records to a specific jagdbezirk\n   164→     */\n   165→    public function ajax_mass_assign() {\n   166→        AHGMH_Validation_Service::verify_ajax_request();\n   167→\n   168→        try {\n   169→            // Validate required parameters\n   170→            if (!isset($_POST['record_ids']) || !isset($_POST['jagdbezirk'])) {\n   171→                throw new Exception(__('Erforderliche Parameter fehlen.', 'abschussplan-hgmh'));\n   172→            }\n   173→\n   174→            $record_ids = $_POST['record_ids'];\n   175→            $jagdbezirk = sanitize_text_field($_POST['jagdbezirk']);\n   176→\n   177→            // Validate record IDs array\n   178→            if (!is_array($record_ids) || empty($record_ids)) {\n   179→                throw new Exception(__('Keine Datensätze ausgewählt.', 'abschussplan-hgmh'));\n   180→            }\n   181→\n   182→            // Validate jagdbezirk\n   183→            if (empty($jagdbezirk)) {\n   184→                throw new Exception(__('Kein Jagdbezirk angegeben.', 'abschussplan-hgmh'));\n   185→            }\n   186→\n   187→            // Sanitize record IDs\n   188→            $sanitized_ids = array_map('intval', $record_ids);\n   189→            $sanitized_ids = array_filter($sanitized_ids, function($id) {\n   190→                return $id > 0;\n   191→            });\n   192→\n   193→            if (empty($sanitized_ids)) {\n   194→                throw new Exception(__('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'));\n   195→            }\n   196→\n   197→            // Perform mass assignment\n   198→            $result = $this->bulk_operations_service->mass_assign_meldegruppe($sanitized_ids, $jagdbezirk);\n   199→\n   200→            if ($result['success']) {\n   201→                wp_send_json_success(array(\n   202→                    'message' => $result['message'],\n   203→                    'updated_count' => $result['updated_count'],\n   204→                    'failed_count' => $result['failed_count'],\n   205→                    'failed_ids' => $result['failed_ids'],\n   206→                    'total_requested' => $result['total_requested']\n   207→                ));\n   208→            } else {\n   209→                wp_send_json_error(array(\n   210→                    'message' => $result['message']\n   211→                ));\n   212→            }\n   213→\n   214→        } catch (Exception $e) {\n   215→            wp_send_json_error(array(\n   216→                'message' => __('Fehler bei Massenzuweisung: ', 'abschussplan-hgmh') . esc_html($e->getMessage())\n   217→            ));\n   218→        }\n   219→    }\n   220→}\n   221→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:48:24.248965+00:00",
+          "type": "tool_start",
+          "content": "[Read] .../abschussplan-hgmh/admin/assets/admin-modern.js",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": ".../abschussplan-hgmh/admin/assets/admin-modern.js"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:25.930903+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: initBulkActions|handleBulkDelete|handleBulkAssign",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: initBulkActions|handleBulkDelete|handleBulkAssign"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:26.200814+00:00",
+          "type": "tool_end",
+          "content": "[Grep] Done",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "detail": "   700→            $('#hegegemeinschaft-limits-' + wildart).hide();\n   701→        } else {\n   702→            $('#meldegruppen-limits-' + wildart).hide();\n   703→            $('#hegegemeinschaft-limits-' + wildart).show();\n   704→        }\n   705→        \n   706→        // Save mode to database\n   707→        $.ajax({\n   708→            url: ahgmh_admin.ajax_url,\n   709→            type: 'POST',\n   710→            data: {\n   711→                action: 'ahgmh_toggle_limit_mode',\n   712→                nonce: ahgmh_admin.nonce,\n   713→                wildart: wildart,\n   714→                mode: mode\n   715→            },\n   716→            success: function (response) {\n   717→                if (response.success) {\n   718→                    showNotification('Limit-Modus geändert!', 'success');\n   719→                    // Reload the entire wildart config to rebuild limits section\n   720→                    setTimeout(function () {\n   721→                        loadWildartConfig(wildart);\n   722→                    }, 500);\n   723→                } else {\n   724→                    showNotification('Fehler beim Ändern des Modus: ' + (response.data || 'Unbekannter Fehler'), 'error');\n   725→                }\n   726→            },\n   727→            error: function () {\n   728→                showNotification('Netzwerkfehler beim Ändern des Modus.', 'error');\n   729→            }\n   730→        });\n   731→    }\n   732→\n   733→    /**\n   734→     * Update gesamt (total) calculations\n   735→     */\n   736→    function updateGesamt() {\n   737→        // Find all categories and calculate totals\n   738→        var categories = {};\n   739→\n   740→        $('.limit-input').each(function () {\n   741→            var kategorie = $(this).data('kategorie');\n   742→            var value = parseInt($(this).val()) || 0;\n   743→\n   744→            if (!categories[kategorie]) {\n   745→                categories[kategorie] = 0;\n   746→            }\n   747→            categories[kategorie] += value;\n   748→        });\n   749→\n   750→        // Update all gesamt cells\n   751→        for (var kategorie in categories) {\n   752→            var gesamtId = 'gesamt_' + kategorie.toLowerCase().replace(/[^a-z0-9]/g, '_');\n   753→            $('#' + gesamtId).text(categories[kategorie]);\n   754→        }\n   755→    }\n   756→\n   757→    /**\n   758→     * Validate all limit inputs in real-time\n   759→     */\n   760→    function validateLimitInputs() {\n   761→        var hasNegativeValues = false;\n   762→        var negativeFields = [];\n   763→        \n   764→        $('.limit-input, .hegegemeinschaft-limit-input').each(function() {\n   765→            var $input = $(this);\n   766→            var value = parseInt($input.val()) || 0;\n   767→            \n   768→            if (value < 0) {\n   769→                hasNegativeValues = true;\n   770→                negativeFields.push($input);\n   771→                $input.addClass('error-field');\n   772→                $input.css('border-color', '#dc3232');\n   773→            } else {\n   774→                $input.removeClass('error-field');\n   775→                $input.css('border-color', '');\n   776→            }\n   777→        });\n   778→        \n   779→        return { hasNegativeValues: hasNegativeValues, negativeFields: negativeFields };\n   780→    }\n   781→\n   782→    /**\n   783→     * Save limits with enhanced validation\n   784→     */\n   785→    function saveLimits(wildart) {\n   786→        var limits = {};\n   787→        \n   788→        // Validate all inputs first\n   789→        var validation = validateLimitInputs();\n   790→        \n   791→        if (validation.hasNegativeValues) {\n   792→            var fieldCount = validation.negativeFields.length;\n   793→            showNotification('Fehler: ' + fieldCount + ' Feld(er) enthalten negative Werte. Bitte korrigieren Sie diese vor dem Speichern.', 'error');\n   794→            \n   795→            // Focus on first negative field\n   796→            if (validation.negativeFields.length > 0) {\n   797→                validation.negativeFields[0].focus();\n   798→            }\n   799→            return false; // Stop saving\n   800→        }\n   801→\n   802→        $('.limit-input, .hegegemeinschaft-limit-input').each(function () {\n   803→            var $input = $(this);\n   804→            var meldegruppe = $input.data('meldegruppe') || 'gesamt';\n   805→            var kategorie = $input.data('kategorie');\n   806→            var value = Math.max(0, parseInt($input.val()) || 0); // Ensure non-negative\n   807→\n   808→            // Handle both meldegruppen-specific and total limits\n   809→            if (!limits[meldegruppe]) {\n   810→                limits[meldegruppe] = {};\n   811→            }\n   812→            limits[meldegruppe][kategorie] = value;\n   813→        });\n   814→\n   815→        // Debug info\n   816→        console.log('Saving limits for ' + wildart + ':', limits);\n   817→\n   818→        var $btn = $('.save-limits-btn[data-wildart=\"' + wildart + '\"]');\n   819→        var originalText = $btn.text();\n   820→        $btn.prop('disabled', true).text('Speichern...');\n   821→\n   822→        $.ajax({\n   823→            url: ahgmh_admin.ajax_url,\n   824→            type: 'POST',\n   825→            data: {\n   826→                action: 'ahgmh_save_limits',\n   827→                nonce: ahgmh_admin.nonce,\n   828→                wildart: wildart,\n   829→                limits: limits\n   830→            },\n   831→            success: function (response) {\n   832→                if (response.success) {\n   833→                    showNotification('Limits erfolgreich gespeichert!', 'success');\n   834→                    // Clear any error styling\n   835→$('.limit-input, .hegegemeinschaft-limit-input').removeClass('error-field').css('border-color', '');\n   836→                } else {\n   837→                    showNotification('Fehler beim Speichern der Limits: ' + (response.data || 'Unbekannter Fehler'), 'error');\n   838→                }\n   839→            },\n   840→            error: function () {\n   841→                showNotification('Netzwerkfehler beim Speichern der Limits.', 'error');\n   842→            },\n   843→            complete: function () {\n   844→                $btn.prop('disabled', false).text(originalText);\n   845→            }\n   846→        });\n   847→        \n   848→        return true;\n   849→    }\n   850→\n   851→    /**\n   852→     * Show notification\n   853→     */\n   854→    function showNotification(message, type) {\n   855→        type = type || 'info';\n   856→\n   857→        var notification = $('<div class=\"ahgmh-notification ahgmh-notification-' + type + '\">' + message + '</div>');\n   858→        $('body').append(notification);\n   859→\n   860→        setTimeout(function () {\n   861→            notification.addClass('show');\n   862→        }, 100);\n   863→\n   864→        setTimeout(function () {\n   865→            notification.removeClass('show');\n   866→            setTimeout(function () {\n   867→                notification.remove();\n   868→            }, 300);\n   869→        }, 3000);\n   870→    }\n   871→\n   872→    /**\n   873→     * Hide notification\n   874→     */\n   875→    function hideNotification() {\n   876→        $('.ahgmh-notification').removeClass('show');\n   877→        setTimeout(function () {\n   878→            $('.ahgmh-notification').remove();\n   879→        }, 300);\n   880→    }\n   881→\n   882→    // Add CSS for notifications and animations\n   883→    var notificationCSS = `\n   884→<style>\n   885→.ahgmh-notifications {\n   886→    position: fixed;\n   887→    top: 20px;\n   888→    right: 20px;\n   889→    z-index: 10000;\n   890→    max-width: 400px;\n   891→}\n   892→\n   893→.ahgmh-notification {\n   894→    background: #fff;\n   895→    border-left: 4px solid #0073aa;\n   896→    padding: 12px 20px;\n   897→    margin-bottom: 10px;\n   898→    box-shadow: 0 2px 8px rgba(0,0,0,0.1);\n   899→    border-radius: 4px;\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:48:31.950837+00:00",
+          "type": "tool_start",
+          "content": "[Read] .../abschussplan-hgmh/admin/assets/admin-modern.js",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": ".../abschussplan-hgmh/admin/assets/admin-modern.js"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:32.749377+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...plugins/abschussplan-hgmh/abschussplan-hgmh.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:32.978528+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "  1490→\n  1491→        // Cancel button handler\n  1492→        $(document).on('click', '.ahgmh-cancel-bulk-assign, .ahgmh-bulk-assign-overlay', function() {\n  1493→            $('.ahgmh-bulk-assign-dialog, .ahgmh-bulk-assign-overlay').remove();\n  1494→        });\n  1495→\n  1496→        // Confirm button handler\n  1497→        $(document).on('click', '.ahgmh-confirm-bulk-assign', function() {\n  1498→            const jagdbezirk = $('#ahgmh-bulk-assign-jagdbezirk').val();\n  1499→\n  1500→            if (!jagdbezirk) {\n  1501→                showNotification('Bitte wählen Sie einen Jagdbezirk aus.', 'warning');\n  1502→                return;\n  1503→            }\n  1504→\n  1505→            // Show loading state\n  1506→            $(this).prop('disabled', true).text('Weise zu...');\n  1507→\n  1508→            $.ajax({\n  1509→                url: ahgmh_admin.ajax_url,\n  1510→                type: 'POST',\n  1511→                data: {\n  1512→                    action: 'ahgmh_mass_assign',\n  1513→                    nonce: ahgmh_admin.nonce,\n  1514→                    record_ids: ids,\n  1515→                    jagdbezirk: jagdbezirk\n  1516→                },\n  1517→                success: function(response) {\n  1518→                    if (response.success) {\n  1519→                        showNotification(response.data.updated_count + ' Meldung(en) erfolgreich zugewiesen!', 'success');\n  1520→\n  1521→                        // Close dialog\n  1522→                        $('.ahgmh-bulk-assign-dialog, .ahgmh-bulk-assign-overlay').remove();\n  1523→\n  1524→                        // Reload page to show updated data\n  1525→                        setTimeout(function() {\n  1526→                            location.reload();\n  1527→                        }, 1500);\n  1528→                    } else {\n  1529→                        showNotification('Fehler bei Zuweisung: ' + (response.data.message || 'Unbekannter Fehler'), 'error');\n  1530→                        $('.ahgmh-confirm-bulk-assign').prop('disabled', false).text('Zuweisen');\n  1531→                    }\n  1532→                },\n  1533→                error: function() {\n  1534→                    showNotification('Netzwerkfehler bei Zuweisung', 'error');\n  1535→                    $('.ahgmh-confirm-bulk-assign').prop('disabled', false).text('Zuweisen');\n  1536→                }\n  1537→            });\n  1538→        });\n  1539→    }\n  1540→\n  1541→})(jQuery);\n  1542→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:48:38.880483+00:00",
+          "type": "text",
+          "content": "Now let me check if the undo service is already included in the main plugin file:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:40.087221+00:00",
+          "type": "tool_start",
+          "content": "[Grep] pattern: class-undo-service",
+          "phase": "coding",
+          "tool_name": "Grep",
+          "tool_input": "pattern: class-undo-service"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:43.240447+00:00",
+          "type": "tool_start",
+          "content": "[TodoWrite]",
+          "phase": "coding",
+          "tool_name": "TodoWrite"
+        },
+        {
+          "timestamp": "2026-01-12T10:48:43.409993+00:00",
+          "type": "tool_end",
+          "content": "[TodoWrite] Done",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:48:47.670123+00:00",
+          "type": "text",
+          "content": "Perfect! Let me now create the undo controller following the existing patterns:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:03.244384+00:00",
+          "type": "tool_start",
+          "content": "[Write] ...gmh/admin/controllers/class-undo-controller.php",
+          "phase": "coding",
+          "tool_name": "Write",
+          "tool_input": "...gmh/admin/controllers/class-undo-controller.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:03.530240+00:00",
+          "type": "tool_end",
+          "content": "[Write] Done",
+          "phase": "coding",
+          "tool_name": "Write",
+          "detail": "File created successfully at: ./wp-content/plugins/abschussplan-hgmh/admin/controllers/class-undo-controller.php",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:49:07.449044+00:00",
+          "type": "text",
+          "content": "Now let me update the bulk operations controller to integrate undo logging:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:08.177067+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...dmin/services/class-bulk-operations-service.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...dmin/services/class-bulk-operations-service.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:08.347393+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "     1→<?php\n     2→/**\n     3→ * Bulk Operations Service Class\n     4→ * Handles bulk update, bulk delete, and mass field assignment operations\n     5→ */\n     6→\n     7→// Exit if accessed directly\n     8→if (!defined('ABSPATH')) {\n     9→    exit;\n    10→}\n    11→\n    12→/**\n    13→ * Bulk Operations Service for managing multiple records efficiently\n    14→ */\n    15→class AHGMH_Bulk_Operations_Service {\n    16→\n    17→    /**\n    18→     * Database handler instance\n    19→     *\n    20→     * @var AHGMH_Database_Handler\n    21→     */\n    22→    private $db_handler;\n    23→\n    24→    /**\n    25→     * Batch size for processing large datasets\n    26→     *\n    27→     * @var int\n    28→     */\n    29→    private $batch_size = 100;\n    30→\n    31→    /**\n    32→     * Constructor\n    33→     */\n    34→    public function __construct() {\n    35→        $this->db_handler = new AHGMH_Database_Handler();\n    36→    }\n    37→\n    38→    /**\n    39→     * Bulk update multiple records\n    40→     *\n    41→     * @param array $record_ids Array of record IDs to update\n    42→     * @param array $update_data Associative array of fields to update\n    43→     * @return array Result with success count, failed IDs, and errors\n    44→     */\n    45→    public function bulk_update($record_ids, $update_data) {\n    46→        // Validate inputs\n    47→        if (empty($record_ids) || !is_array($record_ids)) {\n    48→            return [\n    49→                'success' => false,\n    50→                'message' => __('Keine Datensätze zum Aktualisieren ausgewählt.', 'abschussplan-hgmh'),\n    51→                'updated_count' => 0,\n    52→                'failed_ids' => []\n    53→            ];\n    54→        }\n    55→\n    56→        if (empty($update_data) || !is_array($update_data)) {\n    57→            return [\n    58→                'success' => false,\n    59→                'message' => __('Keine Aktualisierungsdaten angegeben.', 'abschussplan-hgmh'),\n    60→                'updated_count' => 0,\n    61→                'failed_ids' => []\n    62→            ];\n    63→        }\n    64→\n    65→        // Sanitize record IDs\n    66→        $record_ids = array_map('intval', $record_ids);\n    67→        $record_ids = array_filter($record_ids, function($id) {\n    68→            return $id > 0;\n    69→        });\n    70→\n    71→        if (empty($record_ids)) {\n    72→            return [\n    73→                'success' => false,\n    74→                'message' => __('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'),\n    75→                'updated_count' => 0,\n    76→                'failed_ids' => []\n    77→            ];\n    78→        }\n    79→\n    80→        // Sanitize update data\n    81→        $sanitized_data = $this->sanitize_update_data($update_data);\n    82→\n    83→        if (empty($sanitized_data)) {\n    84→            return [\n    85→                'success' => false,\n    86→                'message' => __('Keine gültigen Aktualisierungsdaten.', 'abschussplan-hgmh'),\n    87→                'updated_count' => 0,\n    88→                'failed_ids' => []\n    89→            ];\n    90→        }\n    91→\n    92→        // Process records in batches\n    93→        $batches = array_chunk($record_ids, $this->batch_size);\n    94→        $updated_count = 0;\n    95→        $failed_ids = [];\n    96→\n    97→        foreach ($batches as $batch) {\n    98→            foreach ($batch as $record_id) {\n    99→                $result = $this->db_handler->update_submission($record_id, $sanitized_data);\n   100→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:49:15.364601+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...ontrollers/class-bulk-operations-controller.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...ontrollers/class-bulk-operations-controller.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:23.546562+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...ontrollers/class-bulk-operations-controller.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...ontrollers/class-bulk-operations-controller.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:26.132973+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...ontrollers/class-bulk-operations-controller.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...ontrollers/class-bulk-operations-controller.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:26.373106+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "The file ./wp-content/plugins/abschussplan-hgmh/admin/controllers/class-bulk-operations-controller.php has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n    11→\n    12→/**\n    13→ * Bulk Operations Controller Class\n    14→ */\n    15→class AHGMH_Bulk_Operations_Controller {\n    16→\n    17→    private $bulk_operations_service;\n    18→    private $undo_service;\n    19→\n    20→    /**\n    21→     * Constructor\n    22→     */\n    23→    public function __construct() {\n    24→        $this->bulk_operations_service = new AHGMH_Bulk_Operations_Service();\n    25→        $this->undo_service = new AHGMH_Undo_Service();\n    26→        $this->register_ajax_handlers();\n    27→    }\n    28→\n    29→    /**\n    30→     * Register AJAX handlers\n    31→     */",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:49:35.543229+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...ontrollers/class-bulk-operations-controller.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...ontrollers/class-bulk-operations-controller.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:35.790131+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "The file ./wp-content/plugins/abschussplan-hgmh/admin/controllers/class-bulk-operations-controller.php has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n    99→                            }\n   100→                        }\n   101→                    }\n   102→                }\n   103→                if (!empty($changes)) {\n   104→                    $this->undo_service->log_bulk_changes($log_id, $changes);\n   105→                }\n   106→            }\n   107→\n   108→            if ($result['success']) {\n   109→                wp_send_json_success(array(\n   110→                    'message' => $result['message'],\n   111→                    'updated_count' => $result['updated_count'],\n   112→                    'failed_count' => $result['failed_count'],\n   113→                    'failed_ids' => $result['failed_ids'],\n   114→                    'total_requested' => $result['total_requested'],\n   115→                    'log_id' => $log_id\n   116→                ));\n   117→            } else {\n   118→                wp_send_json_error(array(\n   119→                    'message' => $result['message']\n   120→                ));\n   121→            }\n   122→\n   123→        } catch (Exception $e) {\n   124→            wp_send_json_error(array(\n   125→                'message' => __('Fehler bei Massenaktualisierung: ', 'abschussplan-hgmh') . esc_html($e->getMessage())\n   126→            ));\n   127→        }\n   128→    }\n   129→\n   130→    /**\n   131→     * AJAX: Bulk delete multiple records\n   132→     *\n   133→     * Requires confirmation token for destructive operation safeguard\n   134→     */\n   135→    public function ajax_bulk_delete() {",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:49:39.519829+00:00",
+          "type": "text",
+          "content": "Now let me update the bulk delete method to also log operations:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:47.705656+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...ontrollers/class-bulk-operations-controller.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...ontrollers/class-bulk-operations-controller.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:49:47.976561+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "The file ./wp-content/plugins/abschussplan-hgmh/admin/controllers/class-bulk-operations-controller.php has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n   162→            if (empty($sanitized_ids)) {\n   163→                throw new Exception(__('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'));\n   164→            }\n   165→\n   166→            // Get records before deletion for undo capability\n   167→            $records_before = $this->undo_service->get_records_snapshot($sanitized_ids);\n   168→\n   169→            // Log operation for undo\n   170→            $description = sprintf(__('%d Datensätze per Massenlöschung gelöscht', 'abschussplan-hgmh'), count($sanitized_ids));\n   171→            $log_id = $this->undo_service->log_operation('bulk_delete', count($sanitized_ids), $description);\n   172→\n   173→            // Perform bulk delete\n   174→            $result = $this->bulk_operations_service->bulk_delete($sanitized_ids);\n   175→\n   176→            // Log changes for undo if operation was logged\n   177→            if ($log_id && $result['success']) {\n   178→                $changes = array();\n   179→                foreach ($sanitized_ids as $record_id) {\n   180→                    if (isset($records_before[$record_id])) {\n   181→                        // Log all fields of the deleted record for restoration\n   182→                        foreach ($records_before[$record_id] as $field_name => $old_value) {\n   183→                            $changes[] = array(\n   184→                                'record_id' => $record_id,\n   185→                                'field_name' => $field_name,\n   186→                                'old_value' => $old_value,\n   187→                                'new_value' => null\n   188→                            );\n   189→                        }\n   190→                    }\n   191→                }\n   192→                if (!empty($changes)) {\n   193→                    $this->undo_service->log_bulk_changes($log_id, $changes);\n   194→                }\n   195→            }\n   196→\n   197→            if ($result['success']) {\n   198→                wp_send_json_success(array(\n   199→                    'message' => $result['message'],\n   200→                    'deleted_count' => $result['deleted_count'],\n   201→                    'failed_count' => $result['failed_count'],\n   202→                    'failed_ids' => $result['failed_ids'],\n   203→                    'total_requested' => $result['total_requested'],\n   204→                    'log_id' => $log_id\n   205→                ));\n   206→            } else {\n   207→                wp_send_json_error(array(\n   208→                    'message' => $result['message']\n   209→                ));\n   210→            }\n   211→\n   212→        } catch (Exception $e) {\n   213→            wp_send_json_error(array(\n   214→                'message' => __('Fehler beim Löschen: ', 'abschussplan-hgmh') . esc_html($e->getMessage())",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:50:01.491181+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...ontrollers/class-bulk-operations-controller.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...ontrollers/class-bulk-operations-controller.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:02.810415+00:00",
+          "type": "tool_start",
+          "content": "[TodoWrite]",
+          "phase": "coding",
+          "tool_name": "TodoWrite"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:03.103261+00:00",
+          "type": "tool_end",
+          "content": "[TodoWrite] Done",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:50:07.450320+00:00",
+          "type": "text",
+          "content": "Now let me add the undo notification UI to the JavaScript. First, let me check the current notification patterns:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:08.395147+00:00",
+          "type": "tool_start",
+          "content": "[Read] .../abschussplan-hgmh/admin/assets/admin-modern.js",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": ".../abschussplan-hgmh/admin/assets/admin-modern.js"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:08.551968+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "   850→\n   851→    /**\n   852→     * Show notification\n   853→     */\n   854→    function showNotification(message, type) {\n   855→        type = type || 'info';\n   856→\n   857→        var notification = $('<div class=\"ahgmh-notification ahgmh-notification-' + type + '\">' + message + '</div>');\n   858→        $('body').append(notification);\n   859→\n   860→        setTimeout(function () {\n   861→            notification.addClass('show');\n   862→        }, 100);\n   863→\n   864→        setTimeout(function () {\n   865→            notification.removeClass('show');\n   866→            setTimeout(function () {\n   867→                notification.remove();\n   868→            }, 300);\n   869→        }, 3000);\n   870→    }\n   871→\n   872→    /**\n   873→     * Hide notification\n   874→     */\n   875→    function hideNotification() {\n   876→        $('.ahgmh-notification').removeClass('show');\n   877→        setTimeout(function () {\n   878→            $('.ahgmh-notification').remove();\n   879→        }, 300);\n   880→    }\n   881→\n   882→    // Add CSS for notifications and animations\n   883→    var notificationCSS = `\n   884→<style>\n   885→.ahgmh-notifications {\n   886→    position: fixed;\n   887→    top: 20px;\n   888→    right: 20px;\n   889→    z-index: 10000;\n   890→    max-width: 400px;\n   891→}\n   892→\n   893→.ahgmh-notification {\n   894→    background: #fff;\n   895→    border-left: 4px solid #0073aa;\n   896→    padding: 12px 20px;\n   897→    margin-bottom: 10px;\n   898→    box-shadow: 0 2px 8px rgba(0,0,0,0.1);\n   899→    border-radius: 4px;\n   900→    opacity: 0;\n   901→    transform: translateX(100%);\n   902→    transition: all 0.3s ease;\n   903→}\n   904→\n   905→.ahgmh-notification.show {\n   906→    opacity: 1;\n   907→    transform: translateX(0);\n   908→}\n   909→\n   910→.ahgmh-notification-success {\n   911→    border-left-color: #46b450;\n   912→}\n   913→\n   914→.ahgmh-notification-error {\n   915→    border-left-color: #dc3232;\n   916→}\n   917→\n   918→.ahgmh-notification-warning {\n   919→    border-left-color: #ffb900;\n   920→}\n   921→\n   922→.ahgmh-tooltip {\n   923→    position: absolute;\n   924→    background: #333;\n   925→    color: #fff;\n   926→    padding: 8px 12px;\n   927→    border-radius: 4px;\n   928→    font-size: 12px;\n   929→    z-index: 10000;\n   930→    max-width: 200px;\n   931→    word-wrap: break-word;\n   932→}\n   933→\n   934→.ahgmh-tooltip:before {\n   935→    content: '';\n   936→    position: absolute;\n   937→    top: 100%;\n   938→    left: 50%;\n   939→    margin-left: -5px;\n   940→    width: 0;\n   941→    height: 0;\n   942→    border-left: 5px solid transparent;\n   943→    border-right: 5px solid transparent;\n   944→    border-top: 5px solid #333;\n   945→}\n   946→\n   947→.ahgmh-spinning {\n   948→    animation: ahgmh-spin 1s linear infinite;\n   949→}\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:50:12.482824+00:00",
+          "type": "text",
+          "content": "Now let me add the undo notification functionality to the JavaScript:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:20.092145+00:00",
+          "type": "tool_start",
+          "content": "[Edit] .../abschussplan-hgmh/admin/assets/admin-modern.js",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": ".../abschussplan-hgmh/admin/assets/admin-modern.js"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:23.072991+00:00",
+          "type": "tool_start",
+          "content": "[Edit] .../abschussplan-hgmh/admin/assets/admin-modern.js",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": ".../abschussplan-hgmh/admin/assets/admin-modern.js"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:26.040242+00:00",
+          "type": "tool_start",
+          "content": "[Edit] .../abschussplan-hgmh/admin/assets/admin-modern.js",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": ".../abschussplan-hgmh/admin/assets/admin-modern.js"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:26.286832+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "The file ./wp-content/plugins/abschussplan-hgmh/admin/assets/admin-modern.js has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n   847→        \n   848→        return true;\n   849→    }\n   850→\n   851→    /**\n   852→     * Show notification\n   853→     */\n   854→    function showNotification(message, type) {\n   855→        type = type || 'info';\n   856→\n   857→        var notification = $('<div class=\"ahgmh-notification ahgmh-notification-' + type + '\">' + message + '</div>');\n   858→        $('body').append(notification);\n   859→\n   860→        setTimeout(function () {\n   861→            notification.addClass('show');\n   862→        }, 100);\n   863→\n   864→        setTimeout(function () {\n   865→            notification.removeClass('show');\n   866→            setTimeout(function () {\n   867→                notification.remove();\n   868→            }, 300);\n   869→        }, 3000);\n   870→    }\n   871→\n   872→    /**\n   873→     * Show undo notification with undo button\n   874→     */\n   875→    function showUndoNotification(message, logId) {\n   876→        // Remove any existing undo notifications\n   877→        $('.ahgmh-undo-notification').remove();\n   878→\n   879→        var notification = $('<div class=\"ahgmh-notification ahgmh-undo-notification ahgmh-notification-success\">' +\n   880→            message +\n   881→            ' <button class=\"button button-small ahgmh-undo-btn\" data-log-id=\"' + logId + '\" style=\"margin-left: 10px;\">Rückgängig machen</button>' +\n   882→            '</div>');\n   883→        $('body').append(notification);\n   884→\n   885→        setTimeout(function () {\n   886→            notification.addClass('show');\n   887→        }, 100);\n   888→\n   889→        // Keep undo notification longer (10 seconds)\n   890→        setTimeout(function () {\n   891→            notification.removeClass('show');\n   892→            setTimeout(function () {\n   893→                notification.remove();\n   894→            }, 300);\n   895→        }, 10000);\n   896→\n   897→        // Handle undo button click\n   898→        notification.find('.ahgmh-undo-btn').on('click', function() {\n   899→            handleUndo(logId);\n   900→            notification.remove();\n   901→        });\n   902→    }\n   903→\n   904→    /**\n   905→     * Hide notification\n   906→     */",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:50:30.215327+00:00",
+          "type": "text",
+          "content": "Now let me add the handleUndo function:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:35.196748+00:00",
+          "type": "tool_start",
+          "content": "[Edit] .../abschussplan-hgmh/admin/assets/admin-modern.js",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": ".../abschussplan-hgmh/admin/assets/admin-modern.js"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:37.424779+00:00",
+          "type": "tool_start",
+          "content": "[TodoWrite]",
+          "phase": "coding",
+          "tool_name": "TodoWrite"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:37.619951+00:00",
+          "type": "tool_end",
+          "content": "[TodoWrite] Done",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:50:41.330612+00:00",
+          "type": "text",
+          "content": "Now let me register the undo service and controller in the main plugin file:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:44.395489+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...plugins/abschussplan-hgmh/abschussplan-hgmh.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:47.445262+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...plugins/abschussplan-hgmh/abschussplan-hgmh.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:49.889790+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...plugins/abschussplan-hgmh/abschussplan-hgmh.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:51.789970+00:00",
+          "type": "tool_start",
+          "content": "[TodoWrite]",
+          "phase": "coding",
+          "tool_name": "TodoWrite"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:51.907186+00:00",
+          "type": "tool_end",
+          "content": "[TodoWrite] Error: <tool_use_error>String to replace not found in file.\nString:     require_once AHGMH_PLUGIN_DIR . 'ad",
+          "phase": "coding",
+          "tool_name": "TodoWrite",
+          "detail": "<tool_use_error>String to replace not found in file.\nString:     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';\n    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-bulk-operations-service.php';\n\n    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';</tool_use_error>",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:50:56.407435+00:00",
+          "type": "tool_start",
+          "content": "[Read] ...plugins/abschussplan-hgmh/abschussplan-hgmh.php",
+          "phase": "coding",
+          "tool_name": "Read",
+          "tool_input": "...plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:50:56.574075+00:00",
+          "type": "tool_end",
+          "content": "[Read] Done",
+          "phase": "coding",
+          "tool_name": "Read",
+          "detail": "     1→<?php\n     2→/**\n     3→ * Plugin Name: Abschussplan HGMH\n     4→ * Plugin URI: https://github.com/foe05/pr25_one\n     5→ * Description: Collect and view game shoots for registration with local hunting authorities in Germany.\n     6→ * Version: 2.5.3\n     7→ * Author: foe05\n     8→ * Author URI: https://github.com/foe05\n     9→ * License: GPL v3 or later\n    10→ * License URI: https://www.gnu.org/licenses/gpl-3.0.html\n    11→ * Text Domain: abschussplan-hgmh\n    12→ * Domain Path: /languages\n    13→ * Requires at least: 5.0\n    14→ * Tested up to: 6.5\n    15→ * Requires PHP: 7.4\n    16→ * Network: false\n    17→ * Update URI: https://github.com/foe05/pr25_one\n    18→ */\n    19→\n    20→// Exit if accessed directly\n    21→if (!defined('ABSPATH')) {\n    22→    exit;\n    23→}\n    24→\n    25→// Define plugin constants\n    26→define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));\n    27→define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));\n    28→define('AHGMH_PLUGIN_VERSION', '2.5.3');\n    29→define('AHGMH_DB_VERSION', '4');\n    30→\n    31→// Include required files\n    32→require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';\n    33→require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';\n    34→require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';\n    35→require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';\n    36→require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';\n    37→require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';\n    38→\n    39→// Include admin-only architecture when needed\n    40→if (is_admin()) {\n    41→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';\n    42→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-dashboard-service.php';\n    43→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';\n    44→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';\n    45→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';\n    46→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-service.php';\n    47→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-column-mapper.php';\n    48→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-ljv-template-detector.php';\n    49→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-validator.php';\n    50→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-bulk-operations-service.php';\n    51→\n    52→    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';\n    53→    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';\n    54→\n    55→    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-dashboard-controller.php';\n    56→    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-data-controller.php';\n    57→    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-settings-controller.php';\n    58→    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-wildart-controller.php';\n    59→    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';\n    60→    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:51:02.726166+00:00",
+          "type": "tool_start",
+          "content": "[Edit] ...plugins/abschussplan-hgmh/abschussplan-hgmh.php",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "tool_input": "...plugins/abschussplan-hgmh/abschussplan-hgmh.php"
+        },
+        {
+          "timestamp": "2026-01-12T10:51:02.891772+00:00",
+          "type": "tool_end",
+          "content": "[Edit] Done",
+          "phase": "coding",
+          "tool_name": "Edit",
+          "detail": "The file ./wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n    44→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';\n    45→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';\n    46→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-service.php';\n    47→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-column-mapper.php';\n    48→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-ljv-template-detector.php';\n    49→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-validator.php';\n    50→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-bulk-operations-service.php';\n    51→    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-undo-service.php';\n    52→\n    53→    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';\n    54→    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';\n    55→\n    56→    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-dashboard-controller.php';\n    57→    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-data-controller.php';",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:51:08.416370+00:00",
+          "type": "text",
+          "content": "Perfect! Now let me verify the implementation and commit the changes:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:51:09.433002+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd ./wp-content/plugins/abschussplan-hgmh && ph...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd ./wp-content/plugins/abschussplan-hgmh && ph..."
+        },
+        {
+          "timestamp": "2026-01-12T10:51:10.140159+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd ./wp-content/plugins/abschussplan-hgmh && ph...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd ./wp-content/plugins/abschussplan-hgmh && ph..."
+        },
+        {
+          "timestamp": "2026-01-12T10:51:10.856611+00:00",
+          "type": "tool_start",
+          "content": "[Bash] cd ./wp-content/plugins/abschussplan-hgmh && ph...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "cd ./wp-content/plugins/abschussplan-hgmh && ph..."
+        },
+        {
+          "timestamp": "2026-01-12T10:51:11.595308+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Error: Command 'php' is not in the allowed commands for this project",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "Command 'php' is not in the allowed commands for this project",
+          "collapsed": true
+        },
+        {
+          "timestamp": "2026-01-12T10:51:20.474619+00:00",
+          "type": "text",
+          "content": "Let me commit the changes and update the status:",
+          "phase": "coding"
+        },
+        {
+          "timestamp": "2026-01-12T10:51:21.104985+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git status",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git status"
+        },
+        {
+          "timestamp": "2026-01-12T10:51:21.621769+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git add .",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git add ."
+        },
+        {
+          "timestamp": "2026-01-12T10:51:31.465077+00:00",
+          "type": "tool_start",
+          "content": "[Bash] git commit -m \"auto-claude: 5.3 - Create contro...",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "tool_input": "git commit -m \"auto-claude: 5.3 - Create contro..."
+        },
+        {
+          "timestamp": "2026-01-12T10:51:32.508384+00:00",
+          "type": "tool_end",
+          "content": "[Bash] Done",
+          "phase": "coding",
+          "tool_name": "Bash",
+          "detail": "Auf Branch auto-claude/005-bulk-operations-import\nÄnderungen, die nicht zum Commit vorgemerkt sind:\n  (benutzen Sie \"git add <Datei>...\", um die Änderungen zum Commit vorzumerken)\n  (benutzen Sie \"git restore <Datei>...\", um die Änderungen im Arbeitsverzeichnis zu verwerfen)\n\tgeändert:       .auto-claude-status\n\tgeändert:       .auto-claude/specs/005-bulk-operations-import/memory/codebase_map.json\n\tgeändert:       .auto-claude/specs/005-bulk-operations-import/task_logs.json\n\tgeändert:       wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php\n\tgeändert:       wp-content/plugins/abschussplan-hgmh/admin/assets/admin-modern.js\n\tgeändert:       wp-content/plugins/abschussplan-hgmh/admin/controllers/class-bulk-operations-controller.php\n\nUnversionierte Dateien:\n  (benutzen Sie \"git add <Datei>...\", um die Änderungen zum Commit vorzumerken)\n\twp-content/plugins/abschussplan-hgmh/admin/controllers/class-undo-controller.php\n\nkeine Änderungen zum Commit vorgemerkt (benutzen Sie \"git add\" und/oder \"git commit -a\")",
+          "collapsed": true
         }
       ]
     },

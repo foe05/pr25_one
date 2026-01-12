@@ -15,12 +15,14 @@ if (!defined('ABSPATH')) {
 class AHGMH_Bulk_Operations_Controller {
 
     private $bulk_operations_service;
+    private $undo_service;
 
     /**
      * Constructor
      */
     public function __construct() {
         $this->bulk_operations_service = new AHGMH_Bulk_Operations_Service();
+        $this->undo_service = new AHGMH_Undo_Service();
         $this->register_ajax_handlers();
     }
 
@@ -70,8 +72,38 @@ class AHGMH_Bulk_Operations_Controller {
                 throw new Exception(__('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'));
             }
 
+            // Get records snapshot before update for undo capability
+            $records_before = $this->undo_service->get_records_snapshot($sanitized_ids);
+
+            // Log operation for undo
+            $description = sprintf(__('%d Datensätze per Massenaktualisierung geändert', 'abschussplan-hgmh'), count($sanitized_ids));
+            $log_id = $this->undo_service->log_operation('bulk_update', count($sanitized_ids), $description);
+
             // Perform bulk update
             $result = $this->bulk_operations_service->bulk_update($sanitized_ids, $update_data);
+
+            // Log changes for undo if operation was logged
+            if ($log_id && $result['success']) {
+                $changes = array();
+                foreach ($sanitized_ids as $record_id) {
+                    if (isset($records_before[$record_id])) {
+                        foreach ($update_data as $field_name => $new_value) {
+                            $old_value = isset($records_before[$record_id][$field_name]) ? $records_before[$record_id][$field_name] : null;
+                            if ($old_value !== $new_value) {
+                                $changes[] = array(
+                                    'record_id' => $record_id,
+                                    'field_name' => $field_name,
+                                    'old_value' => $old_value,
+                                    'new_value' => $new_value
+                                );
+                            }
+                        }
+                    }
+                }
+                if (!empty($changes)) {
+                    $this->undo_service->log_bulk_changes($log_id, $changes);
+                }
+            }
 
             if ($result['success']) {
                 wp_send_json_success(array(
@@ -79,7 +111,8 @@ class AHGMH_Bulk_Operations_Controller {
                     'updated_count' => $result['updated_count'],
                     'failed_count' => $result['failed_count'],
                     'failed_ids' => $result['failed_ids'],
-                    'total_requested' => $result['total_requested']
+                    'total_requested' => $result['total_requested'],
+                    'log_id' => $log_id
                 ));
             } else {
                 wp_send_json_error(array(
@@ -130,11 +163,36 @@ class AHGMH_Bulk_Operations_Controller {
                 throw new Exception(__('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'));
             }
 
-            // Get records before deletion for undo capability (future enhancement)
-            $records_before = $this->bulk_operations_service->get_records_by_ids($sanitized_ids);
+            // Get records before deletion for undo capability
+            $records_before = $this->undo_service->get_records_snapshot($sanitized_ids);
+
+            // Log operation for undo
+            $description = sprintf(__('%d Datensätze per Massenlöschung gelöscht', 'abschussplan-hgmh'), count($sanitized_ids));
+            $log_id = $this->undo_service->log_operation('bulk_delete', count($sanitized_ids), $description);
 
             // Perform bulk delete
             $result = $this->bulk_operations_service->bulk_delete($sanitized_ids);
+
+            // Log changes for undo if operation was logged
+            if ($log_id && $result['success']) {
+                $changes = array();
+                foreach ($sanitized_ids as $record_id) {
+                    if (isset($records_before[$record_id])) {
+                        // Log all fields of the deleted record for restoration
+                        foreach ($records_before[$record_id] as $field_name => $old_value) {
+                            $changes[] = array(
+                                'record_id' => $record_id,
+                                'field_name' => $field_name,
+                                'old_value' => $old_value,
+                                'new_value' => null
+                            );
+                        }
+                    }
+                }
+                if (!empty($changes)) {
+                    $this->undo_service->log_bulk_changes($log_id, $changes);
+                }
+            }
 
             if ($result['success']) {
                 wp_send_json_success(array(
@@ -142,7 +200,8 @@ class AHGMH_Bulk_Operations_Controller {
                     'deleted_count' => $result['deleted_count'],
                     'failed_count' => $result['failed_count'],
                     'failed_ids' => $result['failed_ids'],
-                    'total_requested' => $result['total_requested']
+                    'total_requested' => $result['total_requested'],
+                    'log_id' => $log_id
                 ));
             } else {
                 wp_send_json_error(array(
@@ -194,8 +253,36 @@ class AHGMH_Bulk_Operations_Controller {
                 throw new Exception(__('Ungültige Datensatz-IDs.', 'abschussplan-hgmh'));
             }
 
+            // Get records snapshot before update for undo capability
+            $records_before = $this->undo_service->get_records_snapshot($sanitized_ids);
+
+            // Log operation for undo
+            $description = sprintf(__('%d Datensätze dem Jagdbezirk "%s" zugewiesen', 'abschussplan-hgmh'), count($sanitized_ids), $jagdbezirk);
+            $log_id = $this->undo_service->log_operation('mass_assign', count($sanitized_ids), $description);
+
             // Perform mass assignment
             $result = $this->bulk_operations_service->mass_assign_meldegruppe($sanitized_ids, $jagdbezirk);
+
+            // Log changes for undo if operation was logged
+            if ($log_id && $result['success']) {
+                $changes = array();
+                foreach ($sanitized_ids as $record_id) {
+                    if (isset($records_before[$record_id])) {
+                        $old_value = isset($records_before[$record_id]['jagdbezirk']) ? $records_before[$record_id]['jagdbezirk'] : null;
+                        if ($old_value !== $jagdbezirk) {
+                            $changes[] = array(
+                                'record_id' => $record_id,
+                                'field_name' => 'jagdbezirk',
+                                'old_value' => $old_value,
+                                'new_value' => $jagdbezirk
+                            );
+                        }
+                    }
+                }
+                if (!empty($changes)) {
+                    $this->undo_service->log_bulk_changes($log_id, $changes);
+                }
+            }
 
             if ($result['success']) {
                 wp_send_json_success(array(
@@ -203,7 +290,8 @@ class AHGMH_Bulk_Operations_Controller {
                     'updated_count' => $result['updated_count'],
                     'failed_count' => $result['failed_count'],
                     'failed_ids' => $result['failed_ids'],
-                    'total_requested' => $result['total_requested']
+                    'total_requested' => $result['total_requested'],
+                    'log_id' => $log_id
                 ));
             } else {
                 wp_send_json_error(array(
