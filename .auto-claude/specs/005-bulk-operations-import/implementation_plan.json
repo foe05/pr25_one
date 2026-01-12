@@ -262,8 +262,8 @@
             "Related table stores: log_id, record_id, field_name, old_value, new_value",
             "Index on created_at for efficient cleanup"
           ],
-          "status": "pending",
-          "notes": ""
+          "status": "completed",
+          "notes": "Operation log tables created successfully. Created two tables: ahgmh_operation_logs (main log table with id, operation_type, user_id, affected_count, description, created_at) and ahgmh_operation_log_details (details table with log_id, record_id, field_name, old_value, new_value). Includes indexes on created_at for efficient cleanup, and on log_id/record_id for fast lookups. Integrated into create_table() workflow and cleanup_database() method."
         },
         {
           "subtask_id": "5.2",
