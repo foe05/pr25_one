@@ -43,7 +43,7 @@ Started: 2026-01-11
   * Follows existing pattern (similar to Page Views Controller)
   * AJAX actions automatically registered on instantiation
 
-## Phase 2: Column Mapping System 🔄 IN PROGRESS (2/3)
+## Phase 2: Column Mapping System ✅ COMPLETED (3/3)
 
 ### ✅ COMPLETED: Subtask 2.1 - Create Column Mapping Service
 - File: wp-content/plugins/abschussplan-hgmh/admin/services/class-column-mapper.php
@@ -81,9 +81,31 @@ Started: 2026-01-11
   * Header normalization handling umlauts and special characters
   * is_likely_ljv_format() helper method for quick detection
 
+### ✅ COMPLETED: Subtask 2.3 - Create Import Validator Service
+- File: wp-content/plugins/abschussplan-hgmh/admin/services/class-import-validator.php
+- Commit: cc3533c
+- Date: 2026-01-12
+- Status: All acceptance criteria met
+- Notes:
+  * Implemented AHGMH_Import_Validator service class
+  * Validates required fields (wildart, kategorie) are mapped and not empty
+  * Wildart validation against configured species with case-insensitive fuzzy matching
+  * Kategorie validation against wildart-specific categories
+  * Meldegruppe validation with warnings for unconfigured values
+  * Date format validation supporting multiple formats: DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD, DD/MM/YYYY, etc.
+  * Converts dates to MySQL format (YYYY-MM-DD HH:MM:SS)
+  * WUS number uniqueness checking against existing database records
+  * WUS number caching for performance optimization
+  * Detailed error and warning messages with row numbers
+  * Batch validation via validate_import() method
+  * reset_wus_cache() for multi-batch imports
+  * Returns structured arrays with errors (blocking) and warnings (non-blocking) per row
+
 ## Next Steps
-- Phase 2: Column Mapping System (cont.)
-  - Subtask 2.3: Create Import Validator Service
+- Phase 3: Import UI Components
+  - Subtask 3.1: Create Import View Class
+  - Subtask 3.2: Create Import JavaScript Module
+  - Subtask 3.3: Add Import CSS Styles
 
 ## Session Notes
 - German Excel exports typically use semicolon delimiters - handled automatically
