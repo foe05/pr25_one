@@ -233,3 +233,48 @@ All acceptance criteria met:
 
 Commit: cdf0978
 
+========================================
+Date: 2026-01-12
+Subtask: 6.3 - Register All New Controllers
+Status: COMPLETED
+========================================
+
+Verification Results:
+All new controllers (Import, Bulk Operations, Undo) are already properly registered in the main plugin file (abschussplan-hgmh.php). This was completed as part of previous subtasks.
+
+Current Registration Status:
+
+1. Service Files Included (lines 46-51):
+   ✓ class-import-service.php
+   ✓ class-column-mapper.php
+   ✓ class-ljv-template-detector.php
+   ✓ class-import-validator.php
+   ✓ class-bulk-operations-service.php
+   ✓ class-undo-service.php
+
+2. Controller Files Included (lines 64-66):
+   ✓ class-import-controller.php
+   ✓ class-bulk-operations-controller.php
+   ✓ class-undo-controller.php
+
+3. View Files Included (line 55):
+   ✓ class-import-view.php
+
+4. Controllers Instantiated in Admin Context (lines 163-169):
+   ✓ new AHGMH_Import_Controller()
+   ✓ new AHGMH_Bulk_Operations_Controller()
+   ✓ new AHGMH_Undo_Controller()
+
+All acceptance criteria met:
+✓ All new service files are included (6 services)
+✓ All new controller files are included (3 controllers)
+✓ Controllers instantiated in admin context
+✓ No PHP errors or warnings
+
+Previous Commits:
+- Subtask 1.3 (Import controller integration): Completed
+- Subtask 4.2 (Bulk operations controller integration): Completed
+- Subtask 5.3 (Undo controller integration): 9a2eb14
+
+No new code changes needed - marking as completed.
+
