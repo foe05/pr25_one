@@ -107,6 +107,11 @@ class Abschussplan_HGMH {
     public $public_form;
 
     /**
+     * Verification service instance
+     */
+    public $verification_service;
+
+    /**
      * Get the singleton instance
      */
     public static function get_instance() {
@@ -148,6 +153,9 @@ class Abschussplan_HGMH {
 
         // Initialize public form handler
         $this->public_form = new AHGMH_Public_Form_Handler();
+
+        // Initialize verification service
+        $this->verification_service = new AHGMH_Verification_Service();
 
         // Check for database schema updates
         add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));

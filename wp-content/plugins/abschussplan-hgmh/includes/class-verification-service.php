@@ -20,6 +20,79 @@ class AHGMH_Verification_Service {
     const TOKEN_EXPIRY_HOURS = 48;
 
     /**
+     * Constructor
+     */
+    public function __construct() {
+        // Register init hook to handle verification requests
+        add_action('init', array($this, 'handle_verification_request'));
+
+        // Register action to display verification messages
+        add_action('wp_footer', array($this, 'display_verification_message'));
+    }
+
+    /**
+     * Handle verification request from URL query parameter
+     * Checks for verify_email parameter, validates token, and updates status
+     */
+    public function handle_verification_request() {
+        // Check if verify_email parameter exists
+        if (!isset($_GET['verify_email'])) {
+            return;
+        }
+
+        // Get and sanitize token
+        $token = sanitize_text_field($_GET['verify_email']);
+
+        // Verify the email using static method
+        $result = self::verify_email($token);
+
+        // Set up admin notice or display message
+        if ($result['success']) {
+            // Store success message in transient for display
+            set_transient('ahgmh_verification_message', array(
+                'type' => 'success',
+                'message' => $result['message']
+            ), 60);
+        } else {
+            // Store error message in transient for display
+            set_transient('ahgmh_verification_message', array(
+                'type' => 'error',
+                'message' => $result['message']
+            ), 60);
+        }
+
+        // Redirect to home page without query parameter to prevent re-processing
+        wp_safe_redirect(remove_query_arg('verify_email'));
+        exit;
+    }
+
+    /**
+     * Display verification message from transient
+     * Shows success or error message after email verification
+     */
+    public function display_verification_message() {
+        $message = get_transient('ahgmh_verification_message');
+
+        if (!$message) {
+            return;
+        }
+
+        // Delete transient after retrieving it
+        delete_transient('ahgmh_verification_message');
+
+        $alert_class = $message['type'] === 'success' ? 'alert-success' : 'alert-danger';
+        $icon = $message['type'] === 'success' ? 'check-circle' : 'exclamation-triangle';
+
+        echo '<div class="container mt-4">';
+        echo '<div class="alert ' . esc_attr($alert_class) . ' alert-dismissible fade show" role="alert">';
+        echo '<i class="bi bi-' . esc_attr($icon) . '"></i> ';
+        echo esc_html($message['message']);
+        echo '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+        echo '</div>';
+        echo '</div>';
+    }
+
+    /**
      * Generate a secure verification token
      *
      * @return string 64-character hexadecimal token
