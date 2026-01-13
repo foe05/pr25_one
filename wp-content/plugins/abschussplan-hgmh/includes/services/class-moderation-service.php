@@ -204,6 +204,128 @@ class HGMH_Moderation_Service {
     }
 
     /**
+     * Edit a submission
+     *
+     * @param int $submission_id The submission ID
+     * @param int $obmann_user_id The editing user ID
+     * @param array $updated_data Updated submission data
+     * @param string $comment Optional comment (reason for edit)
+     * @return bool|WP_Error True on success, WP_Error on failure
+     */
+    public function edit($submission_id, $obmann_user_id, $updated_data, $comment = '') {
+        try {
+            // 1. Validate submission exists
+            $submission = $this->repository->get_by_id($submission_id);
+            if (!$submission) {
+                return new WP_Error(
+                    'submission_not_found',
+                    __('Meldung nicht gefunden.', 'abschussplan-hgmh')
+                );
+            }
+
+            // 2. Get moderator info
+            $moderator = get_userdata($obmann_user_id);
+            if (!$moderator) {
+                return new WP_Error(
+                    'invalid_moderator',
+                    __('Ungültiger Moderator.', 'abschussplan-hgmh')
+                );
+            }
+
+            // 3. Validate and sanitize updated data
+            $sanitized_data = $this->sanitize_submission_data($updated_data);
+            if (empty($sanitized_data)) {
+                return new WP_Error(
+                    'invalid_data',
+                    __('Ungültige Meldungsdaten.', 'abschussplan-hgmh')
+                );
+            }
+
+            // 4. Store previous values for history
+            $previous_data = [
+                'art' => $submission->art ?? '',
+                'kategorie' => $submission->kategorie ?? '',
+                'anzahl' => $submission->anzahl ?? 0,
+                'datum' => $submission->datum ?? '',
+                'meldegruppe' => $submission->meldegruppe ?? ''
+            ];
+
+            // 5. Update submission data
+            $result = $this->repository->update($submission_id, $sanitized_data);
+
+            if (!$result) {
+                return new WP_Error(
+                    'update_failed',
+                    __('Aktualisierung der Meldung fehlgeschlagen.', 'abschussplan-hgmh')
+                );
+            }
+
+            // 6. Log to moderation history
+            $this->log_to_history(
+                $submission_id,
+                'edit',
+                $submission->status,
+                $submission->status,
+                $obmann_user_id,
+                $moderator->display_name,
+                $comment
+            );
+
+            // 7. Trigger activity log
+            $this->trigger_activity_log('edit', $submission_id, $obmann_user_id, [
+                'previous_data' => $previous_data,
+                'updated_data' => $sanitized_data,
+                'comment' => $comment
+            ]);
+
+            return true;
+
+        } catch (Exception $e) {
+            error_log('HGMH Moderation Service - Edit error: ' . $e->getMessage());
+            return new WP_Error(
+                'edit_error',
+                __('Fehler beim Bearbeiten der Meldung.', 'abschussplan-hgmh')
+            );
+        }
+    }
+
+    /**
+     * Sanitize submission data for editing
+     *
+     * @param array $data Raw submission data
+     * @return array Sanitized data
+     */
+    private function sanitize_submission_data($data) {
+        $sanitized = [];
+
+        if (isset($data['art'])) {
+            $sanitized['art'] = sanitize_text_field($data['art']);
+        }
+
+        if (isset($data['kategorie'])) {
+            $sanitized['kategorie'] = sanitize_text_field($data['kategorie']);
+        }
+
+        if (isset($data['anzahl'])) {
+            $sanitized['anzahl'] = absint($data['anzahl']);
+        }
+
+        if (isset($data['datum'])) {
+            $sanitized['datum'] = sanitize_text_field($data['datum']);
+        }
+
+        if (isset($data['meldegruppe'])) {
+            $sanitized['meldegruppe'] = sanitize_text_field($data['meldegruppe']);
+        }
+
+        if (isset($data['bemerkung'])) {
+            $sanitized['bemerkung'] = sanitize_textarea_field($data['bemerkung']);
+        }
+
+        return $sanitized;
+    }
+
+    /**
      * Calculate time to approval in minutes
      *
      * @param int $submission_id The submission ID
