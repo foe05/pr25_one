@@ -286,4 +286,124 @@ class HGMH_Submission_Repository {
 
         return $results ? $results : array();
     }
+
+    /**
+     * Count submissions by status
+     *
+     * Returns the number of submissions with a specific status.
+     * Optionally filters by obmann's assigned meldegruppen.
+     *
+     * @param string $status Status to count (e.g., 'pending', 'approved', 'rejected')
+     * @param int|null $obmann_user_id Optional obmann user ID to filter by their meldegruppen
+     * @return int Count of submissions matching the criteria
+     */
+    public function count_by_status($status, $obmann_user_id = null) {
+        // Start building the query
+        $sql = "SELECT COUNT(*) as count
+            FROM {$this->submissions_table} s";
+
+        $prepare_args = array();
+
+        // Add obmann meldegruppen filter if user_id is provided
+        if ($obmann_user_id !== null) {
+            $usermeta_table = $this->wpdb->usermeta;
+            $meta_like = 'ahgmh_assigned_meldegruppe_%';
+
+            // Subquery to filter by obmann's assigned meldegruppen
+            $sql .= " WHERE s.meldegruppe_id IN (
+                SELECT mg.id
+                FROM {$this->meldegruppe_table} mg
+                INNER JOIN {$usermeta_table} um ON mg.name = um.meta_value
+                WHERE um.user_id = %d
+                AND um.meta_key LIKE %s
+            )";
+            $prepare_args[] = (int) $obmann_user_id;
+            $prepare_args[] = $meta_like;
+
+            // Add status filter with AND
+            $sql .= " AND s.status = %s";
+            $prepare_args[] = sanitize_text_field($status);
+        } else {
+            // No obmann filter, just count by status
+            $sql .= " WHERE s.status = %s";
+            $prepare_args[] = sanitize_text_field($status);
+        }
+
+        // Prepare and execute query
+        if (!empty($prepare_args)) {
+            $sql = $this->wpdb->prepare($sql, $prepare_args);
+        }
+
+        $result = $this->wpdb->get_var($sql);
+
+        // Log error for debugging if WP_DEBUG is enabled
+        if ($result === null && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('HGMH Submission Repository count_by_status error: ' . $this->wpdb->last_error);
+            error_log('HGMH Submission Repository last query: ' . $this->wpdb->last_query);
+        }
+
+        return $result !== null ? (int) $result : 0;
+    }
+
+    /**
+     * Update submission status and related data
+     *
+     * Updates the status of a submission and optionally updates additional fields.
+     * Automatically calculates and updates metrics based on business rules.
+     *
+     * @param int $id Submission ID to update
+     * @param string $new_status New status value (e.g., 'pending', 'approved', 'rejected')
+     * @param array $additional_data Optional additional fields to update (e.g., approved_at, approved_by_user_id, rejection_reason)
+     * @return bool True on success, false on failure
+     */
+    public function update_status($id, $new_status, $additional_data = array()) {
+        // Prepare data for update
+        $update_data = array(
+            'status' => sanitize_text_field($new_status)
+        );
+        $format = array('%s');
+
+        // Add timestamp fields based on status change
+        if ($new_status === 'approved' && !isset($additional_data['approved_at'])) {
+            $update_data['approved_at'] = current_time('mysql');
+            $format[] = '%s';
+        } elseif ($new_status === 'rejected' && !isset($additional_data['rejected_at'])) {
+            $update_data['rejected_at'] = current_time('mysql');
+            $format[] = '%s';
+        }
+
+        // Process additional data fields
+        if (!empty($additional_data)) {
+            foreach ($additional_data as $key => $value) {
+                // Sanitize and add each field
+                if (is_int($value)) {
+                    $update_data[$key] = (int) $value;
+                    $format[] = '%d';
+                } elseif (is_float($value)) {
+                    $update_data[$key] = (float) $value;
+                    $format[] = '%f';
+                } else {
+                    $update_data[$key] = sanitize_text_field($value);
+                    $format[] = '%s';
+                }
+            }
+        }
+
+        // Update data with proper data types
+        $result = $this->wpdb->update(
+            $this->submissions_table,
+            $update_data,
+            array('id' => (int) $id),
+            $format,
+            array('%d')
+        );
+
+        // Log error for debugging if WP_DEBUG is enabled
+        if ($result === false && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('HGMH Submission Repository update_status error: ' . $this->wpdb->last_error);
+            error_log('HGMH Submission Repository last query: ' . $this->wpdb->last_query);
+        }
+
+        return $result !== false;
+    }
 }
