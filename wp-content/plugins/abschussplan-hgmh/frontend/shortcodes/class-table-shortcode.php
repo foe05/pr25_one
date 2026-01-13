@@ -186,22 +186,13 @@ class AHGMH_Table_Shortcode {
             }
 
             // Call moderation service to reject submission
-            // Note: This will be implemented in Spec 005
-            // For now, return a placeholder response
-            // TODO: Uncomment when moderation service is available
-            // $moderation_service = new AHGMH_Moderation_Service();
-            // $result = $moderation_service->reject_submission($submission_id, $comment);
+            $moderation_service = new AHGMH_Moderation_Service();
+            $result = $moderation_service->reject_submission($submission_id, $comment);
 
-            // Temporary placeholder until moderation service exists
-            wp_send_json_error(array(
-                'message' => __('Moderation-Service noch nicht implementiert (Spec 005 ausstehend).', 'abschussplan-hgmh')
+            wp_send_json_success(array(
+                'message' => __('Meldung erfolgreich abgelehnt.', 'abschussplan-hgmh'),
+                'submission_id' => $submission_id
             ));
-
-            // When moderation service is ready, use this pattern:
-            // wp_send_json_success(array(
-            //     'message' => __('Meldung erfolgreich abgelehnt.', 'abschussplan-hgmh'),
-            //     'submission_id' => $submission_id
-            // ));
 
         } catch (Exception $e) {
             error_log('AHGMH Table Reject Error: ' . $e->getMessage());
