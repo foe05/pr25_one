@@ -12,6 +12,42 @@ if (!defined('ABSPATH')) {
 /**
  * Repository class for handling submission database operations
  * Provides clean abstraction layer separating business logic from SQL
+ *
+ * Usage Examples:
+ *
+ * // Create new submission
+ * $repo = new HGMH_Submission_Repository();
+ * $submission_id = $repo->create([
+ *     'wildart_id' => 1,
+ *     'eigenjagdbezirk_id' => 2,
+ *     'category' => 'AK1',
+ *     'harvest_date' => '2024-01-15 14:30:00',
+ *     'submitted_by_user_id' => 123
+ * ]);
+ *
+ * // Find submission by ID
+ * $submission = $repo->find($submission_id);
+ *
+ * // Update submission
+ * $repo->update($submission_id, [
+ *     'category' => 'AK2',
+ *     'harvest_date' => '2024-01-15 15:00:00'
+ * ]);
+ *
+ * // Get submissions for obmann (filtered by assigned meldegruppen)
+ * $submissions = $repo->get_for_obmann($user_id, $wildart_id, 'pending');
+ *
+ * // Count submissions by status
+ * $pending_count = $repo->count_by_status('pending', $obmann_user_id);
+ *
+ * // Update submission status with additional data
+ * $repo->update_status($submission_id, 'approved', [
+ *     'approved_by_user_id' => get_current_user_id(),
+ *     'approved_at' => current_time('mysql')
+ * ]);
+ *
+ * // Delete submission
+ * $repo->delete($submission_id);
  */
 class HGMH_Submission_Repository {
     /**
