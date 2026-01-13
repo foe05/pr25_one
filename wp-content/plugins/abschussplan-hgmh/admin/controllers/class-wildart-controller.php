@@ -22,31 +22,16 @@ class AHGMH_Wildart_Controller {
      * Constructor
      */
     public function __construct() {
-        // DEBUG: Log controller creation
-        file_put_contents(ABSPATH . 'wp-content/debug_wildart_controller.log', 
-            date('Y-m-d H:i:s') . " - AHGMH_Wildart_Controller constructor called\n", 
-            FILE_APPEND);
-        
         $this->wildart_service = new AHGMH_Wildart_Service();
         $this->wildart_view = new AHGMH_Wildart_View();
-        
+
         $this->register_ajax_handlers();
-        
-        // DEBUG: Log after AJAX handlers registration
-        file_put_contents(ABSPATH . 'wp-content/debug_wildart_controller.log', 
-            date('Y-m-d H:i:s') . " - AJAX handlers registered\n", 
-            FILE_APPEND);
     }
     
     /**
      * Register AJAX handlers
      */
     private function register_ajax_handlers() {
-        // DEBUG: Log each handler registration
-        file_put_contents(ABSPATH . 'wp-content/debug_wildart_controller.log', 
-            date('Y-m-d H:i:s') . " - Registering AJAX handlers...\n", 
-            FILE_APPEND);
-            
         add_action('wp_ajax_ahgmh_create_wildart', array($this, 'ajax_create_wildart'));
         add_action('wp_ajax_ahgmh_delete_wildart', array($this, 'ajax_delete_wildart'));
         add_action('wp_ajax_ahgmh_load_wildart_config', array($this, 'ajax_load_wildart_config'));
@@ -57,15 +42,9 @@ class AHGMH_Wildart_Controller {
         add_action('wp_ajax_ahgmh_assign_obmann', array($this, 'ajax_assign_obmann'));
         add_action('wp_ajax_ahgmh_remove_obmann', array($this, 'ajax_remove_obmann'));
         add_action('wp_ajax_ahgmh_get_obmann_assignments', array($this, 'ajax_get_obmann_assignments'));
-        
-        // DEBUG: Confirm meldegruppen handler registration
-        file_put_contents(ABSPATH . 'wp-content/debug_wildart_controller.log', 
-            date('Y-m-d H:i:s') . " - ahgmh_save_wildart_meldegruppen handler registered!\n", 
-            FILE_APPEND);
-            
-        // DEBUG: Add global AJAX hook to catch ALL requests
-        add_action('wp_ajax_nopriv_ahgmh_save_wildart_meldegruppen', array($this, 'debug_ajax_catch'));
-        add_action('init', array($this, 'debug_all_ajax'));
+        add_action('wp_ajax_ahgmh_save_wildart_order', array($this, 'ajax_save_wildart_order'));
+        add_action('wp_ajax_ahgmh_get_meldegruppen_for_wildart', array($this, 'ajax_get_meldegruppen_for_wildart'));
+        add_action('wp_ajax_ahgmh_reset_all_assignments', array($this, 'ajax_reset_all_assignments'));
     }
     
     /**
@@ -162,58 +141,25 @@ class AHGMH_Wildart_Controller {
      * AJAX: Save wildart meldegruppen
      */
     public function ajax_save_wildart_meldegruppen() {
-        // EMERGENCY DEBUG: Write to a file to see if this method is called
-        file_put_contents(ABSPATH . 'wp-content/debug_meldegruppen.log', 
-            date('Y-m-d H:i:s') . " - AJAX Handler reached!\n" . 
-            "POST Data: " . print_r($_POST, true) . "\n\n", 
-            FILE_APPEND);
-        
-        // TEMP: Skip validation to test if that's the problem
-        // AHGMH_Validation_Service::verify_ajax_request();
-        
-        // Basic validation instead
-        if (!current_user_can('manage_options')) {
-            file_put_contents(ABSPATH . 'wp-content/debug_meldegruppen.log', 
-                date('Y-m-d H:i:s') . " - Permission denied!\n", 
-                FILE_APPEND);
-            wp_send_json_error('Permission denied');
-            return;
-        }
-        
+        AHGMH_Validation_Service::verify_ajax_request();
+
         try {
             $wildart = sanitize_text_field($_POST['wildart'] ?? '');
             $meldegruppen = AHGMH_Validation_Service::sanitize_text_array($_POST['meldegruppen'] ?? []);
-            
+
             if (empty($wildart)) {
                 wp_send_json_error('Wildart nicht angegeben');
                 return;
             }
-            
+
             $this->wildart_service->save_meldegruppen($wildart, $meldegruppen);
             wp_send_json_success(array(
                 'message' => __('Meldegruppen erfolgreich gespeichert', 'abschussplan-hgmh')
             ));
-            
+
         } catch (Exception $e) {
             wp_send_json_error('Fehler beim Speichern: ' . esc_html($e->getMessage()));
         }
-    }
-    
-    /**
-     * DEBUG: Catch all AJAX requests to see what's happening
-     */
-    public function debug_all_ajax() {
-        if (defined('DOING_AJAX') && DOING_AJAX) {
-            file_put_contents(ABSPATH . 'wp-content/debug_all_ajax.log', 
-                date('Y-m-d H:i:s') . " - AJAX Request detected! Action: " . ($_POST['action'] ?? 'NO ACTION') . "\n", 
-                FILE_APPEND);
-        }
-    }
-    
-    public function debug_ajax_catch() {
-        file_put_contents(ABSPATH . 'wp-content/debug_ajax_catch.log', 
-            date('Y-m-d H:i:s') . " - Caught AJAX request: " . print_r($_POST, true) . "\n", 
-            FILE_APPEND);
     }
     
     /**
@@ -345,6 +291,71 @@ class AHGMH_Wildart_Controller {
 
         } catch (Exception $e) {
             wp_send_json_error('Fehler beim Laden der Zuweisungen: ' . esc_html($e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX: Save wildart order
+     */
+    public function ajax_save_wildart_order() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        try {
+            $order = isset($_POST['order']) ? $_POST['order'] : array();
+
+            if (!is_array($order)) {
+                wp_send_json_error('Ungültige Reihenfolge-Daten');
+                return;
+            }
+
+            // Sanitize order array
+            $order = array_map('sanitize_text_field', $order);
+
+            $result = $this->wildart_service->save_wildart_order($order);
+            wp_send_json_success(array(
+                'message' => __('Reihenfolge erfolgreich gespeichert', 'abschussplan-hgmh')
+            ));
+
+        } catch (Exception $e) {
+            wp_send_json_error('Fehler beim Speichern: ' . esc_html($e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX: Get meldegruppen for a specific wildart
+     */
+    public function ajax_get_meldegruppen_for_wildart() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        try {
+            $wildart = sanitize_text_field($_POST['wildart'] ?? '');
+            if (empty($wildart)) {
+                wp_send_json_error('Wildart erforderlich');
+                return;
+            }
+
+            $meldegruppen = $this->wildart_service->get_meldegruppen_for_wildart($wildart);
+            wp_send_json_success(array('meldegruppen' => $meldegruppen));
+
+        } catch (Exception $e) {
+            wp_send_json_error(esc_html($e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX: Reset all Obmann assignments
+     */
+    public function ajax_reset_all_assignments() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        try {
+            $result = $this->wildart_service->reset_all_obmann_assignments();
+            wp_send_json_success(array(
+                'message' => __('Alle Zuweisungen zurückgesetzt', 'abschussplan-hgmh')
+            ));
+
+        } catch (Exception $e) {
+            wp_send_json_error(esc_html($e->getMessage()));
         }
     }
 

@@ -456,4 +456,13 @@ class AHGMH_Meldegruppe_Repository {
         $count = $this->wpdb->get_var($query);
         return $count > 0;
     }
+
+    /**
+     * Reset all Obmann assignments
+     *
+     * @return bool True on success
+     */
+    public function reset_all_assignments() {
+        return delete_option($this->obmann_option_key);
+    }
 }

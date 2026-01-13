@@ -225,4 +225,35 @@ class AHGMH_Wildart_Service {
         return $meldegruppe_repo->get_obmann_assignments();
     }
 
+    /**
+     * Save wildart order
+     *
+     * @param array $ordered_wildarten Array of wildart names in desired order
+     * @return bool True on success
+     */
+    public function save_wildart_order($ordered_wildarten) {
+        return $this->repository->save_order($ordered_wildarten);
+    }
+
+    /**
+     * Get meldegruppen for a specific wildart
+     * (Alias for get_meldegruppen for clearer API semantics)
+     *
+     * @param string $wildart Wildart name
+     * @return array Array of meldegruppen
+     */
+    public function get_meldegruppen_for_wildart($wildart) {
+        return $this->get_meldegruppen($wildart);
+    }
+
+    /**
+     * Reset all Obmann assignments
+     *
+     * @return bool True on success
+     */
+    public function reset_all_obmann_assignments() {
+        $meldegruppe_repo = new AHGMH_Meldegruppe_Repository();
+        return $meldegruppe_repo->reset_all_assignments();
+    }
+
 }

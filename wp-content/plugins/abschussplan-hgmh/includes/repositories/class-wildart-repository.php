@@ -465,6 +465,26 @@ class AHGMH_Wildart_Repository {
     }
 
     /**
+     * Save wildart order
+     *
+     * @param array $ordered_wildarten Array of wildart names in desired order
+     * @return bool True on success
+     */
+    public function save_order($ordered_wildarten) {
+        $ordered_wildarten = array_map('sanitize_text_field', $ordered_wildarten);
+
+        // Verify all wildarten exist
+        $existing = $this->get_all();
+        foreach ($ordered_wildarten as $wildart) {
+            if (!in_array($wildart, $existing, true)) {
+                return false; // Invalid wildart in order
+            }
+        }
+
+        return update_option($this->wildarten_option_key, $ordered_wildarten);
+    }
+
+    /**
      * Clean up wildart-related data when deleting
      *
      * @param string $wildart_name The wildart name

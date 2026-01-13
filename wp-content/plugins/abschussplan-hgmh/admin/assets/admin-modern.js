@@ -1171,7 +1171,7 @@
         $submitBtn.prop('disabled', true).text(isEditMode ? 'Aktualisiere...' : 'Speichere...');
 
         var formData = {
-            action: 'ahgmh_assign_obmann_meldegruppe',
+            action: 'ahgmh_assign_obmann',
             user_id: $('#user_id').val(),
             wildart: $('#wildart').val(),
             meldegruppe: $('#meldegruppe').val(),
@@ -1280,7 +1280,7 @@
             url: ahgmh_admin.ajax_url,
             type: 'POST',
             data: {
-                action: 'ahgmh_remove_obmann_assignment',
+                action: 'ahgmh_remove_obmann',
                 user_id: userId,
                 wildart: wildart,
                 nonce: ahgmh_admin.nonce
