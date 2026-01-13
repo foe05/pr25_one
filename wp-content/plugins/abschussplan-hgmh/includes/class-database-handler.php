@@ -43,8 +43,18 @@ class AHGMH_Database_Handler {
             field4 text NOT NULL,
             field5 text NOT NULL,
             field6 text,
+            status varchar(20) NOT NULL DEFAULT 'pending',
+            approved_by bigint(20) DEFAULT NULL,
+            approved_at datetime DEFAULT NULL,
+            rejected_by bigint(20) DEFAULT NULL,
+            rejected_at datetime DEFAULT NULL,
+            rejection_reason text,
+            time_to_approval int(11) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id)
+            PRIMARY KEY  (id),
+            KEY status (status),
+            KEY approved_by (approved_by),
+            KEY rejected_by (rejected_by)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
