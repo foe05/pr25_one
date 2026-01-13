@@ -117,6 +117,93 @@ class HGMH_Moderation_Service {
     }
 
     /**
+     * Reject a submission
+     *
+     * @param int $submission_id The submission ID
+     * @param int $obmann_user_id The rejecting user ID
+     * @param string $comment Optional comment (reason for rejection)
+     * @return bool|WP_Error True on success, WP_Error on failure
+     */
+    public function reject($submission_id, $obmann_user_id, $comment = '') {
+        try {
+            // 1. Validate submission exists
+            $submission = $this->repository->get_by_id($submission_id);
+            if (!$submission) {
+                return new WP_Error(
+                    'submission_not_found',
+                    __('Meldung nicht gefunden.', 'abschussplan-hgmh')
+                );
+            }
+
+            // 2. Get moderator info
+            $moderator = get_userdata($obmann_user_id);
+            if (!$moderator) {
+                return new WP_Error(
+                    'invalid_moderator',
+                    __('Ungültiger Moderator.', 'abschussplan-hgmh')
+                );
+            }
+
+            // 3. Update status
+            $previous_status = $submission->status;
+            $update_fields = [
+                'rejected_by' => absint($obmann_user_id),
+                'rejected_at' => current_time('mysql')
+            ];
+
+            $result = $this->repository->update_status(
+                $submission_id,
+                'rejected',
+                $update_fields
+            );
+
+            if (!$result) {
+                return new WP_Error(
+                    'update_failed',
+                    __('Status-Aktualisierung fehlgeschlagen.', 'abschussplan-hgmh')
+                );
+            }
+
+            // 4. Log to moderation history
+            $this->log_to_history(
+                $submission_id,
+                'reject',
+                $previous_status,
+                'rejected',
+                $obmann_user_id,
+                $moderator->display_name,
+                $comment
+            );
+
+            // 5. Trigger activity log
+            $this->trigger_activity_log('reject', $submission_id, $obmann_user_id, [
+                'previous_status' => $previous_status,
+                'new_status' => 'rejected',
+                'comment' => $comment
+            ]);
+
+            // 6. Send email notification
+            if (!empty($submission->email)) {
+                $submission_data = $this->get_submission_data_for_email($submission);
+                $this->email_service->send_rejection_notification(
+                    $submission->email,
+                    $submission_data,
+                    $comment
+                );
+            }
+
+            return true;
+
+        } catch (Exception $e) {
+            error_log('HGMH Moderation Service - Reject error: ' . $e->getMessage());
+            return new WP_Error(
+                'rejection_error',
+                __('Fehler beim Ablehnen der Meldung.', 'abschussplan-hgmh')
+            );
+        }
+    }
+
+    /**
      * Calculate time to approval in minutes
      *
      * @param int $submission_id The submission ID
