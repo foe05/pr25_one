@@ -65,6 +65,9 @@ class AHGMH_Database_Handler {
 
         // Create page views tracking table
         $this->create_page_views_table();
+
+        // Create moderation history table
+        $this->create_moderation_history_table();
     }
     
     /**
@@ -133,6 +136,36 @@ class AHGMH_Database_Handler {
             PRIMARY KEY  (id),
             KEY shortcode_name (shortcode_name),
             KEY user_id (user_id),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+     * Create the moderation history table for audit trail
+     */
+    public function create_moderation_history_table() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'ahgmh_moderation_history';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            submission_id mediumint(9) NOT NULL,
+            action varchar(50) NOT NULL,
+            previous_status varchar(20) DEFAULT NULL,
+            new_status varchar(20) DEFAULT NULL,
+            moderator_id bigint(20) NOT NULL DEFAULT 0,
+            moderator_name varchar(255) DEFAULT '',
+            comment text,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY submission_id (submission_id),
+            KEY moderator_id (moderator_id),
+            KEY action (action),
             KEY created_at (created_at)
         ) $charset_collate;";
 
