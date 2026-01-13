@@ -53,11 +53,18 @@ class AHGMH_Database_Handler {
             rejected_at datetime DEFAULT NULL,
             rejection_reason text,
             time_to_approval int(11) DEFAULT NULL,
+            verification_status enum('pending','verified','expired') DEFAULT 'pending',
+            verification_token varchar(64) DEFAULT NULL,
+            token_expires_at datetime DEFAULT NULL,
+            submitter_email varchar(255) DEFAULT NULL,
+            submitter_ip varchar(100) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
             KEY status (status),
             KEY approved_by (approved_by),
-            KEY rejected_by (rejected_by)
+            KEY rejected_by (rejected_by),
+            KEY verification_token (verification_token),
+            KEY verification_status (verification_status)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');

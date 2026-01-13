@@ -46,6 +46,11 @@ require_once AHGMH_PLUGIN_DIR . 'includes/services/class-moderation-service.php'
 // Include frontend shortcodes
 require_once AHGMH_PLUGIN_DIR . 'frontend/shortcodes/class-table-shortcode.php';
 
+// Include public form and verification services
+require_once AHGMH_PLUGIN_DIR . 'includes/class-verification-service.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-rate-limiter.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-public-form-handler.php';
+
 // Include admin-only architecture when needed
 if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';
@@ -104,11 +109,21 @@ class Abschussplan_HGMH {
      * Admin page instance (Legacy)
      */
     public $admin;
-    
+
     /**
      * New modular admin controller
      */
     public $admin_controller;
+
+    /**
+     * Public form handler instance
+     */
+    public $public_form;
+
+    /**
+     * Verification service instance
+     */
+    public $verification_service;
 
     /**
      * Get the singleton instance
@@ -152,6 +167,12 @@ class Abschussplan_HGMH {
 
         // Initialize frontend table shortcode
         new AHGMH_Table_Shortcode();
+
+        // Initialize public form handler
+        $this->public_form = new AHGMH_Public_Form_Handler();
+
+        // Initialize verification service
+        $this->verification_service = new AHGMH_Verification_Service();
 
         // Check for database schema updates
         add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));
