@@ -302,6 +302,35 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
     </div>
 </div>
 
+<!-- Reject Submission Modal -->
+<div class="modal fade" id="rejectSubmissionModal" tabindex="-1" aria-labelledby="rejectSubmissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rejectSubmissionModalLabel"><?php echo esc_html__('Abschussmeldung ablehnen', 'abschussplan-hgmh'); ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php echo esc_attr__('Schließen', 'abschussplan-hgmh'); ?>"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reject-form-response" class="alert" role="alert" style="display: none;"></div>
+
+                <form id="reject-submission-form" data-submission-id="">
+                    <?php wp_nonce_field('ahgmh_reject_submission_nonce', 'ahgmh_reject_nonce'); ?>
+
+                    <div class="mb-3">
+                        <label for="reject-comment" class="form-label"><?php echo esc_html__('Ablehnungsgrund (Pflichtfeld)', 'abschussplan-hgmh'); ?> <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="reject-comment" name="comment" rows="4" required placeholder="<?php echo esc_attr__('Bitte geben Sie einen Grund für die Ablehnung an...', 'abschussplan-hgmh'); ?>"></textarea>
+                        <div class="form-error text-danger mt-1"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo esc_html__('Abbrechen', 'abschussplan-hgmh'); ?></button>
+                <button type="button" class="btn btn-danger" id="confirm-reject-btn"><?php echo esc_html__('Ablehnen bestätigen', 'abschussplan-hgmh'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function exportCSV(species) {
     // Build export URL
