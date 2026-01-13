@@ -50,6 +50,21 @@ class AHGMH_Public_Form_Handler {
         wp_enqueue_script('jquery-ui-datepicker');
         wp_enqueue_style('jquery-ui-css', 'https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css');
 
+        // Enqueue public form validation script
+        wp_enqueue_script(
+            'ahgmh-public-form-validation',
+            AHGMH_PLUGIN_URL . 'assets/js/public-form-validation.js',
+            array('jquery'),
+            AHGMH_VERSION,
+            true
+        );
+
+        // Localize script with AJAX URL and nonce
+        wp_localize_script('ahgmh-public-form-validation', 'ahgmh_ajax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('ahgmh_form_nonce')
+        ));
+
         // Set up the yesterday's date as default
         $yesterday = date('Y-m-d', strtotime('-1 day'));
 
@@ -71,6 +86,10 @@ class AHGMH_Public_Form_Handler {
         // Generate list of available categories
         $categories = !empty($saved_categories) ? $saved_categories : array();
 
+        // Define variables for template
+        $counts = array();
+        $limits = array();
+
         ob_start();
         include AHGMH_PLUGIN_DIR . 'templates/public-form-template.php';
         return ob_get_clean();
@@ -81,6 +100,13 @@ class AHGMH_Public_Form_Handler {
      * No login required, uses email verification and rate limiting
      */
     public function process_form_submission() {
+        // Verify nonce for security
+        if (!isset($_POST['ahgmh_nonce']) || !wp_verify_nonce($_POST['ahgmh_nonce'], 'ahgmh_form_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitsüberprüfung fehlgeschlagen. Bitte laden Sie die Seite neu.', 'abschussplan-hgmh')
+            ));
+        }
+
         // Get client IP address
         $client_ip = AHGMH_Verification_Service::get_client_ip();
 

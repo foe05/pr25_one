@@ -21,8 +21,8 @@ if (!defined('ABSPATH')) {
         <input type="hidden" id="game_species" name="game_species" value="<?php echo esc_attr($selected_species); ?>" />
 
         <div class="mb-3">
-            <label for="user_email" class="form-label"><?php echo esc_html__('E-Mail-Adresse', 'abschussplan-hgmh'); ?> <span class="text-danger">*</span></label>
-            <input type="email" class="form-control" id="user_email" name="user_email" required>
+            <label for="email" class="form-label"><?php echo esc_html__('E-Mail-Adresse', 'abschussplan-hgmh'); ?> <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="email" name="email" required>
             <small class="form-text text-muted"><?php echo esc_html__('Sie erhalten eine Bestätigungs-E-Mail zur Verifizierung Ihrer Meldung.', 'abschussplan-hgmh'); ?></small>
             <div class="form-error"></div>
         </div>
