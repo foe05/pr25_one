@@ -121,10 +121,18 @@ class HGMH_Moderation_Service {
      *
      * @param int $submission_id The submission ID
      * @param int $obmann_user_id The rejecting user ID
-     * @param string $comment Optional comment (reason for rejection)
+     * @param string $reason Rejection reason (REQUIRED!)
      * @return bool|WP_Error True on success, WP_Error on failure
      */
-    public function reject($submission_id, $obmann_user_id, $comment = '') {
+    public function reject($submission_id, $obmann_user_id, $reason) {
+        // Validate reason is provided (spec requirement: "Reason ist Pflicht!")
+        if (empty(trim($reason))) {
+            return new WP_Error(
+                'reason_required',
+                __('Ablehnungsgrund ist erforderlich.', 'abschussplan-hgmh')
+            );
+        }
+
         try {
             // 1. Validate submission exists
             $submission = $this->repository->get_by_id($submission_id);
@@ -172,14 +180,14 @@ class HGMH_Moderation_Service {
                 'rejected',
                 $obmann_user_id,
                 $moderator->display_name,
-                $comment
+                $reason
             );
 
             // 5. Trigger activity log
             $this->trigger_activity_log('reject', $submission_id, $obmann_user_id, [
                 'previous_status' => $previous_status,
                 'new_status' => 'rejected',
-                'comment' => $comment
+                'reason' => $reason
             ]);
 
             // 6. Send email notification
@@ -188,7 +196,7 @@ class HGMH_Moderation_Service {
                 $this->email_service->send_rejection_notification(
                     $submission->email,
                     $submission_data,
-                    $comment
+                    $reason
                 );
             }
 
