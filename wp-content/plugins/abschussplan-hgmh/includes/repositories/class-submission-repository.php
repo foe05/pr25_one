@@ -123,9 +123,11 @@ class HGMH_Submission_Repository {
      * @param array $data Submission data array with keys:
      *                    - wildart_id (int): ID of the wildart (game species)
      *                    - eigenjagdbezirk_id (int): ID of the eigenjagdbezirk (hunting district)
+     *                    - meldegruppe_id (int): ID of the meldegruppe (reporting group)
      *                    - category (string): Category classification (e.g., 'AK1', 'AK2')
      *                    - harvest_date (string): Date and time of harvest (MySQL datetime format)
      *                    - submitted_by_user_id (int): WordPress user ID of submitter
+     *                    - status (string, optional): Initial status (defaults to 'pending')
      * @return int|false New submission ID on success, false on failure
      */
     public function create($data) {
@@ -133,16 +135,18 @@ class HGMH_Submission_Repository {
         $insert_data = array(
             'wildart_id' => isset($data['wildart_id']) ? (int) $data['wildart_id'] : 0,
             'eigenjagdbezirk_id' => isset($data['eigenjagdbezirk_id']) ? (int) $data['eigenjagdbezirk_id'] : 0,
+            'meldegruppe_id' => isset($data['meldegruppe_id']) ? (int) $data['meldegruppe_id'] : 0,
             'category' => isset($data['category']) ? sanitize_text_field($data['category']) : '',
             'harvest_date' => isset($data['harvest_date']) ? sanitize_text_field($data['harvest_date']) : '',
-            'submitted_by_user_id' => isset($data['submitted_by_user_id']) ? (int) $data['submitted_by_user_id'] : 0
+            'submitted_by_user_id' => isset($data['submitted_by_user_id']) ? (int) $data['submitted_by_user_id'] : 0,
+            'status' => isset($data['status']) ? sanitize_text_field($data['status']) : 'pending'
         );
 
         // Insert data with proper data types
         $result = $this->wpdb->insert(
             $this->submissions_table,
             $insert_data,
-            array('%d', '%d', '%s', '%s', '%d')
+            array('%d', '%d', '%d', '%s', '%s', '%d', '%s')
         );
 
         // Log error for debugging if WP_DEBUG is enabled
@@ -163,6 +167,7 @@ class HGMH_Submission_Repository {
      * @param array $data Submission data array with keys:
      *                    - wildart_id (int): ID of the wildart (game species)
      *                    - eigenjagdbezirk_id (int): ID of the eigenjagdbezirk (hunting district)
+     *                    - meldegruppe_id (int): ID of the meldegruppe (reporting group)
      *                    - category (string): Category classification (e.g., 'AK1', 'AK2')
      *                    - harvest_date (string): Date and time of harvest (MySQL datetime format)
      *                    - submitted_by_user_id (int): WordPress user ID of submitter
@@ -180,6 +185,11 @@ class HGMH_Submission_Repository {
 
         if (isset($data['eigenjagdbezirk_id'])) {
             $update_data['eigenjagdbezirk_id'] = (int) $data['eigenjagdbezirk_id'];
+            $format[] = '%d';
+        }
+
+        if (isset($data['meldegruppe_id'])) {
+            $update_data['meldegruppe_id'] = (int) $data['meldegruppe_id'];
             $format[] = '%d';
         }
 
