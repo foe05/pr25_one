@@ -78,4 +78,43 @@ class HGMH_Submission_Repository {
 
         return $this->wpdb->get_row($sql);
     }
+
+    /**
+     * Create a new submission record
+     *
+     * Inserts a new submission into the database with required fields.
+     *
+     * @param array $data Submission data array with keys:
+     *                    - wildart_id (int): ID of the wildart (game species)
+     *                    - eigenjagdbezirk_id (int): ID of the eigenjagdbezirk (hunting district)
+     *                    - category (string): Category classification (e.g., 'AK1', 'AK2')
+     *                    - harvest_date (string): Date and time of harvest (MySQL datetime format)
+     *                    - submitted_by_user_id (int): WordPress user ID of submitter
+     * @return int|false New submission ID on success, false on failure
+     */
+    public function create($data) {
+        // Prepare data for insertion
+        $insert_data = array(
+            'wildart_id' => isset($data['wildart_id']) ? (int) $data['wildart_id'] : 0,
+            'eigenjagdbezirk_id' => isset($data['eigenjagdbezirk_id']) ? (int) $data['eigenjagdbezirk_id'] : 0,
+            'category' => isset($data['category']) ? sanitize_text_field($data['category']) : '',
+            'harvest_date' => isset($data['harvest_date']) ? sanitize_text_field($data['harvest_date']) : '',
+            'submitted_by_user_id' => isset($data['submitted_by_user_id']) ? (int) $data['submitted_by_user_id'] : 0
+        );
+
+        // Insert data with proper data types
+        $result = $this->wpdb->insert(
+            $this->submissions_table,
+            $insert_data,
+            array('%d', '%d', '%s', '%s', '%d')
+        );
+
+        // Log error for debugging if WP_DEBUG is enabled
+        if ($result === false && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('HGMH Submission Repository insert error: ' . $this->wpdb->last_error);
+            error_log('HGMH Submission Repository last query: ' . $this->wpdb->last_query);
+        }
+
+        return $result ? $this->wpdb->insert_id : false;
+    }
 }

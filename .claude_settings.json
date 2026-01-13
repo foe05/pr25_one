@@ -1,0 +1,44 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/004-submission-repository/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/004-submission-repository/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/004-submission-repository/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/004-submission-repository/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/004-submission-repository/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/004-submission-repository/.auto-claude/specs/004-submission-repository/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/004-submission-repository/.auto-claude/specs/004-submission-repository/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/004-submission-repository/.auto-claude/specs/004-submission-repository/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
