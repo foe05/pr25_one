@@ -50,6 +50,7 @@ require_once AHGMH_PLUGIN_DIR . 'frontend/shortcodes/class-table-shortcode.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-verification-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rate-limiter.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-public-form-handler.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-activity-logger.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
@@ -376,6 +377,37 @@ function ahgmh_clear_page_views_cleanup() {
     }
 }
 register_deactivation_hook(__FILE__, 'ahgmh_clear_page_views_cleanup');
+
+/**
+ * Cron job for automatic activity log cleanup
+ */
+function ahgmh_activity_log_cleanup_cron() {
+    require_once AHGMH_PLUGIN_DIR . 'includes/class-activity-logger.php';
+    $logger = new AHGMH_Activity_Logger();
+    $logger->cleanup_old_logs(90);
+}
+add_action('ahgmh_activity_log_cleanup_hook', 'ahgmh_activity_log_cleanup_cron');
+
+/**
+ * Schedule cron job for activity log cleanup on plugin activation
+ */
+function ahgmh_schedule_activity_log_cleanup() {
+    if (!wp_next_scheduled('ahgmh_activity_log_cleanup_hook')) {
+        wp_schedule_event(time(), 'daily', 'ahgmh_activity_log_cleanup_hook');
+    }
+}
+add_action('wp', 'ahgmh_schedule_activity_log_cleanup');
+
+/**
+ * Clear activity log cleanup cron job on plugin deactivation
+ */
+function ahgmh_clear_activity_log_cleanup() {
+    $timestamp = wp_next_scheduled('ahgmh_activity_log_cleanup_hook');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'ahgmh_activity_log_cleanup_hook');
+    }
+}
+register_deactivation_hook(__FILE__, 'ahgmh_clear_activity_log_cleanup');
 
 // Start the plugin
 abschussplan_hgmh();
