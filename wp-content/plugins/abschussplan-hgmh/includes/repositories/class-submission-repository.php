@@ -51,4 +51,31 @@ class HGMH_Submission_Repository {
         $this->eigenjagdbezirk_table = $wpdb->prefix . 'ahgmh_eigenjagdbezirk';
         $this->meldegruppe_table = $wpdb->prefix . 'ahgmh_meldegruppe';
     }
+
+    /**
+     * Find a submission by ID with enriched reference data
+     *
+     * Retrieves a submission record with joined reference data from wildart,
+     * eigenjagdbezirk, and meldegruppe tables.
+     *
+     * @param int $id Submission ID
+     * @return object|null Submission object with enriched data or null if not found
+     */
+    public function find($id) {
+        $sql = $this->wpdb->prepare(
+            "SELECT
+                s.*,
+                w.name as wildart_name,
+                e.name as eigenjagdbezirk_name,
+                m.name as meldegruppe_name
+            FROM {$this->submissions_table} s
+            LEFT JOIN {$this->wildart_table} w ON s.wildart_id = w.id
+            LEFT JOIN {$this->eigenjagdbezirk_table} e ON s.eigenjagdbezirk_id = e.id
+            LEFT JOIN {$this->meldegruppe_table} m ON s.meldegruppe_id = m.id
+            WHERE s.id = %d",
+            $id
+        );
+
+        return $this->wpdb->get_row($sql);
+    }
 }
