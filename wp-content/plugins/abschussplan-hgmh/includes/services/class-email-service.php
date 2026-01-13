@@ -1,7 +1,14 @@
 <?php
 /**
- * Email Service Class
- * Business logic for email notifications and communications
+ * AHGMH Email Service
+ *
+ * Handles all email notifications for the plugin:
+ * - Verification emails to submitters
+ * - Approval notifications to Obmann
+ * - Approval confirmations to submitters
+ * - Rejection notifications to submitters
+ *
+ * All emails are logged to the activity log (ahgmh_email_log table)
  */
 
 // Exit if accessed directly
@@ -9,309 +16,359 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Email Service for notifications and communications
- */
 class AHGMH_Email_Service {
 
-    private $from_email;
-    private $from_name;
-
     /**
-     * Constructor
+     * Send verification email to submission creator
+     *
+     * @param array $submission Submission data (requires: email, name, wildart, datum)
+     * @return bool True if email sent successfully
      */
-    public function __construct() {
-        $this->from_email = get_option('ahgmh_email_from', get_option('admin_email'));
-        $this->from_name = get_option('ahgmh_email_from_name', get_bloginfo('name'));
+    public static function send_verification_email($submission) {
+        if (empty($submission['email']) || empty($submission['name'])) {
+            error_log('AHGMH Email Service: Missing required fields for verification email');
+            return false;
+        }
+
+        $to = sanitize_email($submission['email']);
+        $subject = 'Bestätigung Ihrer Abschussmeldung - HGMH';
+
+        // Load email template
+        $template_path = plugin_dir_path(dirname(__FILE__, 2)) . 'templates/email/verification.php';
+        $message = self::get_email_content($template_path, $submission);
+
+        // Send email
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $sent = wp_mail($to, $subject, $message, $headers);
+
+        // Log email
+        self::log_email(
+            'verification',
+            $to,
+            $subject,
+            isset($submission['id']) ? $submission['id'] : null
+        );
+
+        return $sent;
     }
 
     /**
-     * Send submission confirmation email
+     * Send approval notification to Obmann or Vorstand
      *
-     * @param string $to Recipient email address
-     * @param array $submission_data Submission data
-     * @return bool Success status
+     * @param array $submission Submission data
+     * @param bool $to_obmann Whether to send to Obmann (true) or Vorstand (false)
+     * @return bool True if email sent successfully
      */
-    public function send_submission_confirmation($to, $submission_data) {
-        if (!is_email($to)) {
+    public static function send_approval_notification($submission, $to_obmann = true) {
+        if (empty($submission['wildart']) || empty($submission['meldegruppe'])) {
+            error_log('AHGMH Email Service: Missing required fields for approval notification');
             return false;
         }
 
-        try {
-            $subject = $this->get_confirmation_subject($submission_data);
-            $message = $this->get_confirmation_message($submission_data);
-            $headers = $this->get_email_headers();
+        // Get recipient email
+        if ($to_obmann) {
+            $recipient_email = self::get_obmann_email($submission['wildart'], $submission['meldegruppe']);
+        } else {
+            $recipient_email = get_option('admin_email');
+        }
 
-            return wp_mail($to, $subject, $message, $headers);
-
-        } catch (Exception $e) {
-            error_log('AHGMH Email Service - Confirmation email error: ' . $e->getMessage());
+        if (empty($recipient_email)) {
+            error_log('AHGMH Email Service: No recipient email found for approval notification');
             return false;
         }
+
+        $to = sanitize_email($recipient_email);
+        $subject = 'Neue Abschussmeldung zur Freigabe - HGMH';
+
+        // Add approval link to submission data
+        $submission['approval_link'] = admin_url('admin.php?page=ahgmh-admin&action=review');
+
+        // Load email template
+        $template_path = plugin_dir_path(dirname(__FILE__, 2)) . 'templates/email/approval-notification.php';
+        $message = self::get_email_content($template_path, $submission);
+
+        // Send email
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $sent = wp_mail($to, $subject, $message, $headers);
+
+        // Log email
+        self::log_email(
+            'approval_notification',
+            $to,
+            $subject,
+            isset($submission['id']) ? $submission['id'] : null
+        );
+
+        return $sent;
     }
 
     /**
-     * Send moderation notification email
+     * Send rejection notification to submission creator
      *
-     * @param string $to Recipient email address
-     * @param array $submission_data Submission data
-     * @return bool Success status
-     */
-    public function send_moderation_notification($to, $submission_data) {
-        if (!is_email($to)) {
-            return false;
-        }
-
-        try {
-            $subject = $this->get_moderation_subject($submission_data);
-            $message = $this->get_moderation_message($submission_data);
-            $headers = $this->get_email_headers();
-
-            return wp_mail($to, $subject, $message, $headers);
-
-        } catch (Exception $e) {
-            error_log('AHGMH Email Service - Moderation notification error: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Send approval notification email
-     *
-     * @param string $to Recipient email address
-     * @param array $submission_data Submission data
-     * @return bool Success status
-     */
-    public function send_approval_notification($to, $submission_data) {
-        if (!is_email($to)) {
-            return false;
-        }
-
-        try {
-            $subject = $this->get_approval_subject($submission_data);
-            $message = $this->get_approval_message($submission_data);
-            $headers = $this->get_email_headers();
-
-            return wp_mail($to, $subject, $message, $headers);
-
-        } catch (Exception $e) {
-            error_log('AHGMH Email Service - Approval notification error: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Send rejection notification email
-     *
-     * @param string $to Recipient email address
-     * @param array $submission_data Submission data
+     * @param array $submission Submission data (requires: email, name, wildart)
      * @param string $reason Rejection reason
-     * @return bool Success status
+     * @return bool True if email sent successfully
      */
-    public function send_rejection_notification($to, $submission_data, $reason = '') {
-        if (!is_email($to)) {
+    public static function send_rejection_notification($submission, $reason) {
+        if (empty($submission['email']) || empty($submission['name'])) {
+            error_log('AHGMH Email Service: Missing required fields for rejection notification');
             return false;
         }
 
-        try {
-            $subject = $this->get_rejection_subject($submission_data);
-            $message = $this->get_rejection_message($submission_data, $reason);
-            $headers = $this->get_email_headers();
+        $to = sanitize_email($submission['email']);
+        $subject = 'Ihre Abschussmeldung wurde abgelehnt - HGMH';
 
-            return wp_mail($to, $subject, $message, $headers);
+        // Add rejection reason and rejected_by to submission data
+        $submission['reason'] = sanitize_text_field($reason);
+        $current_user = wp_get_current_user();
+        $submission['rejected_by'] = $current_user->display_name;
 
-        } catch (Exception $e) {
-            error_log('AHGMH Email Service - Rejection notification error: ' . $e->getMessage());
-            return false;
-        }
-    }
+        // Load email template
+        $template_path = plugin_dir_path(dirname(__FILE__, 2)) . 'templates/email/rejection.php';
+        $message = self::get_email_content($template_path, $submission);
 
-    /**
-     * Get confirmation email subject
-     *
-     * @param array $submission_data Submission data
-     * @return string Email subject
-     */
-    private function get_confirmation_subject($submission_data) {
-        $subject = sprintf(
-            __('Abschussmeldung erhalten - %s', 'abschussplan-hgmh'),
-            esc_html($submission_data['art'] ?? '')
+        // Send email
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $sent = wp_mail($to, $subject, $message, $headers);
+
+        // Log email
+        self::log_email(
+            'rejection',
+            $to,
+            $subject,
+            isset($submission['id']) ? $submission['id'] : null
         );
 
-        return apply_filters('ahgmh_confirmation_email_subject', $subject, $submission_data);
+        return $sent;
     }
 
     /**
-     * Get confirmation email message
+     * Send approval confirmation to submission creator
      *
-     * @param array $submission_data Submission data
-     * @return string Email message
+     * @param array $submission Submission data (requires: email, name, wildart, datum)
+     * @return bool True if email sent successfully
      */
-    private function get_confirmation_message($submission_data) {
-        $message = sprintf(
-            __("Ihre Abschussmeldung wurde erfolgreich empfangen.\n\nDetails:\nWildart: %s\nKategorie: %s\nAnzahl: %d\nDatum: %s\n\nStatus: In Prüfung\n\nSie erhalten eine weitere Benachrichtigung nach der Prüfung.", 'abschussplan-hgmh'),
-            esc_html($submission_data['art'] ?? ''),
-            esc_html($submission_data['kategorie'] ?? ''),
-            absint($submission_data['anzahl'] ?? 0),
-            esc_html($submission_data['datum'] ?? '')
-        );
-
-        return apply_filters('ahgmh_confirmation_email_message', $message, $submission_data);
-    }
-
-    /**
-     * Get moderation notification subject
-     *
-     * @param array $submission_data Submission data
-     * @return string Email subject
-     */
-    private function get_moderation_subject($submission_data) {
-        $subject = sprintf(
-            __('Neue Abschussmeldung zu prüfen - %s', 'abschussplan-hgmh'),
-            esc_html($submission_data['art'] ?? '')
-        );
-
-        return apply_filters('ahgmh_moderation_email_subject', $subject, $submission_data);
-    }
-
-    /**
-     * Get moderation notification message
-     *
-     * @param array $submission_data Submission data
-     * @return string Email message
-     */
-    private function get_moderation_message($submission_data) {
-        $admin_url = admin_url('admin.php?page=abschussplan-hgmh-submissions');
-
-        $message = sprintf(
-            __("Eine neue Abschussmeldung wartet auf Prüfung.\n\nDetails:\nWildart: %s\nKategorie: %s\nMeldegruppe: %s\nAnzahl: %d\nDatum: %s\n\nZur Prüfung: %s", 'abschussplan-hgmh'),
-            esc_html($submission_data['art'] ?? ''),
-            esc_html($submission_data['kategorie'] ?? ''),
-            esc_html($submission_data['meldegruppe'] ?? ''),
-            absint($submission_data['anzahl'] ?? 0),
-            esc_html($submission_data['datum'] ?? ''),
-            esc_url($admin_url)
-        );
-
-        return apply_filters('ahgmh_moderation_email_message', $message, $submission_data);
-    }
-
-    /**
-     * Get approval notification subject
-     *
-     * @param array $submission_data Submission data
-     * @return string Email subject
-     */
-    private function get_approval_subject($submission_data) {
-        $subject = sprintf(
-            __('Abschussmeldung genehmigt - %s', 'abschussplan-hgmh'),
-            esc_html($submission_data['art'] ?? '')
-        );
-
-        return apply_filters('ahgmh_approval_email_subject', $subject, $submission_data);
-    }
-
-    /**
-     * Get approval notification message
-     *
-     * @param array $submission_data Submission data
-     * @return string Email message
-     */
-    private function get_approval_message($submission_data) {
-        $message = sprintf(
-            __("Ihre Abschussmeldung wurde genehmigt.\n\nDetails:\nWildart: %s\nKategorie: %s\nAnzahl: %d\nDatum: %s\n\nStatus: Genehmigt", 'abschussplan-hgmh'),
-            esc_html($submission_data['art'] ?? ''),
-            esc_html($submission_data['kategorie'] ?? ''),
-            absint($submission_data['anzahl'] ?? 0),
-            esc_html($submission_data['datum'] ?? '')
-        );
-
-        return apply_filters('ahgmh_approval_email_message', $message, $submission_data);
-    }
-
-    /**
-     * Get rejection notification subject
-     *
-     * @param array $submission_data Submission data
-     * @return string Email subject
-     */
-    private function get_rejection_subject($submission_data) {
-        $subject = sprintf(
-            __('Abschussmeldung abgelehnt - %s', 'abschussplan-hgmh'),
-            esc_html($submission_data['art'] ?? '')
-        );
-
-        return apply_filters('ahgmh_rejection_email_subject', $subject, $submission_data);
-    }
-
-    /**
-     * Get rejection notification message
-     *
-     * @param array $submission_data Submission data
-     * @param string $reason Rejection reason
-     * @return string Email message
-     */
-    private function get_rejection_message($submission_data, $reason = '') {
-        $reason_text = !empty($reason) ? "\n\nGrund: " . esc_html($reason) : '';
-
-        $message = sprintf(
-            __("Ihre Abschussmeldung wurde leider abgelehnt.\n\nDetails:\nWildart: %s\nKategorie: %s\nAnzahl: %d\nDatum: %s%s\n\nStatus: Abgelehnt\n\nBitte korrigieren Sie die Angaben und reichen Sie die Meldung erneut ein.", 'abschussplan-hgmh'),
-            esc_html($submission_data['art'] ?? ''),
-            esc_html($submission_data['kategorie'] ?? ''),
-            absint($submission_data['anzahl'] ?? 0),
-            esc_html($submission_data['datum'] ?? ''),
-            $reason_text
-        );
-
-        return apply_filters('ahgmh_rejection_email_message', $message, $submission_data, $reason);
-    }
-
-    /**
-     * Get email headers
-     *
-     * @return array Email headers
-     */
-    private function get_email_headers() {
-        $headers = [
-            'Content-Type: text/plain; charset=UTF-8',
-            sprintf('From: %s <%s>', $this->from_name, $this->from_email)
-        ];
-
-        return apply_filters('ahgmh_email_headers', $headers);
-    }
-
-    /**
-     * Test email configuration
-     *
-     * @param string $to Test recipient email
-     * @return bool Success status
-     */
-    public function test_email_configuration($to) {
-        if (!is_email($to)) {
+    public static function send_approval_confirmation($submission) {
+        if (empty($submission['email']) || empty($submission['name'])) {
+            error_log('AHGMH Email Service: Missing required fields for approval confirmation');
             return false;
         }
 
-        $subject = __('Test Email - Abschussplan HGMH', 'abschussplan-hgmh');
-        $message = __('Dies ist eine Test-E-Mail vom Abschussplan HGMH Plugin. Wenn Sie diese E-Mail erhalten haben, ist die E-Mail-Konfiguration korrekt.', 'abschussplan-hgmh');
-        $headers = $this->get_email_headers();
+        $to = sanitize_email($submission['email']);
+        $subject = 'Ihre Abschussmeldung wurde freigegeben - HGMH';
 
-        return wp_mail($to, $subject, $message, $headers);
+        // Add approved_by to submission data
+        $current_user = wp_get_current_user();
+        $submission['approved_by'] = $current_user->display_name;
+
+        // Load email template
+        $template_path = plugin_dir_path(dirname(__FILE__, 2)) . 'templates/email/approval-confirmation.php';
+        $message = self::get_email_content($template_path, $submission);
+
+        // Send email
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $sent = wp_mail($to, $subject, $message, $headers);
+
+        // Log email
+        self::log_email(
+            'approval_confirmation',
+            $to,
+            $subject,
+            isset($submission['id']) ? $submission['id'] : null
+        );
+
+        return $sent;
     }
 
     /**
-     * Get email statistics
+     * Get email content from template with variable replacement
      *
-     * @return array Email statistics
+     * @param string $template_path Path to template file
+     * @param array $data Submission data for variable replacement
+     * @return string Email content with replaced variables
      */
-    public function get_email_stats() {
-        // Stub method - will be implemented with email logging
-        return [
-            'total_sent' => 0,
-            'confirmations_sent' => 0,
-            'notifications_sent' => 0,
-            'approvals_sent' => 0,
-            'rejections_sent' => 0,
-            'last_sent' => null
-        ];
+    private static function get_email_content($template_path, $data) {
+        // If template exists, load it
+        if (file_exists($template_path)) {
+            ob_start();
+            include $template_path;
+            $content = ob_get_clean();
+        } else {
+            // Fallback to simple message if template not found
+            $content = 'Ihre Abschussmeldung wurde registriert.';
+        }
+
+        // Replace variables in template
+        $content = self::replace_variables($content, $data);
+
+        return $content;
+    }
+
+    /**
+     * Replace template variables with actual values
+     *
+     * Supported variables:
+     * {{name}} - Submitter name
+     * {{wildart}} - Wildlife species
+     * {{date}} or {{datum}} - Submission date
+     * {{link}} - Action link
+     * {{approval_link}} - Approval page link
+     * {{reason}} - Rejection reason
+     * {{approved_by}} - User who approved
+     * {{rejected_by}} - User who rejected
+     * {{obmann_name}} - Obmann name
+     * {{submitter_name}} - Submitter name
+     *
+     * @param string $content Template content
+     * @param array $data Data array with values
+     * @return string Content with replaced variables
+     */
+    private static function replace_variables($content, $data) {
+        $replacements = array(
+            '{{name}}' => isset($data['name']) ? esc_html($data['name']) : '',
+            '{{wildart}}' => isset($data['wildart']) ? esc_html($data['wildart']) : '',
+            '{{art}}' => isset($data['wildart']) ? esc_html($data['wildart']) : (isset($data['art']) ? esc_html($data['art']) : ''),
+            '{{date}}' => isset($data['datum']) ? esc_html($data['datum']) : '',
+            '{{datum}}' => isset($data['datum']) ? esc_html($data['datum']) : '',
+            '{{link}}' => isset($data['link']) ? esc_url($data['link']) : '',
+            '{{approval_link}}' => isset($data['approval_link']) ? esc_url($data['approval_link']) : '',
+            '{{reason}}' => isset($data['reason']) ? esc_html($data['reason']) : '',
+            '{{approved_by}}' => isset($data['approved_by']) ? esc_html($data['approved_by']) : '',
+            '{{rejected_by}}' => isset($data['rejected_by']) ? esc_html($data['rejected_by']) : '',
+            '{{obmann_name}}' => isset($data['obmann_name']) ? esc_html($data['obmann_name']) : '',
+            '{{submitter_name}}' => isset($data['submitter_name']) ? esc_html($data['submitter_name']) : (isset($data['name']) ? esc_html($data['name']) : ''),
+            '{{meldegruppe}}' => isset($data['meldegruppe']) ? esc_html($data['meldegruppe']) : '',
+            '{{kategorie}}' => isset($data['kategorie']) ? esc_html($data['kategorie']) : '',
+            '{{anzahl}}' => isset($data['anzahl']) ? absint($data['anzahl']) : '0',
+        );
+
+        return str_replace(array_keys($replacements), array_values($replacements), $content);
+    }
+
+    /**
+     * Log email to activity log database table
+     *
+     * @param string $email_type Type of email (verification, approval_notification, etc.)
+     * @param string $recipient Email recipient
+     * @param string $subject Email subject
+     * @param int|null $submission_id Associated submission ID
+     * @return bool True if logged successfully
+     */
+    private static function log_email($email_type, $recipient, $subject, $submission_id = null) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ahgmh_email_log';
+
+        $result = $wpdb->insert(
+            $table_name,
+            array(
+                'email_type' => sanitize_text_field($email_type),
+                'recipient' => sanitize_email($recipient),
+                'subject' => sanitize_text_field($subject),
+                'sent_at' => current_time('mysql'),
+                'submission_id' => $submission_id ? absint($submission_id) : null
+            ),
+            array('%s', '%s', '%s', '%s', '%d')
+        );
+
+        if ($result === false) {
+            error_log('AHGMH Email Service: Failed to log email to database');
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get Obmann email for specific wildart and meldegruppe
+     *
+     * @param string $wildart Wildlife species
+     * @param string $meldegruppe Meldegruppe name
+     * @return string|false Obmann email or false if not found
+     */
+    private static function get_obmann_email($wildart, $meldegruppe) {
+        // Get all users
+        $users = get_users();
+
+        foreach ($users as $user) {
+            // Check if user has permission for this wildart/meldegruppe
+            if (class_exists('AHGMH_Permissions_Service')) {
+                if (AHGMH_Permissions_Service::user_can_access_meldegruppe($user->ID, $wildart, $meldegruppe)) {
+                    return $user->user_email;
+                }
+            }
+        }
+
+        // Fallback to admin email if no specific Obmann found
+        return get_option('admin_email');
+    }
+
+    /**
+     * Get email logs for a specific submission
+     *
+     * @param int $submission_id Submission ID
+     * @return array Array of email log entries
+     */
+    public static function get_submission_emails($submission_id) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ahgmh_email_log';
+
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $table_name WHERE submission_id = %d ORDER BY sent_at DESC",
+                $submission_id
+            ),
+            ARRAY_A
+        );
+
+        return $results ? $results : array();
+    }
+
+    /**
+     * Get all email logs with optional filters
+     *
+     * @param array $filters Optional filters (email_type, date_from, date_to, limit)
+     * @return array Array of email log entries
+     */
+    public static function get_email_logs($filters = array()) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'ahgmh_email_log';
+
+        $where_conditions = array();
+        $where_values = array();
+
+        if (!empty($filters['email_type'])) {
+            $where_conditions[] = 'email_type = %s';
+            $where_values[] = $filters['email_type'];
+        }
+
+        if (!empty($filters['date_from'])) {
+            $where_conditions[] = 'sent_at >= %s';
+            $where_values[] = $filters['date_from'];
+        }
+
+        if (!empty($filters['date_to'])) {
+            $where_conditions[] = 'sent_at <= %s';
+            $where_values[] = $filters['date_to'];
+        }
+
+        $query = "SELECT * FROM $table_name";
+
+        if (!empty($where_conditions)) {
+            $query .= ' WHERE ' . implode(' AND ', $where_conditions);
+        }
+
+        $query .= ' ORDER BY sent_at DESC';
+
+        if (!empty($filters['limit'])) {
+            $query .= ' LIMIT ' . absint($filters['limit']);
+        }
+
+        if (!empty($where_values)) {
+            $query = $wpdb->prepare($query, $where_values);
+        }
+
+        $results = $wpdb->get_results($query, ARRAY_A);
+
+        return $results ? $results : array();
     }
 }
