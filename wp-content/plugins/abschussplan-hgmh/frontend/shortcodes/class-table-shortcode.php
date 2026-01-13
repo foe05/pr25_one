@@ -147,10 +147,16 @@ class AHGMH_Table_Shortcode {
             $moderation_service = new AHGMH_Moderation_Service();
             $result = $moderation_service->approve_submission($submission_id);
 
-            wp_send_json_success(array(
-                'message' => __('Meldung erfolgreich freigegeben.', 'abschussplan-hgmh'),
-                'submission_id' => $submission_id
-            ));
+            if ($result) {
+                wp_send_json_success(array(
+                    'message' => __('Meldung erfolgreich freigegeben.', 'abschussplan-hgmh'),
+                    'submission_id' => $submission_id
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => __('Fehler beim Freigeben der Meldung. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh')
+                ));
+            }
 
         } catch (Exception $e) {
             error_log('AHGMH Table Approve Error: ' . $e->getMessage());
@@ -189,10 +195,16 @@ class AHGMH_Table_Shortcode {
             $moderation_service = new AHGMH_Moderation_Service();
             $result = $moderation_service->reject_submission($submission_id, $comment);
 
-            wp_send_json_success(array(
-                'message' => __('Meldung erfolgreich abgelehnt.', 'abschussplan-hgmh'),
-                'submission_id' => $submission_id
-            ));
+            if ($result) {
+                wp_send_json_success(array(
+                    'message' => __('Meldung erfolgreich abgelehnt.', 'abschussplan-hgmh'),
+                    'submission_id' => $submission_id
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => __('Fehler beim Ablehnen der Meldung. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh')
+                ));
+            }
 
         } catch (Exception $e) {
             error_log('AHGMH Table Reject Error: ' . $e->getMessage());
@@ -266,13 +278,8 @@ class AHGMH_Table_Shortcode {
             }
 
             // Call moderation service to update submission
-            // Note: When Spec 005 is implemented, use:
-            // $moderation_service = new AHGMH_Moderation_Service();
-            // $result = $moderation_service->update_submission($submission_id, $data);
-            //
-            // For now, use database handler directly
-            $database = abschussplan_hgmh()->database;
-            $result = $database->update_submission($submission_id, $data);
+            $moderation_service = new AHGMH_Moderation_Service();
+            $result = $moderation_service->update_submission($submission_id, $data);
 
             if ($result !== false) {
                 wp_send_json_success(array(
