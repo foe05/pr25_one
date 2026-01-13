@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "004-submission-repository",
+  "spec": "005-moderation-service",
   "state": "building",
   "subtasks": {
-    "completed": 4,
-    "total": 8,
+    "completed": 10,
+    "total": 11,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Repository Implementation",
+    "current": "Integration and Testing",
     "id": null,
-    "total": 6
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 6,
-    "started_at": "2026-01-13T07:07:44.198957"
+    "number": 12,
+    "started_at": "2026-01-13T07:42:51.804705"
   },
-  "last_update": "2026-01-13T07:23:16.488171"
+  "last_update": "2026-01-13T08:14:43.154047"
 }

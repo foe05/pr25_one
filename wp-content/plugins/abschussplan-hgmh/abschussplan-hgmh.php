@@ -38,6 +38,11 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-feature-flags.php';
 
+// Include moderation services
+require_once AHGMH_PLUGIN_DIR . 'includes/services/class-submission-repository.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/services/class-email-service.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/services/class-moderation-service.php';
+
 // Include admin-only architecture when needed
 if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';
