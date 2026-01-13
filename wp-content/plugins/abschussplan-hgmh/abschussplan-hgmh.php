@@ -43,6 +43,9 @@ require_once AHGMH_PLUGIN_DIR . 'includes/services/class-submission-repository.p
 require_once AHGMH_PLUGIN_DIR . 'includes/services/class-email-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/services/class-moderation-service.php';
 
+// Include frontend shortcodes
+require_once AHGMH_PLUGIN_DIR . 'frontend/shortcodes/class-table-shortcode.php';
+
 // Include admin-only architecture when needed
 if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';
@@ -50,6 +53,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-moderation-service.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
@@ -145,6 +149,9 @@ class Abschussplan_HGMH {
 
         // Initialize table display
         $this->table = new AHGMH_Table_Display();
+
+        // Initialize frontend table shortcode
+        new AHGMH_Table_Shortcode();
 
         // Check for database schema updates
         add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));

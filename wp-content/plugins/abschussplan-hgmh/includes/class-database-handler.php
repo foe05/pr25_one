@@ -23,6 +23,9 @@ class AHGMH_Database_Handler {
     public function __construct() {
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'ahgmh_submissions';
+
+        // Run migration for status field (safe to run multiple times)
+        $this->migrate_add_status_field();
     }
 
     /**
@@ -43,7 +46,7 @@ class AHGMH_Database_Handler {
             field4 text NOT NULL,
             field5 text NOT NULL,
             field6 text,
-            status varchar(20) NOT NULL DEFAULT 'pending',
+            status varchar(50) NOT NULL DEFAULT 'pending',
             approved_by bigint(20) DEFAULT NULL,
             approved_at datetime DEFAULT NULL,
             rejected_by bigint(20) DEFAULT NULL,
@@ -219,6 +222,28 @@ class AHGMH_Database_Handler {
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+    }
+
+    /**
+     * Migrate existing installations to add status field
+     * Safe to run multiple times - checks if column exists first
+     */
+    public function migrate_add_status_field() {
+        global $wpdb;
+
+        // Check if status column already exists
+        $row = $wpdb->get_results("SHOW COLUMNS FROM {$this->table_name} LIKE 'status'");
+
+        if (empty($row)) {
+            // Column doesn't exist, add it
+            $wpdb->query("
+                ALTER TABLE {$this->table_name}
+                ADD COLUMN status varchar(50) DEFAULT 'pending_approval' NOT NULL
+                AFTER field6
+            ");
+
+            error_log('AHGMH: Added status field to submissions table');
+        }
     }
 
     /**
