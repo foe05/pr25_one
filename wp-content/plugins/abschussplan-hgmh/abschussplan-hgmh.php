@@ -35,6 +35,9 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-verification-service.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-rate-limiter.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-public-form-handler.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
@@ -92,11 +95,16 @@ class Abschussplan_HGMH {
      * Admin page instance (Legacy)
      */
     public $admin;
-    
+
     /**
      * New modular admin controller
      */
     public $admin_controller;
+
+    /**
+     * Public form handler instance
+     */
+    public $public_form;
 
     /**
      * Get the singleton instance
@@ -137,6 +145,9 @@ class Abschussplan_HGMH {
 
         // Initialize table display
         $this->table = new AHGMH_Table_Display();
+
+        // Initialize public form handler
+        $this->public_form = new AHGMH_Public_Form_Handler();
 
         // Check for database schema updates
         add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));
