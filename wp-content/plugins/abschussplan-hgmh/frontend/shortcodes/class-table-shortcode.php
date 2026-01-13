@@ -220,37 +220,64 @@ class AHGMH_Table_Shortcode {
             }
 
             // Sanitize and validate form data
-            $data = array(
-                'field1' => isset($_POST['field1']) ? sanitize_text_field($_POST['field1']) : '',
-                'field2' => isset($_POST['field2']) ? sanitize_text_field($_POST['field2']) : '',
-                'field3' => isset($_POST['field3']) ? sanitize_text_field($_POST['field3']) : '',
-                'field4' => isset($_POST['field4']) ? sanitize_text_field($_POST['field4']) : '',
-                'field5' => isset($_POST['field5']) ? sanitize_text_field($_POST['field5']) : '',
-                'field6' => isset($_POST['field6']) ? sanitize_textarea_field($_POST['field6']) : ''
-            );
+            // Based on database schema: game_species, field1-field6
+            $data = array();
 
-            // Basic validation - ensure required fields are not empty
-            if (empty($data['field1']) || empty($data['field2']) || empty($data['field3'])) {
+            // Game species (optional in update, might not be changed)
+            if (isset($_POST['game_species'])) {
+                $data['game_species'] = sanitize_text_field($_POST['game_species']);
+            }
+
+            // Field1 (e.g., date, sex, or other submission data)
+            if (isset($_POST['field1'])) {
+                $data['field1'] = sanitize_text_field($_POST['field1']);
+            }
+
+            // Field2 (e.g., category)
+            if (isset($_POST['field2'])) {
+                $data['field2'] = sanitize_text_field($_POST['field2']);
+            }
+
+            // Field3 (e.g., WUS number)
+            if (isset($_POST['field3'])) {
+                $data['field3'] = sanitize_text_field($_POST['field3']);
+            }
+
+            // Field4 (e.g., meldegruppe)
+            if (isset($_POST['field4'])) {
+                $data['field4'] = sanitize_text_field($_POST['field4']);
+            }
+
+            // Field5 (e.g., jagdbezirk)
+            if (isset($_POST['field5'])) {
+                $data['field5'] = sanitize_text_field($_POST['field5']);
+            }
+
+            // Field6 (e.g., notes/comments - optional)
+            if (isset($_POST['field6'])) {
+                $data['field6'] = sanitize_textarea_field($_POST['field6']);
+            }
+
+            // Validate that at least one field is being updated
+            if (empty($data)) {
                 wp_send_json_error(array(
-                    'message' => __('Bitte füllen Sie alle Pflichtfelder aus.', 'abschussplan-hgmh')
+                    'message' => __('Keine Änderungen zum Speichern vorhanden.', 'abschussplan-hgmh')
                 ));
             }
 
             // Call moderation service to update submission
-            // Note: This will be implemented in Spec 005
-            // For now, we can use the database handler directly for updates
+            // Note: When Spec 005 is implemented, use:
+            // $moderation_service = new AHGMH_Moderation_Service();
+            // $result = $moderation_service->update_submission($submission_id, $data);
+            //
+            // For now, use database handler directly
             $database = abschussplan_hgmh()->database;
             $result = $database->update_submission($submission_id, $data);
 
             if ($result !== false) {
-                // Get the updated submission data
-                $submissions = $database->get_submissions(1, $submission_id - 1);
-                $updated_submission = !empty($submissions) ? $submissions[0] : null;
-
                 wp_send_json_success(array(
                     'message' => __('Meldung erfolgreich aktualisiert.', 'abschussplan-hgmh'),
-                    'submission_id' => $submission_id,
-                    'submission' => $updated_submission
+                    'submission_id' => $submission_id
                 ));
             } else {
                 wp_send_json_error(array(

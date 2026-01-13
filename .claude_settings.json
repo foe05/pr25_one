@@ -1,0 +1,44 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/006-table-moderation/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/006-table-moderation/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/006-table-moderation/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/006-table-moderation/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/006-table-moderation/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/006-table-moderation/.auto-claude/specs/006-table-moderation/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/006-table-moderation/.auto-claude/specs/006-table-moderation/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/worktrees/tasks/006-table-moderation/.auto-claude/specs/006-table-moderation/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/pr25_one/.worktrees/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
