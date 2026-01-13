@@ -43,8 +43,15 @@ class AHGMH_Database_Handler {
             field4 text NOT NULL,
             field5 text NOT NULL,
             field6 text,
+            verification_status enum('pending','verified','expired') DEFAULT 'pending',
+            verification_token varchar(64) DEFAULT NULL,
+            token_expires_at datetime DEFAULT NULL,
+            submitter_email varchar(255) DEFAULT NULL,
+            submitter_ip varchar(100) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id)
+            PRIMARY KEY  (id),
+            KEY verification_token (verification_token),
+            KEY verification_status (verification_status)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
