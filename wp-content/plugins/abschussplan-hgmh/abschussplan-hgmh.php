@@ -36,6 +36,9 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
 
+// Include frontend shortcodes
+require_once AHGMH_PLUGIN_DIR . 'frontend/shortcodes/class-table-shortcode.php';
+
 // Include admin-only architecture when needed
 if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';
