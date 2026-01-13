@@ -27,11 +27,12 @@ class AHGMH_Wildart_View {
                             <?php echo esc_html__('+ Neue Wildart', 'abschussplan-hgmh'); ?>
                         </button>
                     </div>
-                    
-                    <div class="wildart-list">
+
+                    <div class="wildart-list" id="sortable-wildart-list">
                         <?php if (!empty($wildarten)): ?>
                             <?php foreach ($wildarten as $index => $wildart): ?>
-                                <div class="wildart-item <?php echo $index === 0 ? 'active' : ''; ?>" data-wildart="<?php echo esc_attr($wildart); ?>">
+                                <div class="wildart-item <?php echo $index === 0 ? 'active' : ''; ?>" data-wildart="<?php echo esc_attr($wildart); ?>" data-order="<?php echo esc_attr($index); ?>">
+                                    <span class="wildart-drag-handle dashicons dashicons-menu" title="<?php echo esc_attr__('Ziehen zum Sortieren', 'abschussplan-hgmh'); ?>"></span>
                                     <span class="wildart-name"><?php echo esc_html($wildart); ?></span>
                                     <button class="wildart-delete" data-wildart="<?php echo esc_attr($wildart); ?>" title="<?php echo esc_attr__('Löschen', 'abschussplan-hgmh'); ?>">
                                         <span class="dashicons dashicons-trash"></span>
@@ -42,6 +43,15 @@ class AHGMH_Wildart_View {
                             <p class="no-wildarten"><?php echo esc_html__('Noch keine Wildarten konfiguriert.', 'abschussplan-hgmh'); ?></p>
                         <?php endif; ?>
                     </div>
+
+                    <?php if (!empty($wildarten)): ?>
+                        <div class="wildart-sort-actions">
+                            <button id="save-wildart-order" class="button button-secondary" style="display: none;">
+                                <span class="dashicons dashicons-yes"></span>
+                                <?php echo esc_html__('Reihenfolge speichern', 'abschussplan-hgmh'); ?>
+                            </button>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- Detail Panel (Right) -->

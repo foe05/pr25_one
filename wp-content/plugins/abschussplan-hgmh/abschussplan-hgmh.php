@@ -54,6 +54,10 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-activity-logger.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
+    // Load repositories first (required by services)
+    require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-wildart-repository.php';
+    require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-meldegruppe-repository.php';
+
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-dashboard-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';

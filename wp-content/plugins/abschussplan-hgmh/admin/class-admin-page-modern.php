@@ -115,6 +115,16 @@ class AHGMH_Admin_Page_Modern {
             array($this, 'render_migrations')
         );
 
+        // Wildarten Configuration
+        add_submenu_page(
+            'abschussplan-hgmh',
+            __('Wildarten-Konfiguration', 'abschussplan-hgmh'),
+            __('🦌 Wildarten', 'abschussplan-hgmh'),
+            'manage_options',
+            'abschussplan-hgmh-wildarten',
+            array($this, 'render_wildarten_management')
+        );
+
         // Settings (Einstellungen)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -4350,7 +4360,19 @@ class AHGMH_Admin_Page_Modern {
         </div>
         <?php
     }
-    
+
+    /**
+     * Render Wildarten Management Page
+     * Includes the standalone wildarten configuration page
+     */
+    public function render_wildarten_management() {
+        // Include the standalone wildarten management page
+        require_once plugin_dir_path(__FILE__) . 'wildarten/index.php';
+
+        // Call the rendering function
+        ahgmh_render_wildarten_management_page();
+    }
+
     /**
      * AJAX: Get Meldegruppen for specific Wildart
      */

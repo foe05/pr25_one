@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "009-activity-logging",
+  "spec": "010-wildarten-management",
   "state": "building",
   "subtasks": {
-    "completed": 6,
-    "total": 7,
+    "completed": 10,
+    "total": 11,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Plugin Integration",
+    "current": "Integration & Testing",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 8,
-    "started_at": "2026-01-13T00:02:27.690177"
+    "number": 163,
+    "started_at": "2026-01-13T00:02:33.000354"
   },
-  "last_update": "2026-01-13T00:19:54.090777"
+  "last_update": "2026-01-13T02:02:51.769408"
 }
