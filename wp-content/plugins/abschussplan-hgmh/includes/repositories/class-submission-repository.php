@@ -209,4 +209,81 @@ class HGMH_Submission_Repository {
 
         return $result !== false;
     }
+
+    /**
+     * Get submissions for Obmann (district supervisor)
+     *
+     * Retrieves submissions filtered by the obmann's assigned meldegruppen.
+     * Returns enriched data with joined reference tables.
+     *
+     * @param int $user_id WordPress user ID of the obmann
+     * @param int|null $wildart_id Optional wildart ID to filter by
+     * @param string|null $status Optional status to filter by
+     * @return array Array of submission objects with enriched data
+     */
+    public function get_for_obmann($user_id, $wildart_id = null, $status = null) {
+        if (!$user_id) {
+            return array();
+        }
+
+        // Start building the query
+        $sql = "SELECT
+                s.*,
+                w.name as wildart_name,
+                e.name as eigenjagdbezirk_name,
+                m.name as meldegruppe_name
+            FROM {$this->submissions_table} s
+            LEFT JOIN {$this->wildart_table} w ON s.wildart_id = w.id
+            LEFT JOIN {$this->eigenjagdbezirk_table} e ON s.eigenjagdbezirk_id = e.id
+            LEFT JOIN {$this->meldegruppe_table} m ON s.meldegruppe_id = m.id
+            WHERE 1=1";
+
+        $prepare_args = array();
+
+        // Filter by obmann's assigned meldegruppen
+        // Get all user meta keys for meldegruppe assignments
+        $usermeta_table = $this->wpdb->usermeta;
+        $meta_like = 'ahgmh_assigned_meldegruppe_%';
+
+        // Subquery to get meldegruppe IDs for user's assigned meldegruppen
+        $sql .= " AND s.meldegruppe_id IN (
+            SELECT mg.id
+            FROM {$this->meldegruppe_table} mg
+            INNER JOIN {$usermeta_table} um ON mg.name = um.meta_value
+            WHERE um.user_id = %d
+            AND um.meta_key LIKE %s
+        )";
+        $prepare_args[] = (int) $user_id;
+        $prepare_args[] = $meta_like;
+
+        // Apply optional wildart_id filter
+        if ($wildart_id !== null) {
+            $sql .= " AND s.wildart_id = %d";
+            $prepare_args[] = (int) $wildart_id;
+        }
+
+        // Apply optional status filter
+        if ($status !== null) {
+            $sql .= " AND s.status = %s";
+            $prepare_args[] = sanitize_text_field($status);
+        }
+
+        // Order by most recent first
+        $sql .= " ORDER BY s.created_at DESC";
+
+        // Prepare and execute query
+        if (!empty($prepare_args)) {
+            $sql = $this->wpdb->prepare($sql, $prepare_args);
+        }
+
+        $results = $this->wpdb->get_results($sql);
+
+        // Log error for debugging if WP_DEBUG is enabled
+        if ($results === null && defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('HGMH Submission Repository get_for_obmann error: ' . $this->wpdb->last_error);
+            error_log('HGMH Submission Repository last query: ' . $this->wpdb->last_query);
+        }
+
+        return $results ? $results : array();
+    }
 }
