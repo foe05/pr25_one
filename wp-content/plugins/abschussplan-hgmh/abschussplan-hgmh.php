@@ -35,6 +35,7 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-feature-flags.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
@@ -54,6 +55,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-feature-flags-controller.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
 
@@ -148,6 +150,9 @@ class Abschussplan_HGMH {
 
             // Initialize page views controller
             new AHGMH_Page_Views_Controller();
+
+            // Initialize feature flags controller
+            new AHGMH_Feature_Flags_Controller();
 
             // New modular controller disabled until issues resolved
             // $this->admin_controller = new AHGMH_Admin_Controller();
