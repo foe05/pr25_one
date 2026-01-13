@@ -1,0 +1,34 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/pr25_one/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/pr25_one/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/roadmap/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/roadmap/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/pr25_one/.auto-claude/roadmap/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}

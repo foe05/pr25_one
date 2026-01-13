@@ -4,10 +4,26 @@
 - **Project Name**: Abschussplan HGMH (Hunting Harvest Tracking for German Hunting Districts)
 - **Repository**: https://github.com/foe05/pr25_one
 - **Type**: WordPress Plugin for hunting submission tracking
-- **Version**: 2.5.2
-- **Status**: Production Ready - Enhanced Meldegruppen Management System
+- **Version**: 3.0.0
+- **Status**: Production Ready - Complete v2 Refactoring with Enterprise Features
 - **License**: GPLv3
 - **Target Audience**: German hunting associations (Hegegemeinschaften)
+
+## v3.0 Major Update
+**Release Date:** January 2026
+**Focus:** Complete architectural refactoring from prototype to production-grade software
+
+**10 New Features Integrated:**
+1. Feature Flags System - Safe feature rollout
+2. Migration Manager & Schema - Versioned DB management
+3. Data Migration v1 → v2 - Automated data migration
+4. Submission Repository - Clean data abstraction
+5. Moderation Service - Centralized business logic
+6. Table Moderation Interface - Direct approve/edit/reject in tables
+7. Public Form with Email Verification - Anonymous submissions
+8. Email Service - Unified notification system
+9. Activity Logging - Analytics and audit trail
+10. Enhanced Wildarten Management - Repository-based CRUD
 
 ## WordPress Plugin Structure
 - **Main Plugin File**: `wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php`
@@ -27,7 +43,15 @@
 - **Shortcodes**: 5 main shortcodes with 3-level permission system (`[abschuss_form]`, `[abschuss_table]`, `[abschuss_admin]`, `[abschuss_summary]`, `[abschuss_limits]`)
 - **Permission System**: 3-level hierarchy (Besucher, Obmann, Vorstand) with wildart-specific meldegruppe assignments
 - **AJAX Handlers**: Form submission, admin config, CSV export, limits management, obmann management via WordPress AJAX
-- **Database Tables**: `wp_ahgmh_submissions`, `wp_ahgmh_jagdbezirke`, `wp_ahgmh_meldegruppen_config`, `wp_ahgmh_meldegruppen_limits`
+- **Database Tables** (v3.0):
+  - `wp_ahgmh_submissions` - Enhanced with verification, moderation fields
+  - `wp_ahgmh_jagdbezirke` - Hunting district configuration
+  - `wp_ahgmh_meldegruppen_config` - Meldegruppen configuration
+  - `wp_ahgmh_meldegruppen_limits` - Limits management
+  - `wp_ahgmh_moderation_history` - NEW: Audit trail for moderation actions
+  - `wp_ahgmh_email_log` - NEW: Email sending history
+  - `wp_ahgmh_activity_log` - NEW: User activity tracking
+  - `wp_ahgmh_page_views` - Page view tracking
 - **User Integration**: WordPress user authentication with wildart-specific user meta keys
 
 ## Core Functionality
@@ -53,7 +77,7 @@
 - **Wildart-Specific Access Control**: User meta keys for fine-grained permissions
 - **Validation Service**: Centralized security checks for all operations
 
-## File Structure
+## File Structure (v3.0)
 ```
 wp-content/plugins/abschussplan-hgmh/
 ├── abschussplan-hgmh.php (main plugin file)
@@ -61,22 +85,67 @@ wp-content/plugins/abschussplan-hgmh/
 │   ├── class-database-handler.php
 │   ├── class-form-handler.php
 │   ├── class-table-display.php
-│   └── class-permissions-service.php
+│   ├── class-permissions-service.php
+│   ├── class-feature-flags.php (NEW: v3.0)
+│   ├── class-migration-manager.php (NEW: v3.0)
+│   ├── class-activity-logger.php (NEW: v3.0)
+│   ├── class-verification-service.php (NEW: v3.0)
+│   ├── class-rate-limiter.php (NEW: v3.0)
+│   ├── class-public-form-handler.php (NEW: v3.0)
+│   ├── services/ (NEW: v3.0 service layer)
+│   │   ├── class-moderation-service.php
+│   │   ├── class-email-service.php
+│   │   └── class-submission-repository.php
+│   └── repositories/ (NEW: v3.0 repository pattern)
+│       ├── class-wildart-repository.php
+│       └── class-meldegruppe-repository.php
+├── migrations/ (NEW: v3.0 database migrations)
+│   ├── 001_create_new_schema.php
+│   └── 002_migrate_existing_data.php
+├── frontend/ (NEW: v3.0 frontend organization)
+│   ├── shortcodes/
+│   │   └── class-table-shortcode.php
+│   ├── templates/
+│   │   └── table.php
+│   └── assets/js/
+│       └── table-moderation.js
 ├── templates/ (frontend templates)
 │   ├── form-template.php
 │   ├── table-template.php
 │   ├── summary-template.php
 │   ├── admin-template-modern.php
-│   └── admin-template-old.php
+│   ├── public-form-template.php (NEW: v3.0)
+│   └── email/ (NEW: v3.0 email templates)
+│       ├── verification.php
+│       ├── approval-notification.php
+│       ├── approval-confirmation.php
+│       └── rejection.php
 ├── admin/ (admin functionality)
 │   ├── class-admin-page-modern.php (tabbed admin interface)
 │   ├── class-admin-page-legacy.php (legacy interface)
+│   ├── feature-flags.php (NEW: v3.0)
+│   ├── views/
+│   │   ├── page-migrations.php (NEW: v3.0)
+│   │   └── class-wildart-view.php (NEW: v3.0)
+│   ├── controllers/ (NEW: v3.0)
+│   │   ├── class-feature-flags-controller.php
+│   │   └── class-wildart-controller.php
+│   ├── services/ (NEW: v3.0)
+│   │   ├── class-moderation-service.php
+│   │   └── class-wildart-service.php
 │   └── assets/ (admin CSS/JS)
 │       ├── admin-modern.css
 │       └── admin-modern.js
+├── tests/ (NEW: v3.0 integration tests)
+│   ├── README.md
+│   ├── test-moderation-service-e2e.php
+│   ├── integration-test-public-form.md
+│   └── test-helper-public-form.php
 ├── assets/ (frontend CSS/JS files)
 │   ├── css/style.css
-│   └── js/form-validation.js
+│   └── js/
+│       ├── form-validation.js
+│       └── public-form-validation.js (NEW: v3.0)
 └── uninstall.php (cleanup)
 ```
 

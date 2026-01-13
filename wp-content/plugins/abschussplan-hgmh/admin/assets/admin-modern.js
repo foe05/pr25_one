@@ -385,6 +385,9 @@
     function initWildartConfig() {
         if ($('.ahgmh-wildart-config').length === 0) return;
 
+        // Initialize sortable on wildart list
+        initWildartSortable();
+
         // Create new wildart
         $(document).on('click', '#add-new-wildart', function (e) {
             e.preventDefault();
@@ -510,6 +513,89 @@
         if (firstWildart.length > 0) {
             firstWildart.click();
         }
+    }
+
+    /**
+     * Initialize drag & drop sorting for wildart list
+     */
+    function initWildartSortable() {
+        var $sortableList = $('#sortable-wildart-list');
+
+        if ($sortableList.length === 0 || $('.wildart-item').length === 0) {
+            return;
+        }
+
+        // Initialize jQuery UI Sortable
+        $sortableList.sortable({
+            items: '.wildart-item',
+            handle: '.wildart-drag-handle',
+            axis: 'y',
+            cursor: 'move',
+            opacity: 0.8,
+            placeholder: 'wildart-item-placeholder',
+            helper: 'clone',
+            tolerance: 'pointer',
+            start: function(event, ui) {
+                ui.item.addClass('wildart-dragging');
+                ui.placeholder.height(ui.item.height());
+            },
+            stop: function(event, ui) {
+                ui.item.removeClass('wildart-dragging');
+            },
+            update: function(event, ui) {
+                // Show save button when order changes
+                $('#save-wildart-order').fadeIn();
+            }
+        });
+
+        // Save wildart order button
+        $(document).on('click', '#save-wildart-order', function(e) {
+            e.preventDefault();
+            saveWildartOrder();
+        });
+    }
+
+    /**
+     * Save wildart sort order
+     */
+    function saveWildartOrder() {
+        var order = [];
+        $('.wildart-item').each(function(index) {
+            order.push($(this).data('wildart'));
+        });
+
+        var $btn = $('#save-wildart-order');
+        var originalText = $btn.html();
+        $btn.prop('disabled', true).html('<span class="dashicons dashicons-update ahgmh-spinning"></span> Speichern...');
+
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_save_wildart_order',
+                nonce: ahgmh_admin.nonce,
+                order: order
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification('Reihenfolge gespeichert!', 'success');
+                    $btn.fadeOut();
+
+                    // Update data-order attributes
+                    $('.wildart-item').each(function(index) {
+                        $(this).attr('data-order', index);
+                    });
+                } else {
+                    showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                }
+            },
+            error: function() {
+                showNotification('Netzwerkfehler beim Speichern.', 'error');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html(originalText);
+            }
+        });
     }
 
     /**
@@ -1085,7 +1171,7 @@
         $submitBtn.prop('disabled', true).text(isEditMode ? 'Aktualisiere...' : 'Speichere...');
 
         var formData = {
-            action: 'ahgmh_assign_obmann_meldegruppe',
+            action: 'ahgmh_assign_obmann',
             user_id: $('#user_id').val(),
             wildart: $('#wildart').val(),
             meldegruppe: $('#meldegruppe').val(),
@@ -1194,7 +1280,7 @@
             url: ahgmh_admin.ajax_url,
             type: 'POST',
             data: {
-                action: 'ahgmh_remove_obmann_assignment',
+                action: 'ahgmh_remove_obmann',
                 user_id: userId,
                 wildart: wildart,
                 nonce: ahgmh_admin.nonce

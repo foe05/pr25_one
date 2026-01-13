@@ -957,7 +957,7 @@
 .wildart-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 10px;
     padding: 12px 20px;
     cursor: pointer;
     border-bottom: 1px solid #f0f0f0;
@@ -967,7 +967,6 @@
 
 .wildart-item:hover {
     background: #f0f6fc;
-    padding-left: 24px;
 }
 
 .wildart-item.active {
@@ -986,6 +985,47 @@
     background: #135e96;
 }
 
+/* Drag handle */
+.wildart-drag-handle {
+    cursor: move;
+    color: #8c8f94;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.wildart-item:hover .wildart-drag-handle {
+    opacity: 1;
+    color: #2271b1;
+}
+
+.wildart-item.active .wildart-drag-handle {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.wildart-item.active:hover .wildart-drag-handle {
+    color: white;
+}
+
+/* Dragging state */
+.wildart-item.wildart-dragging {
+    opacity: 0.8;
+    background: #f0f6fc;
+    border: 2px dashed #2271b1;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: rotate(2deg);
+}
+
+.wildart-item-placeholder {
+    background: #f0f6fc !important;
+    border: 2px dashed #72aee6 !important;
+    visibility: visible !important;
+    opacity: 0.5;
+}
+
 .wildart-name {
     flex: 1;
     font-size: 14px;
@@ -1000,6 +1040,7 @@
     border-radius: 4px;
     opacity: 0;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
 .wildart-item:hover .wildart-delete {
@@ -1023,6 +1064,32 @@
     font-size: 16px;
     width: 16px;
     height: 16px;
+}
+
+/* Sort actions panel */
+.wildart-sort-actions {
+    padding: 15px 20px;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f9fa;
+}
+
+.wildart-sort-actions .button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.wildart-sort-actions .button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Sortable disabled state (for no-wildarten message) */
+#sortable-wildart-list.ui-sortable-disabled .wildart-drag-handle {
+    display: none;
 }
 
 /* New wildart form */

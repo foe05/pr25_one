@@ -23,6 +23,9 @@ class AHGMH_Database_Handler {
     public function __construct() {
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'ahgmh_submissions';
+
+        // Run migration for status field (safe to run multiple times)
+        $this->migrate_add_status_field();
     }
 
     /**
@@ -43,8 +46,25 @@ class AHGMH_Database_Handler {
             field4 text NOT NULL,
             field5 text NOT NULL,
             field6 text,
+            status varchar(50) NOT NULL DEFAULT 'pending',
+            approved_by bigint(20) DEFAULT NULL,
+            approved_at datetime DEFAULT NULL,
+            rejected_by bigint(20) DEFAULT NULL,
+            rejected_at datetime DEFAULT NULL,
+            rejection_reason text,
+            time_to_approval int(11) DEFAULT NULL,
+            verification_status enum('pending','verified','expired') DEFAULT 'pending',
+            verification_token varchar(64) DEFAULT NULL,
+            token_expires_at datetime DEFAULT NULL,
+            submitter_email varchar(255) DEFAULT NULL,
+            submitter_ip varchar(100) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id)
+            PRIMARY KEY  (id),
+            KEY status (status),
+            KEY approved_by (approved_by),
+            KEY rejected_by (rejected_by),
+            KEY verification_token (verification_token),
+            KEY verification_status (verification_status)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -55,6 +75,18 @@ class AHGMH_Database_Handler {
 
         // Create page views tracking table
         $this->create_page_views_table();
+
+        // Run data migration from v1 to v2 schema if needed
+        $this->run_migration_002();
+
+        // Create moderation history table
+        $this->create_moderation_history_table();
+
+        // Create email log table
+        $this->create_email_log_table();
+
+        // Create activity log table
+        $this->create_activity_log_table();
     }
     
     /**
@@ -63,7 +95,52 @@ class AHGMH_Database_Handler {
     public function get_table_name() {
         return $this->table_name;
     }
-    
+
+    /**
+     * Run migration 002 to migrate existing data from v1 to v2 schema
+     *
+     * This method is called during database upgrades to migrate existing data
+     * from the old schema (field1-6) to the new normalized schema.
+     *
+     * @return bool True on success, false on failure
+     */
+    public function run_migration_002() {
+        // Check if migration has already been completed
+        if (get_option('ahgmh_migration_002_completed', false)) {
+            return true;
+        }
+
+        // Check if migration file exists
+        $migration_file = AHGMH_PLUGIN_DIR . 'migrations/002_migrate_existing_data.php';
+        if (!file_exists($migration_file)) {
+            error_log('HGMH Migration 002: Migration file not found at ' . $migration_file);
+            return false;
+        }
+
+        // Load the migration file
+        require_once $migration_file;
+
+        // Check if class exists
+        if (!class_exists('HGMH_Migration_002')) {
+            error_log('HGMH Migration 002: HGMH_Migration_002 class not found');
+            return false;
+        }
+
+        // Instantiate and run the migration
+        $migration = new HGMH_Migration_002();
+        $result = $migration->up();
+
+        // Track completion if successful
+        if ($result) {
+            update_option('ahgmh_migration_002_completed', true);
+            error_log('HGMH Migration 002: Successfully completed and marked as done');
+        } else {
+            error_log('HGMH Migration 002: Migration failed');
+        }
+
+        return $result;
+    }
+
     /**
      * Create the Jagdbezirk configuration table
      */
@@ -124,6 +201,111 @@ class AHGMH_Database_Handler {
             KEY shortcode_name (shortcode_name),
             KEY user_id (user_id),
             KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+<<<<<<< HEAD
+     * Create the moderation history table for audit trail
+     */
+    public function create_moderation_history_table() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'ahgmh_moderation_history';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            submission_id mediumint(9) NOT NULL,
+            action varchar(50) NOT NULL,
+            previous_status varchar(20) DEFAULT NULL,
+            new_status varchar(20) DEFAULT NULL,
+            moderator_id bigint(20) NOT NULL DEFAULT 0,
+            moderator_name varchar(255) DEFAULT '',
+            comment text,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY submission_id (submission_id),
+            KEY moderator_id (moderator_id),
+            KEY action (action),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+     * Migrate existing installations to add status field
+     * Safe to run multiple times - checks if column exists first
+     */
+    public function migrate_add_status_field() {
+        global $wpdb;
+
+        // Check if status column already exists
+        $row = $wpdb->get_results("SHOW COLUMNS FROM {$this->table_name} LIKE 'status'");
+
+        if (empty($row)) {
+            // Column doesn't exist, add it
+            $wpdb->query("
+                ALTER TABLE {$this->table_name}
+                ADD COLUMN status varchar(50) DEFAULT 'pending_approval' NOT NULL
+                AFTER field6
+            ");
+
+            error_log('AHGMH: Added status field to submissions table');
+        }
+    }
+
+    /**
+     * Create the email log table
+     */
+    public function create_email_log_table() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'ahgmh_email_log';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            email_type varchar(100) NOT NULL,
+            recipient varchar(255) NOT NULL,
+            subject text NOT NULL,
+            sent_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            submission_id bigint(20) DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY email_type (email_type),
+            KEY submission_id (submission_id),
+            KEY sent_at (sent_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+     * Create activity log table for tracking user activities
+     */
+    public function create_activity_log_table() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'ahgmh_activity_log';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL,
+            action varchar(50) NOT NULL,
+            context longtext,
+            ip_hash varchar(64),
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY user_id_idx (user_id),
+            KEY action_idx (action),
+            KEY created_at_idx (created_at)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -1925,7 +2107,7 @@ class AHGMH_Database_Handler {
     /**
      * Get applicable limit for species/meldegruppe/category combination
      * Implements fallback logic: meldegruppe-specific > hegegemeinschaft total > old system
-     * 
+     *
      * @param string $species Species name
      * @param string $meldegruppe Meldegruppe name (can be null for total limits)
      * @param string $category Category name
@@ -1933,30 +2115,51 @@ class AHGMH_Database_Handler {
      */
     public function get_applicable_limit($species, $meldegruppe, $category) {
         global $wpdb;
-        
+
         if (!empty($meldegruppe)) {
             // Try to get meldegruppe-specific limit from config table
             $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
             $limit_value = $wpdb->get_var($wpdb->prepare("
-                SELECT limit_value FROM $meldegruppen_config_table 
-                WHERE wildart = %s AND meldegruppe = %s AND kategorie = %s 
+                SELECT limit_value FROM $meldegruppen_config_table
+                WHERE wildart = %s AND meldegruppe = %s AND kategorie = %s
                   AND limit_value IS NOT NULL AND limit_mode = 'meldegruppen_specific'
             ", sanitize_text_field($species), sanitize_text_field($meldegruppe), sanitize_text_field($category)));
-            
+
             if ($limit_value !== null) {
                 return intval($limit_value);
             }
         }
-        
+
         // Fallback to hegegemeinschaft total limit
         $hegegemeinschaft_limit = $this->get_hegegemeinschaft_limit($species, $category);
         if ($hegegemeinschaft_limit > 0) {
             return $hegegemeinschaft_limit;
         }
-        
+
         // Final fallback to old WordPress options system
         $limits_key = 'abschuss_category_limits_' . sanitize_key($species);
         $species_limits = get_option($limits_key, array());
         return isset($species_limits[$category]) ? intval($species_limits[$category]) : 0;
+    }
+
+    /**
+     * Check if wildart has any submissions
+     *
+     * @param string $wildart Wildart name
+     * @return bool True if submissions exist, false otherwise
+     */
+    public function check_wildart_has_submissions($wildart) {
+        global $wpdb;
+
+        $wildart = sanitize_text_field($wildart);
+
+        $query = $wpdb->prepare(
+            "SELECT COUNT(*) FROM $this->table_name WHERE game_species = %s",
+            $wildart
+        );
+
+        $count = $wpdb->get_var($query);
+
+        return (int) $count > 0;
     }
 }
