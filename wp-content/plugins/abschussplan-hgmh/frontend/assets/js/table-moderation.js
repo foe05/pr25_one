@@ -222,6 +222,102 @@
             });
         });
 
+        /**
+         * Handle reject button click - open modal
+         */
+        $('.btn-reject').on('click', function(e) {
+            e.preventDefault();
+
+            const $btn = $(this);
+            const submissionId = $btn.data('submission-id');
+
+            // Set submission ID on the form
+            $('#reject-submission-form').attr('data-submission-id', submissionId);
+
+            // Clear the comment field and any previous error messages
+            $('#reject-comment').val('');
+            $('.form-error').text('').hide();
+            $('.is-invalid').removeClass('is-invalid');
+            $('#reject-form-response').hide();
+
+            // Open the modal
+            const rejectModal = new bootstrap.Modal(document.getElementById('rejectSubmissionModal'));
+            rejectModal.show();
+        });
+
+        /**
+         * Handle reject submit button click
+         */
+        $('#reject-submission-btn').on('click', function(e) {
+            e.preventDefault();
+
+            const $btn = $(this);
+            const $form = $('#reject-submission-form');
+            const submissionId = $form.attr('data-submission-id');
+            const $commentField = $('#reject-comment');
+            const comment = $commentField.val().trim();
+
+            // Clear previous error messages
+            $('.form-error').text('').hide();
+            $('.is-invalid').removeClass('is-invalid');
+
+            // Validate comment field - it is required
+            if (!comment) {
+                $commentField.addClass('is-invalid');
+                $commentField.siblings('.form-error').text('Dieses Feld ist erforderlich').show();
+                return;
+            }
+
+            // Disable button to prevent multiple submissions
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird abgelehnt...');
+
+            // Prepare form data
+            const formData = {
+                action: 'ahgmh_table_reject',
+                nonce: ahgmh_table_moderation.nonce,
+                submission_id: submissionId,
+                comment: comment
+            };
+
+            // Send AJAX request
+            $.ajax({
+                url: ahgmh_table_moderation.ajax_url,
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        // Show success notification
+                        showNotification('success', ahgmh_table_moderation.strings.success_rejected || 'Abschussmeldung wurde erfolgreich abgelehnt.');
+
+                        // Close the modal
+                        const rejectModal = bootstrap.Modal.getInstance(document.getElementById('rejectSubmissionModal'));
+                        rejectModal.hide();
+
+                        // Remove the table row since submission is rejected
+                        const $row = $('.btn-reject[data-submission-id="' + submissionId + '"]').closest('tr');
+                        $row.fadeOut(400, function() {
+                            $(this).remove();
+                        });
+                    } else {
+                        // Show error message in modal
+                        const message = response.data && response.data.message
+                            ? response.data.message
+                            : ahgmh_table_moderation.strings.error_generic;
+                        $('#reject-form-response').removeClass('alert-success').addClass('alert-danger').text(message).show();
+                    }
+                },
+                error: function() {
+                    // Show general error message in modal
+                    $('#reject-form-response').removeClass('alert-success').addClass('alert-danger')
+                        .text(ahgmh_table_moderation.strings.error_generic).show();
+                },
+                complete: function() {
+                    // Re-enable button
+                    $btn.prop('disabled', false).text('Ablehnen');
+                }
+            });
+        });
+
     });
 
     /**
