@@ -251,7 +251,7 @@ class HGMH_Moderation_Service {
             ];
 
             // 5. Update submission data
-            $result = $this->repository->update($submission_id, $sanitized_data);
+            $result = $this->repository->update_fields($submission_id, $sanitized_data);
 
             if (!$result) {
                 return new WP_Error(
