@@ -243,6 +243,65 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
     <?php endif; ?>
 </div>
 
+<!-- Edit Submission Modal -->
+<div class="modal fade" id="editSubmissionModal" tabindex="-1" aria-labelledby="editSubmissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSubmissionModalLabel"><?php echo esc_html__('Abschussmeldung bearbeiten', 'abschussplan-hgmh'); ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php echo esc_attr__('Schließen', 'abschussplan-hgmh'); ?>"></button>
+            </div>
+            <div class="modal-body">
+                <div id="edit-form-response" class="alert" role="alert" style="display: none;"></div>
+
+                <form id="edit-submission-form" data-submission-id="">
+                    <?php wp_nonce_field('ahgmh_edit_submission_nonce', 'ahgmh_edit_nonce'); ?>
+
+                    <div class="mb-3">
+                        <label for="edit-field1" class="form-label"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></label>
+                        <input type="date" class="form-control" id="edit-field1" name="field1" required>
+                        <div class="form-error"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-field2" class="form-label"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></label>
+                        <input type="text" class="form-control" id="edit-field2" name="field2" required>
+                        <div class="form-error"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-field3" class="form-label"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></label>
+                        <input type="number" class="form-control" id="edit-field3" name="field3" min="1000000" max="9999999" maxlength="7">
+                        <div class="form-error"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-field5" class="form-label"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></label>
+                        <input type="text" class="form-control" id="edit-field5" name="field5" required>
+                        <div class="form-error"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-field4" class="form-label"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></label>
+                        <textarea class="form-control" id="edit-field4" name="field4" rows="4"></textarea>
+                        <div class="form-error"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-field6" class="form-label"><?php echo esc_html__('Interne Notiz', 'abschussplan-hgmh'); ?></label>
+                        <textarea class="form-control" id="edit-field6" name="field6" rows="4"></textarea>
+                        <div class="form-error"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo esc_html__('Abbrechen', 'abschussplan-hgmh'); ?></button>
+                <button type="button" class="btn btn-primary" id="save-submission-btn"><?php echo esc_html__('Speichern', 'abschussplan-hgmh'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function exportCSV(species) {
     // Build export URL
