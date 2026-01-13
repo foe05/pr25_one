@@ -46,6 +46,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-moderation-service.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
