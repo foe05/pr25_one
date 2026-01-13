@@ -3,23 +3,23 @@
   "spec": "006-table-moderation",
   "state": "building",
   "subtasks": {
-    "completed": 5,
+    "completed": 14,
     "total": 15,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Create Shortcode Infrastructure",
+    "current": "Plugin Integration and Registration",
     "id": null,
-    "total": 5
+    "total": 2
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 7,
+    "number": 16,
     "started_at": "2026-01-13T08:29:28.199150"
   },
-  "last_update": "2026-01-13T08:47:39.155904"
+  "last_update": "2026-01-13T09:11:03.057017"
 }

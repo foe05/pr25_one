@@ -141,6 +141,9 @@ class Abschussplan_HGMH {
         // Initialize table display
         $this->table = new AHGMH_Table_Display();
 
+        // Initialize frontend table shortcode
+        new AHGMH_Table_Shortcode();
+
         // Check for database schema updates
         add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));
 

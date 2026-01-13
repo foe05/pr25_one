@@ -248,7 +248,7 @@
         /**
          * Handle reject submit button click
          */
-        $('#reject-submission-btn').on('click', function(e) {
+        $('#confirm-reject-btn').on('click', function(e) {
             e.preventDefault();
 
             const $btn = $(this);
