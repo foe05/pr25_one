@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "010-wildarten-management",
+  "spec": "018-extract-duplicated-ajax-security-checks-into-reusa",
   "state": "building",
   "subtasks": {
-    "completed": 10,
-    "total": 11,
+    "completed": 1,
+    "total": 14,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration & Testing",
+    "current": "Audit Security Checks",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 163,
-    "started_at": "2026-01-13T00:02:33.000354"
+    "number": 3,
+    "started_at": "2026-01-14T20:02:54.552350"
   },
-  "last_update": "2026-01-13T02:02:51.769408"
+  "last_update": "2026-01-14T20:12:39.970792"
 }
