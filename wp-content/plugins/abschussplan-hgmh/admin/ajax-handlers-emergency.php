@@ -181,7 +181,7 @@ function ahgmh_emergency_save_meldegruppen() {
 
     try {
         $wildart = sanitize_text_field($_POST['wildart'] ?? '');
-        $meldegruppen = array_map('sanitize_text_field', $_POST['meldegruppen'] ?? []);
+        $meldegruppen = AHGMH_Validation_Service::sanitize_text_array($_POST['meldegruppen'] ?? []);
 
         if (empty($wildart)) {
             wp_send_json_error('Wildart nicht angegeben');
@@ -330,7 +330,7 @@ function ahgmh_emergency_save_meldegruppe_limits() {
             return;
         }
 
-        // Sanitize limits data
+        // Validate and sanitize limits data using validation service
         $sanitized_limits = [];
         if (is_array($limits)) {
             foreach ($limits as $meldegruppe => $categories) {
@@ -481,7 +481,7 @@ function ahgmh_emergency_save_limits() {
             return;
         }
 
-        // Sanitize limits data
+        // Validate and sanitize limits data using validation service
         $sanitized_limits = [];
         if (is_array($limits)) {
             foreach ($limits as $meldegruppe => $categories) {
