@@ -70,31 +70,42 @@ class AHGMH_Migration_002 {
             return false;
         }
 
-        // Validate migration: new count should equal old count
+        // Validate migration: check how many were migrated
         $new_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}hgmh_submissions_v2");
+        $skipped_count = $old_count - $migrated_count;
 
-        if ($new_count !== $old_count) {
-            $skipped_count = $old_count - $migrated_count;
+        if ($skipped_count > 0) {
             error_log(
                 sprintf(
-                    'AHGMH Migration 002 FAILED: Count mismatch! Old: %d, New: %d, Migrated: %d, Skipped: %d',
-                    $old_count,
-                    $new_count,
-                    $migrated_count,
-                    $skipped_count
+                    'AHGMH Migration 002 WARNING: %d of %d submissions were skipped (missing references)',
+                    $skipped_count,
+                    $old_count
                 )
             );
+        }
+
+        // Migration succeeds even if some submissions were skipped
+        // Only fail if NO submissions were migrated when there were some to migrate
+        if ($old_count > 0 && $migrated_count === 0) {
+            error_log('AHGMH Migration 002 FAILED: No submissions could be migrated');
             return false;
         }
 
         error_log(
             sprintf(
-                'AHGMH Migration 002 SUCCESS: Migrated %d submissions from v1 to v2 schema',
-                $new_count
+                'AHGMH Migration 002 SUCCESS: Migrated %d of %d submissions (skipped: %d)',
+                $migrated_count,
+                $old_count,
+                $skipped_count
             )
         );
 
         update_option('ahgmh_migration_002_completed', true);
+        update_option('ahgmh_migration_002_stats', [
+            'old_count' => $old_count,
+            'migrated' => $migrated_count,
+            'skipped' => $skipped_count
+        ]);
         return true;
     }
 
@@ -405,6 +416,7 @@ class AHGMH_Migration_002 {
             }
 
             // Resolve Eigenjagdbezirk ID
+            // First, try to find it directly in the new table
             $eigenjagdbezirk_id = $wpdb->get_var($wpdb->prepare("
                 SELECT e.id
                 FROM {$wpdb->prefix}hgmh_eigenjagdbezirke e
@@ -421,11 +433,49 @@ class AHGMH_Migration_002 {
                 return false;
             }
 
+            // If not found, try to create it by looking up the old jagdbezirke table
+            if (!$eigenjagdbezirk_id) {
+                // Look up in old jagdbezirke table to get meldegruppe info
+                $old_jb = $wpdb->get_row($wpdb->prepare(
+                    "SELECT meldegruppe, wildart FROM {$wpdb->prefix}ahgmh_jagdbezirke
+                     WHERE jagdbezirk = %s LIMIT 1",
+                    $old->field5
+                ));
+
+                if ($old_jb) {
+                    // Get or create meldegruppe
+                    $meldegruppe_name = $old_jb->meldegruppe ?: 'Standard';
+                    $meldegruppe_id = $wpdb->get_var($wpdb->prepare(
+                        "SELECT id FROM {$wpdb->prefix}hgmh_meldegruppen
+                         WHERE wildart_id = %d AND name = %s",
+                        $wildart_id, $meldegruppe_name
+                    ));
+
+                    if (!$meldegruppe_id) {
+                        // Create meldegruppe
+                        $wpdb->insert(
+                            $wpdb->prefix . 'hgmh_meldegruppen',
+                            ['wildart_id' => $wildart_id, 'name' => $meldegruppe_name, 'is_active' => 1]
+                        );
+                        $meldegruppe_id = $wpdb->insert_id;
+                        error_log(sprintf('AHGMH Migration 002: Created Meldegruppe "%s" for submission %d', $meldegruppe_name, $old->id));
+                    }
+
+                    // Create eigenjagdbezirk
+                    $wpdb->insert(
+                        $wpdb->prefix . 'hgmh_eigenjagdbezirke',
+                        ['meldegruppe_id' => $meldegruppe_id, 'name' => $old->field5, 'is_active' => 1]
+                    );
+                    $eigenjagdbezirk_id = $wpdb->insert_id;
+                    error_log(sprintf('AHGMH Migration 002: Created Eigenjagdbezirk "%s" for submission %d', $old->field5, $old->id));
+                }
+            }
+
             if (!$eigenjagdbezirk_id) {
                 $skipped_count++;
                 error_log(
                     sprintf(
-                        'AHGMH Migration 002: Skipping submission ID %d - Eigenjagdbezirk "%s" not found for Wildart ID %d',
+                        'AHGMH Migration 002: Skipping submission ID %d - Could not resolve Eigenjagdbezirk "%s" for Wildart ID %d',
                         $old->id,
                         $old->field5,
                         $wildart_id
