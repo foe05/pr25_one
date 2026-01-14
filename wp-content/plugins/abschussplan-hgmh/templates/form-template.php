@@ -125,7 +125,7 @@ if (!defined('ABSPATH')) {
         <!-- Jagdbezirk Dropdown - dynamically populated based on Meldegruppe selection -->
         <div class="mb-3" id="jagdbezirk-container" style="display: none;">
             <label for="field7" class="form-label"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></label>
-            <select class="form-select" id="field7" name="field7" required>
+            <select class="form-select" id="field7" name="field7">
                 <option value="" selected disabled><?php echo esc_html__('Bitte zuerst Meldegruppe wählen...', 'abschussplan-hgmh'); ?></option>
             </select>
             <div class="form-error"></div>

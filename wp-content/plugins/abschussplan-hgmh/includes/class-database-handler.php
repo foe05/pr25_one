@@ -1498,6 +1498,7 @@ class AHGMH_Database_Handler {
     /**
      * Get Jagdbezirke by Meldegruppe name
      * Returns all active Jagdbezirke assigned to a specific Meldegruppe
+     * Uses the new schema with junction table (hgmh_jagdbezirk_meldegruppen)
      *
      * @param string $meldegruppe Meldegruppe name
      * @return array Array of Jagdbezirke
@@ -1505,27 +1506,55 @@ class AHGMH_Database_Handler {
     public function get_jagdbezirke_by_meldegruppe($meldegruppe) {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
         $meldegruppe = sanitize_text_field($meldegruppe);
 
-        // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
-        if (!$table_exists) {
-            return array();
+        // New schema tables
+        $eigenjagdbezirke_table = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $meldegruppen_table = $wpdb->prefix . 'hgmh_meldegruppen';
+        $junction_table = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+
+        // Check if new schema tables exist
+        $junction_exists = $wpdb->get_var("SHOW TABLES LIKE '$junction_table'");
+        $eigenjagdbezirke_exists = $wpdb->get_var("SHOW TABLES LIKE '$eigenjagdbezirke_table'");
+        $meldegruppen_exists = $wpdb->get_var("SHOW TABLES LIKE '$meldegruppen_table'");
+
+        if ($junction_exists && $eigenjagdbezirke_exists && $meldegruppen_exists) {
+            // Use new schema with junction table
+            $query = $wpdb->prepare(
+                "SELECT e.id, e.name as jagdbezirk, m.name as meldegruppe, e.notes as bemerkung
+                 FROM $eigenjagdbezirke_table e
+                 INNER JOIN $junction_table jm ON e.id = jm.jagdbezirk_id
+                 INNER JOIN $meldegruppen_table m ON jm.meldegruppe_id = m.id
+                 WHERE m.name = %s AND e.is_active = 1
+                 ORDER BY e.name ASC",
+                $meldegruppe
+            );
+
+            $results = $wpdb->get_results($query, ARRAY_A);
+
+            if (!empty($results)) {
+                return $results;
+            }
         }
 
-        // Get active Jagdbezirke for this Meldegruppe
-        $query = $wpdb->prepare(
-            "SELECT id, jagdbezirk, meldegruppe, bemerkung
-             FROM $table_name
-             WHERE meldegruppe = %s AND ungueltig = 0
-             ORDER BY jagdbezirk ASC",
-            $meldegruppe
-        );
+        // Fallback to legacy table structure
+        $legacy_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        $legacy_exists = $wpdb->get_var("SHOW TABLES LIKE '$legacy_table'");
 
-        $results = $wpdb->get_results($query, ARRAY_A);
+        if ($legacy_exists) {
+            $query = $wpdb->prepare(
+                "SELECT id, jagdbezirk, meldegruppe, bemerkung
+                 FROM $legacy_table
+                 WHERE meldegruppe = %s AND ungueltig = 0
+                 ORDER BY jagdbezirk ASC",
+                $meldegruppe
+            );
 
-        return $results ?: array();
+            $results = $wpdb->get_results($query, ARRAY_A);
+            return $results ?: array();
+        }
+
+        return array();
     }
 
     /**

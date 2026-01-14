@@ -1330,7 +1330,7 @@
         $submitBtn.prop('disabled', true).text(isEditMode ? 'Aktualisiere...' : 'Speichere...');
 
         var formData = {
-            action: 'ahgmh_assign_obmann',
+            action: 'ahgmh_assign_obmann_meldegruppe',
             user_id: $('#user_id').val(),
             wildart: $('#wildart').val(),
             meldegruppe: $('#meldegruppe').val(),
