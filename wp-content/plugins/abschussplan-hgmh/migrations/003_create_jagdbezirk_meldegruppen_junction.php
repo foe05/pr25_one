@@ -52,6 +52,28 @@ class AHGMH_Migration_003 {
         $eigenjagdbezirke_table = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
         $junction_table = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
 
+        // Check if eigenjagdbezirke table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$eigenjagdbezirke_table}'");
+        if (!$table_exists) {
+            error_log('AHGMH Migration 003: Eigenjagdbezirke table does not exist, skipping assignment migration');
+            return;
+        }
+
+        // Check if meldegruppe_id column exists
+        $columns = $wpdb->get_results("SHOW COLUMNS FROM {$eigenjagdbezirke_table}");
+        $has_meldegruppe_id = false;
+        foreach ($columns as $col) {
+            if ($col->Field === 'meldegruppe_id') {
+                $has_meldegruppe_id = true;
+                break;
+            }
+        }
+
+        if (!$has_meldegruppe_id) {
+            error_log('AHGMH Migration 003: meldegruppe_id column does not exist, skipping assignment migration');
+            return;
+        }
+
         // Get all existing Jagdbezirke with their meldegruppe_id
         $jagdbezirke = $wpdb->get_results(
             "SELECT id, meldegruppe_id FROM {$eigenjagdbezirke_table} WHERE meldegruppe_id > 0",
@@ -59,8 +81,11 @@ class AHGMH_Migration_003 {
         );
 
         if (empty($jagdbezirke)) {
+            error_log('AHGMH Migration 003: No jagdbezirke with meldegruppe_id found, nothing to migrate');
             return;
         }
+
+        error_log(sprintf('AHGMH Migration 003: Found %d jagdbezirke to migrate', count($jagdbezirke)));
 
         foreach ($jagdbezirke as $jb) {
             // Check if this assignment already exists in junction table

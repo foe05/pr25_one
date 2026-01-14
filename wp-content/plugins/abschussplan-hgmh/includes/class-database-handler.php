@@ -1521,7 +1521,7 @@ class AHGMH_Database_Handler {
         if ($junction_exists && $eigenjagdbezirke_exists && $meldegruppen_exists) {
             // Use new schema with junction table
             $query = $wpdb->prepare(
-                "SELECT e.id, e.name as jagdbezirk, m.name as meldegruppe, e.notes as bemerkung
+                "SELECT e.id, e.name as jagdbezirk, m.name as meldegruppe, e.description as bemerkung
                  FROM $eigenjagdbezirke_table e
                  INNER JOIN $junction_table jm ON e.id = jm.jagdbezirk_id
                  INNER JOIN $meldegruppen_table m ON jm.meldegruppe_id = m.id

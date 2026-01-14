@@ -30,12 +30,19 @@ class AHGMH_Migration_002 {
 
         error_log('AHGMH Migration 002: Starting migration from v1 to v2 schema');
 
-        // Skip if old table doesn't exist
-        $exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}ahgmh_submissions'");
-        if (!$exists) {
-            error_log('AHGMH Migration 002: Old table does not exist, skipping migration');
+        // Skip if old tables don't exist
+        $submissions_exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}ahgmh_submissions'");
+        $jagdbezirke_exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}ahgmh_jagdbezirke'");
+
+        if (!$submissions_exists) {
+            error_log('AHGMH Migration 002: Old submissions table does not exist, skipping migration');
             update_option('ahgmh_migration_002_completed', true);
             return true;
+        }
+
+        if (!$jagdbezirke_exists) {
+            error_log('AHGMH Migration 002: Old jagdbezirke table does not exist, skipping hierarchie migration');
+            // Continue with just wildarten and submissions if possible
         }
 
         // Get count of old submissions before migration
@@ -173,9 +180,38 @@ class AHGMH_Migration_002 {
 
         error_log('AHGMH Migration 002: Starting Hierarchie migration');
 
-        $jagdbezirke = $wpdb->get_results(
-            "SELECT * FROM {$wpdb->prefix}ahgmh_jagdbezirke WHERE active = 1"
-        );
+        // Check if jagdbezirke table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}ahgmh_jagdbezirke'");
+        if (!$table_exists) {
+            error_log('AHGMH Migration 002: Jagdbezirke table does not exist, skipping hierarchie migration');
+            return true; // Not an error, just nothing to migrate
+        }
+
+        // Check which column exists for active status (active or ungueltig)
+        $columns = $wpdb->get_results("SHOW COLUMNS FROM {$wpdb->prefix}ahgmh_jagdbezirke");
+        $has_active = false;
+        $has_ungueltig = false;
+
+        foreach ($columns as $col) {
+            if ($col->Field === 'active') $has_active = true;
+            if ($col->Field === 'ungueltig') $has_ungueltig = true;
+        }
+
+        // Build query based on available columns
+        if ($has_active) {
+            $jagdbezirke = $wpdb->get_results(
+                "SELECT * FROM {$wpdb->prefix}ahgmh_jagdbezirke WHERE active = 1"
+            );
+        } elseif ($has_ungueltig) {
+            $jagdbezirke = $wpdb->get_results(
+                "SELECT * FROM {$wpdb->prefix}ahgmh_jagdbezirke WHERE ungueltig = 0"
+            );
+        } else {
+            // No filter column, get all
+            $jagdbezirke = $wpdb->get_results(
+                "SELECT * FROM {$wpdb->prefix}ahgmh_jagdbezirke"
+            );
+        }
 
         if ($wpdb->last_error) {
             error_log(sprintf(

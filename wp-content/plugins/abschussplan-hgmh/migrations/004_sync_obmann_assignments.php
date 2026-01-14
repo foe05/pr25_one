@@ -138,6 +138,15 @@ class AHGMH_Migration_004 {
 
         $synced_count = 0;
 
+        // Check if required tables exist
+        $meldegruppen_exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}hgmh_meldegruppen'");
+        $wildarten_exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}hgmh_wildarten'");
+
+        if (!$meldegruppen_exists || !$wildarten_exists) {
+            error_log('AHGMH Migration 004: Required tables do not exist, skipping DB sync');
+            return 0;
+        }
+
         // Get all user meta entries with our prefix
         $assignments = $wpdb->get_results($wpdb->prepare(
             "SELECT user_id, meta_key, meta_value as meldegruppe
@@ -148,8 +157,11 @@ class AHGMH_Migration_004 {
         ));
 
         if (empty($assignments)) {
+            error_log('AHGMH Migration 004: No user meta assignments found');
             return 0;
         }
+
+        error_log(sprintf('AHGMH Migration 004: Found %d assignments to sync', count($assignments)));
 
         foreach ($assignments as $assignment) {
             // Extract wildart from meta key
