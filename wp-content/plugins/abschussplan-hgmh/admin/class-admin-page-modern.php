@@ -2517,11 +2517,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Add Species
      */
     public function ajax_add_species() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
-        }
+        AHGMH_Validation_Service::verify_ajax_request();
         
         $species_name = sanitize_text_field($_POST['species_name'] ?? '');
         
@@ -2552,11 +2548,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Delete Species
      */
     public function ajax_delete_species() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
-        }
+        AHGMH_Validation_Service::verify_ajax_request();
         
         $species = sanitize_text_field($_POST['species'] ?? '');
         $index = intval($_POST['index'] ?? -1);
@@ -2593,11 +2585,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Add Category
      */
     public function ajax_add_category() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
-        }
+        AHGMH_Validation_Service::verify_ajax_request();
         
         $species = sanitize_text_field($_POST['species'] ?? '');
         $category_name = sanitize_text_field($_POST['category_name'] ?? '');
@@ -2626,11 +2614,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Edit Category
      */
     public function ajax_edit_category() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
-        }
+        AHGMH_Validation_Service::verify_ajax_request();
         
         $species = sanitize_text_field($_POST['species'] ?? '');
         $old_category = sanitize_text_field($_POST['old_category'] ?? '');
@@ -2681,11 +2665,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Delete Category
      */
     public function ajax_delete_category() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
-        }
+        AHGMH_Validation_Service::verify_ajax_request();
         
         $species = sanitize_text_field($_POST['species'] ?? '');
         $category = sanitize_text_field($_POST['category'] ?? '');
@@ -2947,13 +2927,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX handler: Load meldegruppen for a specific wildart
      */
     public function ajax_load_wildart_meldegruppen() {
-        // Security checks
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        AHGMH_Validation_Service::verify_ajax_request();
 
         $wildart = sanitize_text_field($_POST['wildart'] ?? '');
         
@@ -2976,13 +2950,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX handler: Save meldegruppen configuration for a wildart
      */
     public function ajax_save_wildart_meldegruppen() {
-        // Security checks
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        AHGMH_Validation_Service::verify_ajax_request();
 
         $wildart = sanitize_text_field($_POST['wildart'] ?? '');
         $meldegruppen_text = sanitize_textarea_field($_POST['meldegruppen'] ?? '');
@@ -3022,13 +2990,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX handler: Load meldegruppen limits configuration for a species
      */
     public function ajax_load_meldegruppen_limits() {
-        // Security checks
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        AHGMH_Validation_Service::verify_ajax_request();
 
         $species = sanitize_text_field($_POST['species'] ?? '');
         
@@ -3075,13 +3037,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX handler: Toggle custom limits for a meldegruppe
      */
     public function ajax_toggle_meldegruppe_custom_limits() {
-        // Security checks
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        AHGMH_Validation_Service::verify_ajax_request();
 
         $species = sanitize_text_field($_POST['species'] ?? '');
         $meldegruppe = sanitize_text_field($_POST['meldegruppe'] ?? '');
@@ -3117,13 +3073,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX handler: Save limits configuration for a meldegruppe
      */
     public function ajax_save_meldegruppe_limits() {
-        // Security checks
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung für diese Aktion.', 'abschussplan-hgmh'));
-            return;
-        }
-
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+        AHGMH_Validation_Service::verify_ajax_request();
 
         $species = sanitize_text_field($_POST['species'] ?? '');
         $meldegruppe = sanitize_text_field($_POST['meldegruppe'] ?? '');
