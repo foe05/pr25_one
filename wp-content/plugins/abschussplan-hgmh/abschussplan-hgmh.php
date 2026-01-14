@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Abschussplan HGMH
  * Plugin URI: https://github.com/foe05/pr25_one
- * Description: Collect and view game shoots for registration with local hunting authorities in Germany.
- * Version: 2.5.3
+ * Description: Collect and view game shoots for registration with local hunting authorities in Germany. Version 3.0: Complete architectural refactoring with enterprise features including moderation workflow, email verification, activity logging, and migration manager.
+ * Version: 3.0.1
  * Author: foe05
  * Author URI: https://github.com/foe05
  * License: GPL v3 or later
@@ -25,46 +25,60 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('AHGMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AHGMH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('AHGMH_PLUGIN_VERSION', '2.5.3');
-define('AHGMH_DB_VERSION', '4');
+define('AHGMH_PLUGIN_VERSION', '3.0.1');
+define('AHGMH_DB_VERSION', '10'); // v3.0: Major schema update with 7 new tables
 
 // Include required files
 require_once AHGMH_PLUGIN_DIR . 'includes/class-database-handler.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-migration-manager.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-feature-flags.php';
+
+// Include moderation services
+require_once AHGMH_PLUGIN_DIR . 'includes/services/class-submission-repository.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/services/class-email-service.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/services/class-moderation-service.php';
+
+// Include frontend shortcodes
+require_once AHGMH_PLUGIN_DIR . 'frontend/shortcodes/class-table-shortcode.php';
+
+// Include public form and verification services
+require_once AHGMH_PLUGIN_DIR . 'includes/class-verification-service.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-rate-limiter.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-public-form-handler.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/class-activity-logger.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
+    // Load repositories first (required by services)
+    require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-wildart-repository.php';
+    require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-meldegruppe-repository.php';
+    require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-jagdbezirk-repository.php';
+
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-dashboard-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-jagdbezirk-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-report-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-report-generator-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-pdf-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-email-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-scheduler-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-moderation-service.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-compliance-view.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-reports-view.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-schedule-settings-view.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-dashboard-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-data-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-settings-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-wildart-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-jagdbezirk-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-compliance-controller.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-reports-controller.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-schedule-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-feature-flags-controller.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-controller.php';
 
@@ -103,11 +117,21 @@ class Abschussplan_HGMH {
      * Admin page instance (Legacy)
      */
     public $admin;
-    
+
     /**
      * New modular admin controller
      */
     public $admin_controller;
+
+    /**
+     * Public form handler instance
+     */
+    public $public_form;
+
+    /**
+     * Verification service instance
+     */
+    public $verification_service;
 
     /**
      * Get the singleton instance
@@ -149,6 +173,15 @@ class Abschussplan_HGMH {
         // Initialize table display
         $this->table = new AHGMH_Table_Display();
 
+        // Initialize frontend table shortcode
+        new AHGMH_Table_Shortcode();
+
+        // Initialize public form handler
+        $this->public_form = new AHGMH_Public_Form_Handler();
+
+        // Initialize verification service
+        $this->verification_service = new AHGMH_Verification_Service();
+
         // Check for database schema updates
         add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));
 
@@ -159,6 +192,15 @@ class Abschussplan_HGMH {
 
             // Initialize page views controller
             new AHGMH_Page_Views_Controller();
+
+            // Initialize feature flags controller
+            new AHGMH_Feature_Flags_Controller();
+
+            // Initialize Jagdbezirk controller (for AJAX handlers)
+            new AHGMH_Jagdbezirk_Controller();
+
+            // Initialize Export controller (Bug #2 Fix - zentralisierter Export)
+            new AHGMH_Export_Controller();
 
             // New modular controller disabled until issues resolved
             // $this->admin_controller = new AHGMH_Admin_Controller();
@@ -171,9 +213,6 @@ class Abschussplan_HGMH {
     public function activate_plugin() {
         // Create database table
         $this->database->create_table();
-
-        // Register scheduled report cron hooks
-        ahgmh_register_scheduled_report_hooks();
 
         // Flush rewrite rules
         flush_rewrite_rules();
@@ -225,60 +264,6 @@ class Abschussplan_HGMH {
             AHGMH_PLUGIN_URL . 'assets/css/style.css',
             array('bootstrap-css'),
             AHGMH_PLUGIN_VERSION
-        );
-
-        // Enqueue admin reports styles
-        wp_enqueue_style(
-            'ahgmh-admin-reports',
-            AHGMH_PLUGIN_URL . 'admin/assets/admin-reports.css',
-            array('bootstrap-css'),
-            AHGMH_PLUGIN_VERSION
-        );
-
-        // Enqueue admin reports script
-        wp_enqueue_script(
-            'ahgmh-admin-reports',
-            AHGMH_PLUGIN_URL . 'admin/assets/admin-reports.js',
-            array('jquery'),
-            AHGMH_PLUGIN_VERSION,
-            true
-        );
-
-        // Localize admin reports script
-        wp_localize_script(
-            'ahgmh-admin-reports',
-            'ahgmh_reports',
-            array(
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('ahgmh_admin_nonce'),
-                'strings' => array(
-                    'loading' => __('Lädt...', 'abschussplan-hgmh'),
-                    'error' => __('Ein Fehler ist aufgetreten.', 'abschussplan-hgmh'),
-                    'apply_filter' => __('Filter anwenden', 'abschussplan-hgmh'),
-                    'select_dates' => __('Bitte wählen Sie Start- und Enddatum.', 'abschussplan-hgmh'),
-                    'start_before_end' => __('Startdatum muss vor Enddatum liegen.', 'abschussplan-hgmh'),
-                    'valid_email' => __('Bitte geben Sie eine gültige E-Mail-Adresse ein.', 'abschussplan-hgmh'),
-                    'preview_error' => __('Fehler beim Laden der Vorschau.', 'abschussplan-hgmh'),
-                    'csv_started' => __('CSV-Download wurde gestartet.', 'abschussplan-hgmh'),
-                    'pdf_started' => __('PDF-Download wurde gestartet.', 'abschussplan-hgmh'),
-                    'sending_email' => __('Sendet E-Mail...', 'abschussplan-hgmh'),
-                    'configure_report' => __('Konfigurieren Sie einen Bericht und klicken Sie auf "Vorschau anzeigen", um das Ergebnis zu sehen.', 'abschussplan-hgmh'),
-                    'new_schedule' => __('Neuer Zeitplan', 'abschussplan-hgmh'),
-                    'edit_schedule' => __('Zeitplan bearbeiten', 'abschussplan-hgmh'),
-                    'confirm_delete_schedule' => __('Sind Sie sicher, dass Sie diesen Zeitplan löschen möchten?', 'abschussplan-hgmh'),
-                    'required_fields' => __('Bitte füllen Sie alle Pflichtfelder aus.', 'abschussplan-hgmh'),
-                    'saving' => __('Speichert...', 'abschussplan-hgmh'),
-                    'active' => __('Aktiv', 'abschussplan-hgmh'),
-                    'inactive' => __('Inaktiv', 'abschussplan-hgmh'),
-                    'no_history' => __('Keine Verlaufsdaten verfügbar.', 'abschussplan-hgmh'),
-                    'testing' => __('Testet...', 'abschussplan-hgmh'),
-                    'test_success' => __('Konfiguration ist gültig!', 'abschussplan-hgmh'),
-                    'test_failed' => __('Konfigurationstest fehlgeschlagen.', 'abschussplan-hgmh'),
-                    'enter_recipients' => __('Bitte geben Sie mindestens einen Empfänger ein.', 'abschussplan-hgmh'),
-                    'email_sent' => __('Test-E-Mail wurde erfolgreich gesendet!', 'abschussplan-hgmh'),
-                    'email_failed' => __('E-Mail-Versand fehlgeschlagen.', 'abschussplan-hgmh')
-                )
-            )
         );
 
         // Enqueue form validation script
@@ -371,133 +356,6 @@ function ahgmh_activate_plugin() {
 }
 
 /**
- * Add custom cron intervals for scheduled reports
- */
-function ahgmh_add_cron_intervals($schedules) {
-    // Add weekly interval (7 days)
-    if (!isset($schedules['weekly'])) {
-        $schedules['weekly'] = array(
-            'interval' => 604800, // 7 days in seconds
-            'display'  => __('Once Weekly', 'abschussplan-hgmh')
-        );
-    }
-
-    // Add monthly interval (30 days)
-    if (!isset($schedules['monthly'])) {
-        $schedules['monthly'] = array(
-            'interval' => 2592000, // 30 days in seconds
-            'display'  => __('Once Monthly', 'abschussplan-hgmh')
-        );
-    }
-
-    return $schedules;
-}
-add_filter('cron_schedules', 'ahgmh_add_cron_intervals');
-
-/**
- * Execute a scheduled report
- * This is the callback function for WP Cron
- *
- * @param string $schedule_id The schedule ID to execute
- */
-function ahgmh_execute_scheduled_report($schedule_id) {
-    try {
-        error_log('AHGMH Cron: Starting execution of schedule - ' . $schedule_id);
-
-        // Initialize scheduler service
-        $scheduler = new AHGMH_Scheduler_Service();
-
-        // Execute the schedule
-        $result = $scheduler->execute_schedule($schedule_id);
-
-        if ($result['success']) {
-            error_log('AHGMH Cron: Successfully executed schedule - ' . $schedule_id);
-        } else {
-            $error_msg = isset($result['error']) ? $result['error'] : 'Unknown error';
-            error_log('AHGMH Cron: Failed to execute schedule - ' . $schedule_id . ': ' . $error_msg);
-        }
-
-    } catch (Exception $e) {
-        error_log('AHGMH Cron: Exception executing schedule - ' . $schedule_id . ': ' . $e->getMessage());
-    }
-}
-
-/**
- * Register WP Cron action hooks for all scheduled reports
- * This hook handles all scheduled report execution callbacks
- */
-function ahgmh_register_scheduled_report_hooks() {
-    // Get all schedules
-    $scheduler = new AHGMH_Scheduler_Service();
-    $schedules = $scheduler->get_all_schedules();
-
-    // Register action hook for each schedule
-    foreach ($schedules as $schedule) {
-        $hook_name = 'ahgmh_scheduled_report_' . $schedule['id'];
-
-        // Remove existing action to prevent duplicates
-        remove_action($hook_name, 'ahgmh_execute_scheduled_report');
-
-        // Add action hook
-        add_action($hook_name, 'ahgmh_execute_scheduled_report', 10, 1);
-
-        error_log('AHGMH: Registered cron action hook - ' . $hook_name);
-    }
-}
-
-/**
- * Ensure scheduled report cron hooks are registered on init
- * This runs on every WordPress init to ensure hooks are properly registered
- */
-function ahgmh_ensure_scheduled_report_hooks() {
-    // Only run in admin or during cron
-    if (!is_admin() && !defined('DOING_CRON')) {
-        return;
-    }
-
-    ahgmh_register_scheduled_report_hooks();
-}
-add_action('init', 'ahgmh_ensure_scheduled_report_hooks');
-
-/**
- * Clean up all scheduled report cron jobs
- * Called on plugin deactivation
- */
-function ahgmh_clear_scheduled_reports() {
-    try {
-        error_log('AHGMH: Clearing all scheduled report cron jobs');
-
-        // Get all schedules
-        $scheduler = new AHGMH_Scheduler_Service();
-        $schedules = $scheduler->get_all_schedules();
-
-        $cleared_count = 0;
-
-        // Clear cron for each schedule
-        foreach ($schedules as $schedule) {
-            $hook_name = 'ahgmh_scheduled_report_' . $schedule['id'];
-
-            // Find and clear all scheduled events for this hook
-            $timestamp = wp_next_scheduled($hook_name, array($schedule['id']));
-            while ($timestamp) {
-                wp_unschedule_event($timestamp, $hook_name, array($schedule['id']));
-                $cleared_count++;
-                error_log('AHGMH: Cleared scheduled event - ' . $hook_name . ' at ' . date('Y-m-d H:i:s', $timestamp));
-
-                // Check for more events
-                $timestamp = wp_next_scheduled($hook_name, array($schedule['id']));
-            }
-        }
-
-        error_log('AHGMH: Cleared ' . $cleared_count . ' scheduled report cron job(s)');
-
-    } catch (Exception $e) {
-        error_log('AHGMH: Error clearing scheduled reports - ' . $e->getMessage());
-    }
-}
-register_deactivation_hook(__FILE__, 'ahgmh_clear_scheduled_reports');
-
-/**
  * Cron job for automatic page views cleanup
  */
 function ahgmh_page_views_cleanup_cron() {
@@ -532,6 +390,37 @@ function ahgmh_clear_page_views_cleanup() {
     }
 }
 register_deactivation_hook(__FILE__, 'ahgmh_clear_page_views_cleanup');
+
+/**
+ * Cron job for automatic activity log cleanup
+ */
+function ahgmh_activity_log_cleanup_cron() {
+    require_once AHGMH_PLUGIN_DIR . 'includes/class-activity-logger.php';
+    $logger = new AHGMH_Activity_Logger();
+    $logger->cleanup_old_logs(90);
+}
+add_action('ahgmh_activity_log_cleanup_hook', 'ahgmh_activity_log_cleanup_cron');
+
+/**
+ * Schedule cron job for activity log cleanup on plugin activation
+ */
+function ahgmh_schedule_activity_log_cleanup() {
+    if (!wp_next_scheduled('ahgmh_activity_log_cleanup_hook')) {
+        wp_schedule_event(time(), 'daily', 'ahgmh_activity_log_cleanup_hook');
+    }
+}
+add_action('wp', 'ahgmh_schedule_activity_log_cleanup');
+
+/**
+ * Clear activity log cleanup cron job on plugin deactivation
+ */
+function ahgmh_clear_activity_log_cleanup() {
+    $timestamp = wp_next_scheduled('ahgmh_activity_log_cleanup_hook');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'ahgmh_activity_log_cleanup_hook');
+    }
+}
+register_deactivation_hook(__FILE__, 'ahgmh_clear_activity_log_cleanup');
 
 // Start the plugin
 abschussplan_hgmh();

@@ -105,6 +105,24 @@ msgstr "Kategorie"
 msgid "Jagdbezirk"
 msgstr "Jagdbezirk"
 
+msgid "Bitte zuerst Meldegruppe wählen..."
+msgstr "Bitte zuerst Meldegruppe wählen..."
+
+msgid "Lade Jagdbezirke..."
+msgstr "Lade Jagdbezirke..."
+
+msgid "Bitte wählen Sie einen Jagdbezirk aus."
+msgstr "Bitte wählen Sie einen Jagdbezirk aus."
+
+msgid "Bitte waehlen Sie einen Jagdbezirk aus."
+msgstr "Bitte wählen Sie einen Jagdbezirk aus."
+
+msgid "Bitte waehlen Sie einen gueltigen Jagdbezirk aus."
+msgstr "Bitte wählen Sie einen gültigen Jagdbezirk aus."
+
+msgid "Meldegruppe ist erforderlich."
+msgstr "Meldegruppe ist erforderlich."
+
 msgid "Meldegruppe"
 msgstr "Meldegruppe"
 
@@ -174,12 +192,53 @@ msgstr "Fehler beim Export. Bitte versuchen Sie es erneut."
 msgid "Fehler beim Laden der Statistiken. Bitte versuchen Sie es erneut."
 msgstr "Fehler beim Laden der Statistiken. Bitte versuchen Sie es erneut."
 
-# CSV Export
+# CSV Export (Bug #2 Fix - zentralisierter Export)
 msgid "Export URL generieren"
 msgstr "Export URL generieren"
 
 msgid "Direkter Download"
 msgstr "Direkter Download"
+
+# Export Service Status Übersetzungen
+msgid "Ausstehend"
+msgstr "Ausstehend"
+
+msgid "E-Mail-Bestätigung ausstehend"
+msgstr "E-Mail-Bestätigung ausstehend"
+
+msgid "Genehmigung ausstehend"
+msgstr "Genehmigung ausstehend"
+
+msgid "Genehmigt"
+msgstr "Genehmigt"
+
+msgid "Abgelehnt"
+msgstr "Abgelehnt"
+
+msgid "Verifiziert"
+msgstr "Verifiziert"
+
+# Export Filter
+msgid "Nicht unterstütztes Format"
+msgstr "Nicht unterstütztes Format"
+
+msgid "Export-Datei konnte nicht erstellt werden"
+msgstr "Export-Datei konnte nicht erstellt werden"
+
+msgid "Sicherheitsprüfung fehlgeschlagen"
+msgstr "Sicherheitsprüfung fehlgeschlagen"
+
+msgid "Keine Berechtigung für diese Aktion"
+msgstr "Keine Berechtigung für diese Aktion"
+
+msgid "Fehler beim Export: "
+msgstr "Fehler beim Export: "
+
+msgid "Fehler beim Laden der Optionen"
+msgstr "Fehler beim Laden der Optionen"
+
+msgid "Export fehlgeschlagen: "
+msgstr "Export fehlgeschlagen: "
 
 msgid "URL kopieren"
 msgstr "URL kopieren"

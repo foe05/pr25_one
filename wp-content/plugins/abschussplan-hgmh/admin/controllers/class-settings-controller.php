@@ -9,11 +9,12 @@ if (!defined('ABSPATH')) {
 }
 
 class AHGMH_Settings_Controller {
-    
-    private $wildart_controller;
-    
+
+    private $wildart_service;
+
     public function __construct() {
-        $this->wildart_controller = new AHGMH_Wildart_Controller();
+        // Use service directly instead of controller to avoid duplicate AJAX handlers
+        $this->wildart_service = new AHGMH_Wildart_Service();
     }
     
     /**
@@ -39,7 +40,7 @@ class AHGMH_Settings_Controller {
                 </nav>
                 
                 <div id="wildart-config" class="ahgmh-tab-content">
-                    <?php echo $this->wildart_controller->render_config_section(); ?>
+                    <?php $this->render_wildart_config_section(); ?>
                 </div>
                 
                 <div id="general" class="ahgmh-tab-content" style="display: none;">
@@ -70,5 +71,14 @@ class AHGMH_Settings_Controller {
         });
         </script>
         <?php
+    }
+
+    /**
+     * Render wildart configuration section using the view class
+     */
+    private function render_wildart_config_section() {
+        $wildarten = $this->wildart_service->get_all_wildarten();
+        $view = new AHGMH_Wildart_View();
+        $view->render_master_detail_ui($wildarten);
     }
 }

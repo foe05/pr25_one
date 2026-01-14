@@ -45,11 +45,13 @@ class AHGMH_Table_Display {
         // Get database instance
         $database = abschussplan_hgmh()->database;
 
-        // Get submissions
-        $submissions = $database->get_submissions($limit, $offset);
-        
-        // Get total count
-        $total_submissions = $database->count_submissions();
+        // Bug #13b & #14: Only show approved submissions in public views
+        // This shortcode (ahgmh_submissions) is a legacy public shortcode
+        // that requires filtering by approved status
+        $submissions = $database->get_submissions($limit, $offset, true);
+
+        // Get total count (only approved)
+        $total_submissions = $database->count_submissions(true);
         
         // Calculate pagination
         $total_pages = ceil($total_submissions / $limit);
