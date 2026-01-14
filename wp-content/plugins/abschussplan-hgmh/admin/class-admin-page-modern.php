@@ -2245,44 +2245,47 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Export data with filters
      */
     public function ajax_export_data() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
-        }
-        
+        AHGMH_Validation_Service::verify_ajax_request();
+
         $format = sanitize_text_field($_POST['format'] ?? 'csv');
         $species = sanitize_text_field($_POST['species'] ?? '');
-        
-        $database = abschussplan_hgmh()->database;
-        $submissions = $database->get_submissions_by_species(0, 0, $species);
-        
-        if (empty($submissions)) {
-            wp_send_json_error(__('Keine Daten zum Exportieren gefunden', 'abschussplan-hgmh'));
+
+        try {
+            $database = abschussplan_hgmh()->database;
+            $submissions = $database->get_submissions_by_species(0, 0, $species);
+
+            if (empty($submissions)) {
+                wp_send_json_error(__('Keine Daten zum Exportieren gefunden', 'abschussplan-hgmh'));
+            }
+
+            // Generate CSV content
+            $csv_content = $this->generate_csv_content($submissions);
+
+            // Create filename
+            $timestamp = date('Y-m-d_H-i-s');
+            $species_suffix = $species ? '_' . sanitize_file_name($species) : '';
+            $filename = "abschuss_export_{$timestamp}{$species_suffix}.csv";
+
+            // Save to uploads directory
+            $upload_dir = wp_upload_dir();
+            $file_path = $upload_dir['path'] . '/' . $filename;
+
+            if (file_put_contents($file_path, $csv_content) === false) {
+                wp_send_json_error(__('Fehler beim Erstellen der Export-Datei', 'abschussplan-hgmh'));
+            }
+
+            $download_url = $upload_dir['url'] . '/' . $filename;
+
+            wp_send_json_success(array(
+                'download_url' => $download_url,
+                'filename' => $filename
+            ));
+        } catch (Exception $e) {
+            error_log('AHGMH Export Data Error: ' . $e->getMessage());
+            wp_send_json_error(array(
+                'message' => __('Fehler beim Exportieren der Daten', 'abschussplan-hgmh')
+            ));
         }
-        
-        // Generate CSV content
-        $csv_content = $this->generate_csv_content($submissions);
-        
-        // Create filename
-        $timestamp = date('Y-m-d_H-i-s');
-        $species_suffix = $species ? '_' . sanitize_file_name($species) : '';
-        $filename = "abschuss_export_{$timestamp}{$species_suffix}.csv";
-        
-        // Save to uploads directory
-        $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['path'] . '/' . $filename;
-        
-        if (file_put_contents($file_path, $csv_content) === false) {
-            wp_send_json_error(__('Fehler beim Erstellen der Export-Datei', 'abschussplan-hgmh'));
-        }
-        
-        $download_url = $upload_dir['url'] . '/' . $filename;
-        
-        wp_send_json_success(array(
-            'download_url' => $download_url,
-            'filename' => $filename
-        ));
     }
 
     /**
@@ -2725,23 +2728,26 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Save Export Settings
      */
     public function ajax_export_settings() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
-        }
-        
-        $settings = array(
-            'filename_pattern' => sanitize_text_field($_POST['filename_pattern'] ?? 'abschuss_export_%Y%m%d'),
-            'base_url' => esc_url_raw($_POST['base_url'] ?? home_url()),
-            'api_endpoint' => sanitize_text_field($_POST['api_endpoint'] ?? '/wp-json/ahgmh/v1/export'),
-            'download_url_pattern' => sanitize_text_field($_POST['download_url_pattern'] ?? '/wp-admin/admin-ajax.php?action=ahgmh_download_export&file=%s&nonce=%s')
-        );
-        
-        if (update_option('ahgmh_export_settings', $settings)) {
-            wp_send_json_success(__('Export-Einstellungen erfolgreich gespeichert', 'abschussplan-hgmh'));
-        } else {
-            wp_send_json_error(__('Fehler beim Speichern der Export-Einstellungen', 'abschussplan-hgmh'));
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        try {
+            $settings = array(
+                'filename_pattern' => sanitize_text_field($_POST['filename_pattern'] ?? 'abschuss_export_%Y%m%d'),
+                'base_url' => esc_url_raw($_POST['base_url'] ?? home_url()),
+                'api_endpoint' => sanitize_text_field($_POST['api_endpoint'] ?? '/wp-json/ahgmh/v1/export'),
+                'download_url_pattern' => sanitize_text_field($_POST['download_url_pattern'] ?? '/wp-admin/admin-ajax.php?action=ahgmh_download_export&file=%s&nonce=%s')
+            );
+
+            if (update_option('ahgmh_export_settings', $settings)) {
+                wp_send_json_success(__('Export-Einstellungen erfolgreich gespeichert', 'abschussplan-hgmh'));
+            } else {
+                wp_send_json_error(__('Fehler beim Speichern der Export-Einstellungen', 'abschussplan-hgmh'));
+            }
+        } catch (Exception $e) {
+            error_log('AHGMH Export Settings Error: ' . $e->getMessage());
+            wp_send_json_error(array(
+                'message' => __('Fehler beim Speichern der Export-Einstellungen', 'abschussplan-hgmh')
+            ));
         }
     }
 
@@ -2888,35 +2894,32 @@ class AHGMH_Admin_Page_Modern {
      * AJAX handler for saving export configuration
      */
     public function ajax_save_export_config() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'ahgmh_admin_nonce')) {
-            wp_send_json_error(__('Sicherheitsprüfung fehlgeschlagen', 'abschussplan-hgmh'));
-            return;
-        }
+        AHGMH_Validation_Service::verify_ajax_request();
 
-        // Check user permissions
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Nicht ausreichende Berechtigung', 'abschussplan-hgmh'));
-            return;
-        }
+        try {
+            $filename_pattern = sanitize_text_field($_POST['filename_pattern'] ?? 'abschussplan_{species}_{date}');
+            $include_time = $_POST['include_time'] === 'true';
 
-        $filename_pattern = sanitize_text_field($_POST['filename_pattern'] ?? 'abschussplan_{species}_{date}');
-        $include_time = $_POST['include_time'] === 'true';
+            // Validate filename pattern
+            if (empty($filename_pattern)) {
+                wp_send_json_error(__('Dateiname-Muster darf nicht leer sein', 'abschussplan-hgmh'));
+                return;
+            }
 
-        // Validate filename pattern
-        if (empty($filename_pattern)) {
-            wp_send_json_error(__('Dateiname-Muster darf nicht leer sein', 'abschussplan-hgmh'));
-            return;
-        }
+            // Save configuration
+            $pattern_saved = update_option('ahgmh_export_filename_pattern', $filename_pattern);
+            $time_saved = update_option('ahgmh_export_include_time', $include_time);
 
-        // Save configuration
-        $pattern_saved = update_option('ahgmh_export_filename_pattern', $filename_pattern);
-        $time_saved = update_option('ahgmh_export_include_time', $include_time);
-
-        if ($pattern_saved || $time_saved) {
-            wp_send_json_success(__('Export-Einstellungen erfolgreich gespeichert', 'abschussplan-hgmh'));
-        } else {
-            wp_send_json_error(__('Fehler beim Speichern der Export-Einstellungen', 'abschussplan-hgmh'));
+            if ($pattern_saved || $time_saved) {
+                wp_send_json_success(__('Export-Einstellungen erfolgreich gespeichert', 'abschussplan-hgmh'));
+            } else {
+                wp_send_json_error(__('Fehler beim Speichern der Export-Einstellungen', 'abschussplan-hgmh'));
+            }
+        } catch (Exception $e) {
+            error_log('AHGMH Save Export Config Error: ' . $e->getMessage());
+            wp_send_json_error(array(
+                'message' => __('Fehler beim Speichern der Export-Konfiguration', 'abschussplan-hgmh')
+            ));
         }
     }
 
