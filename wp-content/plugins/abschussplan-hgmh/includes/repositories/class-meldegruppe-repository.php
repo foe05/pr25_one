@@ -34,9 +34,15 @@ class AHGMH_Meldegruppe_Repository {
     private $meldegruppen_option_key = 'ahgmh_wildart_meldegruppen';
 
     /**
-     * Option key for Obmann assignments
+     * Option key for Obmann assignments (legacy - kept for backwards compatibility)
+     * Note: Primary storage is now in user meta via AHGMH_Permissions_Service
      */
     private $obmann_option_key = 'ahgmh_meldegruppe_obmann';
+
+    /**
+     * User meta key prefix for meldegruppe assignments
+     */
+    private $user_meta_prefix = 'ahgmh_assigned_meldegruppe_';
 
     /**
      * Constructor
@@ -187,6 +193,9 @@ class AHGMH_Meldegruppe_Repository {
     /**
      * Assign an Obmann (supervisor) to a meldegruppe
      *
+     * Uses user meta as primary storage (via AHGMH_Permissions_Service pattern)
+     * This ensures compatibility with the permission checking system.
+     *
      * @param string $wildart_name The wildart name
      * @param string $meldegruppe_name The meldegruppe name
      * @param int $user_id The WordPress user ID of the Obmann
@@ -201,26 +210,56 @@ class AHGMH_Meldegruppe_Repository {
             return false; // Invalid user ID
         }
 
-        // Get current assignments
-        $assignments = get_option($this->obmann_option_key, []);
-        if (!is_array($assignments)) {
-            $assignments = [];
+        // Primary storage: User Meta (compatible with AHGMH_Permissions_Service)
+        $meta_key = $this->user_meta_prefix . sanitize_key($wildart_name);
+
+        // First, remove any existing assignment for this user/wildart combination
+        delete_user_meta($user_id, $meta_key);
+
+        // Add the new assignment
+        $result = add_user_meta($user_id, $meta_key, $meldegruppe_name, true);
+
+        // Also update the database table if it exists (hgmh_meldegruppen.obmann_user_id)
+        $this->sync_obmann_to_database($wildart_name, $meldegruppe_name, $user_id);
+
+        return $result !== false;
+    }
+
+    /**
+     * Sync Obmann assignment to the database table
+     *
+     * @param string $wildart_name The wildart name
+     * @param string $meldegruppe_name The meldegruppe name
+     * @param int $user_id The WordPress user ID
+     */
+    private function sync_obmann_to_database($wildart_name, $meldegruppe_name, $user_id) {
+        global $wpdb;
+
+        // Get meldegruppe ID from database
+        $meldegruppe_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT m.id FROM {$wpdb->prefix}hgmh_meldegruppen m
+             INNER JOIN {$wpdb->prefix}hgmh_wildarten w ON m.wildart_id = w.id
+             WHERE w.name = %s AND m.name = %s",
+            $wildart_name,
+            $meldegruppe_name
+        ));
+
+        if ($meldegruppe_id) {
+            // Update obmann_user_id in meldegruppen table
+            $wpdb->update(
+                $wpdb->prefix . 'hgmh_meldegruppen',
+                ['obmann_user_id' => $user_id],
+                ['id' => $meldegruppe_id],
+                ['%d'],
+                ['%d']
+            );
         }
-
-        // Create unique key for wildart + meldegruppe combination
-        $key = $this->get_obmann_key($wildart_name, $meldegruppe_name);
-        $assignments[$key] = [
-            'wildart' => $wildart_name,
-            'meldegruppe' => $meldegruppe_name,
-            'user_id' => $user_id,
-            'assigned_at' => current_time('mysql')
-        ];
-
-        return update_option($this->obmann_option_key, $assignments);
     }
 
     /**
      * Remove Obmann assignment from a meldegruppe
+     *
+     * Removes from user meta (primary storage) and syncs to database table.
      *
      * @param string $wildart_name The wildart name
      * @param string $meldegruppe_name The meldegruppe name
@@ -230,22 +269,61 @@ class AHGMH_Meldegruppe_Repository {
         $wildart_name = sanitize_text_field($wildart_name);
         $meldegruppe_name = sanitize_text_field($meldegruppe_name);
 
-        $assignments = get_option($this->obmann_option_key, []);
-        if (!is_array($assignments)) {
-            return true; // Nothing to remove
+        // Find the user who has this assignment
+        $meta_key = $this->user_meta_prefix . sanitize_key($wildart_name);
+
+        $users = get_users([
+            'meta_key' => $meta_key,
+            'meta_value' => $meldegruppe_name,
+            'fields' => 'ID'
+        ]);
+
+        $removed = false;
+        foreach ($users as $user_id) {
+            delete_user_meta($user_id, $meta_key);
+            $removed = true;
         }
 
-        $key = $this->get_obmann_key($wildart_name, $meldegruppe_name);
-        if (isset($assignments[$key])) {
-            unset($assignments[$key]);
-            return update_option($this->obmann_option_key, $assignments);
-        }
+        // Also clear from database table
+        $this->clear_obmann_from_database($wildart_name, $meldegruppe_name);
 
-        return true; // Already not assigned
+        return true;
+    }
+
+    /**
+     * Clear Obmann assignment from the database table
+     *
+     * @param string $wildart_name The wildart name
+     * @param string $meldegruppe_name The meldegruppe name
+     */
+    private function clear_obmann_from_database($wildart_name, $meldegruppe_name) {
+        global $wpdb;
+
+        // Get meldegruppe ID from database
+        $meldegruppe_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT m.id FROM {$wpdb->prefix}hgmh_meldegruppen m
+             INNER JOIN {$wpdb->prefix}hgmh_wildarten w ON m.wildart_id = w.id
+             WHERE w.name = %s AND m.name = %s",
+            $wildart_name,
+            $meldegruppe_name
+        ));
+
+        if ($meldegruppe_id) {
+            // Clear obmann_user_id in meldegruppen table
+            $wpdb->update(
+                $wpdb->prefix . 'hgmh_meldegruppen',
+                ['obmann_user_id' => null],
+                ['id' => $meldegruppe_id],
+                ['%s'],  // NULL as string
+                ['%d']
+            );
+        }
     }
 
     /**
      * Get Obmann assignment for a specific meldegruppe
+     *
+     * Reads from user meta (primary storage).
      *
      * @param string $wildart_name The wildart name
      * @param string $meldegruppe_name The meldegruppe name
@@ -255,67 +333,131 @@ class AHGMH_Meldegruppe_Repository {
         $wildart_name = sanitize_text_field($wildart_name);
         $meldegruppe_name = sanitize_text_field($meldegruppe_name);
 
-        $assignments = get_option($this->obmann_option_key, []);
-        if (!is_array($assignments)) {
+        // Query user meta for this assignment
+        $meta_key = $this->user_meta_prefix . sanitize_key($wildart_name);
+
+        $users = get_users([
+            'meta_key' => $meta_key,
+            'meta_value' => $meldegruppe_name,
+            'fields' => ['ID', 'display_name', 'user_email']
+        ]);
+
+        if (empty($users)) {
             return null;
         }
 
-        $key = $this->get_obmann_key($wildart_name, $meldegruppe_name);
-        return isset($assignments[$key]) ? $assignments[$key] : null;
+        $user = $users[0];
+        return [
+            'wildart' => $wildart_name,
+            'meldegruppe' => $meldegruppe_name,
+            'user_id' => $user->ID,
+            'user_name' => $user->display_name,
+            'user_email' => $user->user_email
+        ];
     }
 
     /**
      * Get all Obmann assignments
      *
+     * Reads from user meta (primary storage).
+     *
      * @return array Array of all assignments
      */
     public function get_obmann_assignments() {
-        $assignments = get_option($this->obmann_option_key, []);
-        return is_array($assignments) ? $assignments : [];
+        global $wpdb;
+
+        // Query all user meta entries with our prefix
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT u.ID as user_id, u.display_name as user_name, u.user_email,
+                    SUBSTRING(um.meta_key, %d) as wildart, um.meta_value as meldegruppe
+             FROM {$wpdb->users} u
+             INNER JOIN {$wpdb->usermeta} um ON u.ID = um.user_id
+             WHERE um.meta_key LIKE %s
+             AND um.meta_value != ''
+             ORDER BY u.display_name, wildart",
+            strlen($this->user_meta_prefix) + 1,
+            $this->user_meta_prefix . '%'
+        ), ARRAY_A);
+
+        return $results ?: [];
     }
 
     /**
      * Get all Obmann assignments for a specific wildart
+     *
+     * Reads from user meta (primary storage).
      *
      * @param string $wildart_name The wildart name
      * @return array Array of assignments for the wildart
      */
     public function get_obmann_assignments_by_wildart($wildart_name) {
         $wildart_name = sanitize_text_field($wildart_name);
-        $all_assignments = $this->get_obmann_assignments();
-        $wildart_assignments = [];
+        $meta_key = $this->user_meta_prefix . sanitize_key($wildart_name);
 
-        foreach ($all_assignments as $key => $assignment) {
-            if (isset($assignment['wildart']) && $assignment['wildart'] === $wildart_name) {
-                $wildart_assignments[$key] = $assignment;
+        $users = get_users([
+            'meta_key' => $meta_key,
+            'meta_compare' => 'EXISTS'
+        ]);
+
+        $assignments = [];
+        foreach ($users as $user) {
+            $meldegruppe = get_user_meta($user->ID, $meta_key, true);
+            if (!empty($meldegruppe)) {
+                $assignments[] = [
+                    'wildart' => $wildart_name,
+                    'meldegruppe' => $meldegruppe,
+                    'user_id' => $user->ID,
+                    'user_name' => $user->display_name,
+                    'user_email' => $user->user_email
+                ];
             }
         }
 
-        return $wildart_assignments;
+        return $assignments;
     }
 
     /**
      * Get all Obmann assignments for a specific user
      *
+     * Reads from user meta (primary storage).
+     *
      * @param int $user_id The WordPress user ID
      * @return array Array of assignments for the user
      */
     public function get_obmann_assignments_by_user($user_id) {
+        global $wpdb;
         $user_id = absint($user_id);
+
         if ($user_id <= 0) {
             return [];
         }
 
-        $all_assignments = $this->get_obmann_assignments();
-        $user_assignments = [];
+        // Get all meta entries with our prefix for this user
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT SUBSTRING(meta_key, %d) as wildart, meta_value as meldegruppe
+             FROM {$wpdb->usermeta}
+             WHERE user_id = %d
+             AND meta_key LIKE %s
+             AND meta_value != ''",
+            strlen($this->user_meta_prefix) + 1,
+            $user_id,
+            $this->user_meta_prefix . '%'
+        ), ARRAY_A);
 
-        foreach ($all_assignments as $key => $assignment) {
-            if (isset($assignment['user_id']) && $assignment['user_id'] === $user_id) {
-                $user_assignments[$key] = $assignment;
-            }
+        $user = get_userdata($user_id);
+        $assignments = [];
+
+        foreach ($results as $row) {
+            $assignments[] = [
+                'wildart' => $row['wildart'],
+                'meldegruppe' => $row['meldegruppe'],
+                'user_id' => $user_id,
+                'user_name' => $user ? $user->display_name : '',
+                'user_email' => $user ? $user->user_email : ''
+            ];
         }
 
-        return $user_assignments;
+        return $assignments;
     }
 
     /**
@@ -460,9 +602,27 @@ class AHGMH_Meldegruppe_Repository {
     /**
      * Reset all Obmann assignments
      *
+     * Clears all user meta entries and database table entries.
+     *
      * @return bool True on success
      */
     public function reset_all_assignments() {
-        return delete_option($this->obmann_option_key);
+        global $wpdb;
+
+        // Delete all user meta entries with our prefix
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
+            $this->user_meta_prefix . '%'
+        ));
+
+        // Clear all obmann_user_id entries in database table
+        $wpdb->query(
+            "UPDATE {$wpdb->prefix}hgmh_meldegruppen SET obmann_user_id = NULL"
+        );
+
+        // Also delete legacy option if it exists
+        delete_option($this->obmann_option_key);
+
+        return true;
     }
 }

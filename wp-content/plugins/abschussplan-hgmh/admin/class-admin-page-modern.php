@@ -418,10 +418,15 @@ class AHGMH_Admin_Page_Modern {
                     <span class="dashicons dashicons-admin-network"></span>
                     <?php echo esc_html__('Wildarten-Konfiguration', 'abschussplan-hgmh'); ?>
                 </a>
-                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=export'); ?>" 
+                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=export'); ?>"
                    class="ahgmh-tab <?php echo $active_tab === 'export' ? 'active' : ''; ?>">
                     <span class="dashicons dashicons-download"></span>
                     <?php echo esc_html__('CSV Export', 'abschussplan-hgmh'); ?>
+                </a>
+                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=jagdbezirke'); ?>"
+                   class="ahgmh-tab <?php echo $active_tab === 'jagdbezirke' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-location"></span>
+                    <?php echo esc_html__('Jagdbezirke', 'abschussplan-hgmh'); ?>
                 </a>
             </nav>
 
@@ -430,13 +435,16 @@ class AHGMH_Admin_Page_Modern {
                 <?php
                 switch ($active_tab) {
                     case 'database':
-                    $this->render_database_settings();
-                    break;
+                        $this->render_database_settings();
+                        break;
                     case 'wildart-config':
-                    $this->render_wildart_config();
-                    break;
+                        $this->render_wildart_config();
+                        break;
                     case 'export':
                         $this->render_export_settings();
+                        break;
+                    case 'jagdbezirke':
+                        $this->render_jagdbezirke_settings();
                         break;
                     default:
                         $this->render_database_settings();
@@ -2263,6 +2271,15 @@ class AHGMH_Admin_Page_Modern {
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Render Jagdbezirke settings tab
+     */
+    private function render_jagdbezirke_settings() {
+        // Initialize the Jagdbezirk controller and render its content
+        $jagdbezirk_controller = new AHGMH_Jagdbezirk_Controller();
+        echo $jagdbezirk_controller->render_tab_content();
     }
 
     // ========================================

@@ -57,10 +57,12 @@ if (is_admin()) {
     // Load repositories first (required by services)
     require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-wildart-repository.php';
     require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-meldegruppe-repository.php';
+    require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-jagdbezirk-repository.php';
 
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-validation-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-dashboard-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-wildart-service.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-jagdbezirk-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-moderation-service.php';
@@ -72,6 +74,7 @@ if (is_admin()) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-data-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-settings-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-wildart-controller.php';
+    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-jagdbezirk-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
@@ -192,6 +195,9 @@ class Abschussplan_HGMH {
 
             // Initialize feature flags controller
             new AHGMH_Feature_Flags_Controller();
+
+            // Initialize Jagdbezirk controller (for AJAX handlers)
+            new AHGMH_Jagdbezirk_Controller();
 
             // New modular controller disabled until issues resolved
             // $this->admin_controller = new AHGMH_Admin_Controller();

@@ -113,7 +113,7 @@ class AHGMH_Database_Handler {
         // Check if migration file exists
         $migration_file = AHGMH_PLUGIN_DIR . 'migrations/002_migrate_existing_data.php';
         if (!file_exists($migration_file)) {
-            error_log('HGMH Migration 002: Migration file not found at ' . $migration_file);
+            error_log('AHGMH Migration 002: Migration file not found at ' . $migration_file);
             return false;
         }
 
@@ -121,21 +121,21 @@ class AHGMH_Database_Handler {
         require_once $migration_file;
 
         // Check if class exists
-        if (!class_exists('HGMH_Migration_002')) {
-            error_log('HGMH Migration 002: HGMH_Migration_002 class not found');
+        if (!class_exists('AHGMH_Migration_002')) {
+            error_log('AHGMH Migration 002: AHGMH_Migration_002 class not found');
             return false;
         }
 
         // Instantiate and run the migration
-        $migration = new HGMH_Migration_002();
+        $migration = new AHGMH_Migration_002();
         $result = $migration->up();
 
         // Track completion if successful
         if ($result) {
             update_option('ahgmh_migration_002_completed', true);
-            error_log('HGMH Migration 002: Successfully completed and marked as done');
+            error_log('AHGMH Migration 002: Successfully completed and marked as done');
         } else {
-            error_log('HGMH Migration 002: Migration failed');
+            error_log('AHGMH Migration 002: Migration failed');
         }
 
         return $result;
@@ -208,7 +208,6 @@ class AHGMH_Database_Handler {
     }
 
     /**
-<<<<<<< HEAD
      * Create the moderation history table for audit trail
      */
     public function create_moderation_history_table() {

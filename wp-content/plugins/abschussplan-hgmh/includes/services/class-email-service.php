@@ -281,20 +281,34 @@ class AHGMH_Email_Service {
     /**
      * Get Obmann email for specific wildart and meldegruppe
      *
+     * Uses the unified user meta system for Obmann assignments.
+     *
      * @param string $wildart Wildlife species
      * @param string $meldegruppe Meldegruppe name
      * @return string|false Obmann email or false if not found
      */
     private static function get_obmann_email($wildart, $meldegruppe) {
-        // Get all users
-        $users = get_users();
+        // Use AHGMH_Meldegruppe_Repository for consistent lookup
+        if (class_exists('AHGMH_Meldegruppe_Repository')) {
+            $repo = new AHGMH_Meldegruppe_Repository();
+            $assignment = $repo->get_obmann($wildart, $meldegruppe);
 
-        foreach ($users as $user) {
-            // Check if user has permission for this wildart/meldegruppe
-            if (class_exists('AHGMH_Permissions_Service')) {
-                if (AHGMH_Permissions_Service::user_can_access_meldegruppe($user->ID, $wildart, $meldegruppe)) {
-                    return $user->user_email;
-                }
+            if ($assignment && !empty($assignment['user_email'])) {
+                return $assignment['user_email'];
+            }
+        }
+
+        // Fallback: Check via AHGMH_Permissions_Service (legacy support)
+        if (class_exists('AHGMH_Permissions_Service')) {
+            $meta_key = 'ahgmh_assigned_meldegruppe_' . sanitize_key($wildart);
+            $users = get_users([
+                'meta_key' => $meta_key,
+                'meta_value' => $meldegruppe,
+                'fields' => ['ID', 'user_email']
+            ]);
+
+            if (!empty($users)) {
+                return $users[0]->user_email;
             }
         }
 

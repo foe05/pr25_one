@@ -14,11 +14,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class HGMH_Migration_002
+ * Class AHGMH_Migration_002
  *
  * Handles the migration of existing data from v1 to v2 schema
  */
-class HGMH_Migration_002 {
+class AHGMH_Migration_002 {
 
     /**
      * Run the migration
@@ -28,38 +28,38 @@ class HGMH_Migration_002 {
     public function up() {
         global $wpdb;
 
-        error_log('HGMH Migration 002: Starting migration from v1 to v2 schema');
+        error_log('AHGMH Migration 002: Starting migration from v1 to v2 schema');
 
         // Skip if old table doesn't exist
         $exists = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}ahgmh_submissions'");
         if (!$exists) {
-            error_log('HGMH Migration 002: Old table does not exist, skipping migration');
+            error_log('AHGMH Migration 002: Old table does not exist, skipping migration');
             update_option('ahgmh_migration_002_completed', true);
             return true;
         }
 
         // Get count of old submissions before migration
         $old_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}ahgmh_submissions");
-        error_log(sprintf('HGMH Migration 002: Found %d submissions to migrate', $old_count));
+        error_log(sprintf('AHGMH Migration 002: Found %d submissions to migrate', $old_count));
 
         // Migrate Wildarten
         $wildarten_result = $this->migrate_wildarten();
         if ($wildarten_result === false) {
-            error_log('HGMH Migration 002 FAILED: Wildarten migration failed');
+            error_log('AHGMH Migration 002 FAILED: Wildarten migration failed');
             return false;
         }
 
         // Migrate Hierarchie
         $hierarchie_result = $this->migrate_hierarchie();
         if ($hierarchie_result === false) {
-            error_log('HGMH Migration 002 FAILED: Hierarchie migration failed');
+            error_log('AHGMH Migration 002 FAILED: Hierarchie migration failed');
             return false;
         }
 
         // Migrate Submissions
         $migrated_count = $this->migrate_submissions();
         if ($migrated_count === false) {
-            error_log('HGMH Migration 002 FAILED: Submissions migration failed');
+            error_log('AHGMH Migration 002 FAILED: Submissions migration failed');
             return false;
         }
 
@@ -70,7 +70,7 @@ class HGMH_Migration_002 {
             $skipped_count = $old_count - $migrated_count;
             error_log(
                 sprintf(
-                    'HGMH Migration 002 FAILED: Count mismatch! Old: %d, New: %d, Migrated: %d, Skipped: %d',
+                    'AHGMH Migration 002 FAILED: Count mismatch! Old: %d, New: %d, Migrated: %d, Skipped: %d',
                     $old_count,
                     $new_count,
                     $migrated_count,
@@ -82,7 +82,7 @@ class HGMH_Migration_002 {
 
         error_log(
             sprintf(
-                'HGMH Migration 002 SUCCESS: Migrated %d submissions from v1 to v2 schema',
+                'AHGMH Migration 002 SUCCESS: Migrated %d submissions from v1 to v2 schema',
                 $new_count
             )
         );
@@ -101,10 +101,10 @@ class HGMH_Migration_002 {
     private function migrate_wildarten() {
         global $wpdb;
 
-        error_log('HGMH Migration 002: Starting Wildarten migration');
+        error_log('AHGMH Migration 002: Starting Wildarten migration');
 
         $species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
-        error_log(sprintf('HGMH Migration 002: Found %d species to migrate', count($species)));
+        error_log(sprintf('AHGMH Migration 002: Found %d species to migrate', count($species)));
 
         $created_count = 0;
         $existing_count = 0;
@@ -117,7 +117,7 @@ class HGMH_Migration_002 {
 
             if ($wpdb->last_error) {
                 error_log(sprintf(
-                    'HGMH Migration 002 ERROR: Failed to check for existing Wildart "%s": %s',
+                    'AHGMH Migration 002 ERROR: Failed to check for existing Wildart "%s": %s',
                     $name,
                     $wpdb->last_error
                 ));
@@ -136,7 +136,7 @@ class HGMH_Migration_002 {
 
                 if ($result === false) {
                     error_log(sprintf(
-                        'HGMH Migration 002 ERROR: Failed to insert Wildart "%s": %s',
+                        'AHGMH Migration 002 ERROR: Failed to insert Wildart "%s": %s',
                         $name,
                         $wpdb->last_error
                     ));
@@ -144,14 +144,14 @@ class HGMH_Migration_002 {
                 }
 
                 $created_count++;
-                error_log(sprintf('HGMH Migration 002: Created Wildart "%s" (ID: %d)', $name, $wpdb->insert_id));
+                error_log(sprintf('AHGMH Migration 002: Created Wildart "%s" (ID: %d)', $name, $wpdb->insert_id));
             } else {
                 $existing_count++;
             }
         }
 
         error_log(sprintf(
-            'HGMH Migration 002: Wildarten migration completed - Created: %d, Existing: %d',
+            'AHGMH Migration 002: Wildarten migration completed - Created: %d, Existing: %d',
             $created_count,
             $existing_count
         ));
@@ -171,7 +171,7 @@ class HGMH_Migration_002 {
     private function migrate_hierarchie() {
         global $wpdb;
 
-        error_log('HGMH Migration 002: Starting Hierarchie migration');
+        error_log('AHGMH Migration 002: Starting Hierarchie migration');
 
         $jagdbezirke = $wpdb->get_results(
             "SELECT * FROM {$wpdb->prefix}ahgmh_jagdbezirke WHERE active = 1"
@@ -179,13 +179,13 @@ class HGMH_Migration_002 {
 
         if ($wpdb->last_error) {
             error_log(sprintf(
-                'HGMH Migration 002 ERROR: Failed to fetch Jagdbezirke: %s',
+                'AHGMH Migration 002 ERROR: Failed to fetch Jagdbezirke: %s',
                 $wpdb->last_error
             ));
             return false;
         }
 
-        error_log(sprintf('HGMH Migration 002: Found %d Jagdbezirke to migrate', count($jagdbezirke)));
+        error_log(sprintf('AHGMH Migration 002: Found %d Jagdbezirke to migrate', count($jagdbezirke)));
 
         $meldegruppen_map = array();
         $meldegruppen_created = 0;
@@ -204,7 +204,7 @@ class HGMH_Migration_002 {
 
             if ($wpdb->last_error) {
                 error_log(sprintf(
-                    'HGMH Migration 002 ERROR: Failed to lookup Wildart "%s": %s',
+                    'AHGMH Migration 002 ERROR: Failed to lookup Wildart "%s": %s',
                     $wildart_name,
                     $wpdb->last_error
                 ));
@@ -214,7 +214,7 @@ class HGMH_Migration_002 {
             if (!$wildart_id) {
                 $skipped_wildart_count++;
                 error_log(sprintf(
-                    'HGMH Migration 002: Skipping Jagdbezirk "%s" - Wildart "%s" not found',
+                    'AHGMH Migration 002: Skipping Jagdbezirk "%s" - Wildart "%s" not found',
                     $jb->jagdbezirk,
                     $wildart_name
                 ));
@@ -232,7 +232,7 @@ class HGMH_Migration_002 {
 
                 if ($wpdb->last_error) {
                     error_log(sprintf(
-                        'HGMH Migration 002 ERROR: Failed to lookup Meldegruppe "%s": %s',
+                        'AHGMH Migration 002 ERROR: Failed to lookup Meldegruppe "%s": %s',
                         $meldegruppe_name,
                         $wpdb->last_error
                     ));
@@ -251,7 +251,7 @@ class HGMH_Migration_002 {
 
                     if ($result === false) {
                         error_log(sprintf(
-                            'HGMH Migration 002 ERROR: Failed to insert Meldegruppe "%s": %s',
+                            'AHGMH Migration 002 ERROR: Failed to insert Meldegruppe "%s": %s',
                             $meldegruppe_name,
                             $wpdb->last_error
                         ));
@@ -261,7 +261,7 @@ class HGMH_Migration_002 {
                     $mg_id = $wpdb->insert_id;
                     $meldegruppen_created++;
                     error_log(sprintf(
-                        'HGMH Migration 002: Created Meldegruppe "%s" for Wildart ID %d (ID: %d)',
+                        'AHGMH Migration 002: Created Meldegruppe "%s" for Wildart ID %d (ID: %d)',
                         $meldegruppe_name,
                         $wildart_id,
                         $mg_id
@@ -284,7 +284,7 @@ class HGMH_Migration_002 {
 
             if ($result === false) {
                 error_log(sprintf(
-                    'HGMH Migration 002 ERROR: Failed to insert Eigenjagdbezirk "%s": %s',
+                    'AHGMH Migration 002 ERROR: Failed to insert Eigenjagdbezirk "%s": %s',
                     $jb->jagdbezirk,
                     $wpdb->last_error
                 ));
@@ -295,7 +295,7 @@ class HGMH_Migration_002 {
         }
 
         error_log(sprintf(
-            'HGMH Migration 002: Hierarchie migration completed - Meldegruppen created: %d, Eigenjagdbezirke created: %d, Skipped: %d',
+            'AHGMH Migration 002: Hierarchie migration completed - Meldegruppen created: %d, Eigenjagdbezirke created: %d, Skipped: %d',
             $meldegruppen_created,
             $eigenjagdbezirke_created,
             $skipped_wildart_count
@@ -321,7 +321,7 @@ class HGMH_Migration_002 {
     private function migrate_submissions() {
         global $wpdb;
 
-        error_log('HGMH Migration 002: Starting Submissions migration');
+        error_log('AHGMH Migration 002: Starting Submissions migration');
 
         $submissions = $wpdb->get_results(
             "SELECT * FROM {$wpdb->prefix}ahgmh_submissions"
@@ -329,13 +329,13 @@ class HGMH_Migration_002 {
 
         if ($wpdb->last_error) {
             error_log(sprintf(
-                'HGMH Migration 002 ERROR: Failed to fetch submissions: %s',
+                'AHGMH Migration 002 ERROR: Failed to fetch submissions: %s',
                 $wpdb->last_error
             ));
             return false;
         }
 
-        error_log(sprintf('HGMH Migration 002: Found %d submissions to migrate', count($submissions)));
+        error_log(sprintf('AHGMH Migration 002: Found %d submissions to migrate', count($submissions)));
 
         $migrated_count = 0;
         $skipped_count = 0;
@@ -349,7 +349,7 @@ class HGMH_Migration_002 {
 
             if ($wpdb->last_error) {
                 error_log(sprintf(
-                    'HGMH Migration 002 ERROR: Database error looking up Wildart for submission ID %d: %s',
+                    'AHGMH Migration 002 ERROR: Database error looking up Wildart for submission ID %d: %s',
                     $old->id,
                     $wpdb->last_error
                 ));
@@ -360,7 +360,7 @@ class HGMH_Migration_002 {
                 $skipped_count++;
                 error_log(
                     sprintf(
-                        'HGMH Migration 002: Skipping submission ID %d - Wildart "%s" not found',
+                        'AHGMH Migration 002: Skipping submission ID %d - Wildart "%s" not found',
                         $old->id,
                         $old->game_species
                     )
@@ -378,7 +378,7 @@ class HGMH_Migration_002 {
 
             if ($wpdb->last_error) {
                 error_log(sprintf(
-                    'HGMH Migration 002 ERROR: Database error looking up Eigenjagdbezirk for submission ID %d: %s',
+                    'AHGMH Migration 002 ERROR: Database error looking up Eigenjagdbezirk for submission ID %d: %s',
                     $old->id,
                     $wpdb->last_error
                 ));
@@ -389,7 +389,7 @@ class HGMH_Migration_002 {
                 $skipped_count++;
                 error_log(
                     sprintf(
-                        'HGMH Migration 002: Skipping submission ID %d - Eigenjagdbezirk "%s" not found for Wildart ID %d',
+                        'AHGMH Migration 002: Skipping submission ID %d - Eigenjagdbezirk "%s" not found for Wildart ID %d',
                         $old->id,
                         $old->field5,
                         $wildart_id
@@ -418,7 +418,7 @@ class HGMH_Migration_002 {
 
             if ($result === false) {
                 error_log(sprintf(
-                    'HGMH Migration 002 ERROR: Failed to insert submission ID %d: %s',
+                    'AHGMH Migration 002 ERROR: Failed to insert submission ID %d: %s',
                     $old->id,
                     $wpdb->last_error
                 ));
@@ -429,7 +429,7 @@ class HGMH_Migration_002 {
         }
 
         error_log(sprintf(
-            'HGMH Migration 002: Submissions migration completed - Migrated: %d, Skipped: %d',
+            'AHGMH Migration 002: Submissions migration completed - Migrated: %d, Skipped: %d',
             $migrated_count,
             $skipped_count
         ));
@@ -437,7 +437,7 @@ class HGMH_Migration_002 {
         if ($skipped_count > 0) {
             error_log(
                 sprintf(
-                    'HGMH Migration 002 WARNING: Skipped %d submissions due to missing references',
+                    'AHGMH Migration 002 WARNING: Skipped %d submissions due to missing references',
                     $skipped_count
                 )
             );
@@ -456,7 +456,7 @@ class HGMH_Migration_002 {
     public function down() {
         global $wpdb;
 
-        error_log('HGMH Migration 002: Starting rollback (down migration)');
+        error_log('AHGMH Migration 002: Starting rollback (down migration)');
 
         // Truncate tables in reverse dependency order
         $tables = array(
@@ -471,18 +471,18 @@ class HGMH_Migration_002 {
 
             if ($result === false) {
                 error_log(sprintf(
-                    'HGMH Migration 002 ERROR: Failed to truncate table %s: %s',
+                    'AHGMH Migration 002 ERROR: Failed to truncate table %s: %s',
                     $table,
                     $wpdb->last_error
                 ));
                 return false;
             }
 
-            error_log(sprintf('HGMH Migration 002: Truncated table %s', $table));
+            error_log(sprintf('AHGMH Migration 002: Truncated table %s', $table));
         }
 
         delete_option('ahgmh_migration_002_completed');
-        error_log('HGMH Migration 002: Rollback completed successfully');
+        error_log('AHGMH Migration 002: Rollback completed successfully');
 
         return true;
     }

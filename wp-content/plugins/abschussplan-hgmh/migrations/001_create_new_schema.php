@@ -115,6 +115,24 @@ class AHGMH_Migration_001 {
             KEY created_at (created_at)
         ) $charset_collate;";
 
+        // 7. Email Log
+        $sql_email_log = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_email_log (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            submission_id bigint(20) DEFAULT NULL,
+            email_type varchar(50) NOT NULL,
+            recipient_email varchar(255) NOT NULL,
+            subject varchar(255) DEFAULT NULL,
+            body text,
+            status varchar(20) DEFAULT 'sent',
+            error_message text,
+            sent_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY submission_id (submission_id),
+            KEY email_type (email_type),
+            KEY recipient_email (recipient_email),
+            KEY sent_at (sent_at)
+        ) $charset_collate;";
+
         // Execute migrations
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
@@ -124,6 +142,7 @@ class AHGMH_Migration_001 {
         dbDelta($sql_submissions);
         dbDelta($sql_moderation);
         dbDelta($sql_activity);
+        dbDelta($sql_email_log);
 
         return true;
     }
@@ -132,6 +151,7 @@ class AHGMH_Migration_001 {
         global $wpdb;
 
         // Drop in reverse order
+        $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}hgmh_email_log");
         $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}hgmh_activity_log");
         $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}hgmh_moderation_history");
         $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}hgmh_submissions_v2");
