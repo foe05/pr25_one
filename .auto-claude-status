@@ -1,10 +1,10 @@
 {
   "active": true,
   "spec": "017-remove-backup-and-legacy-files-cluttering-the-code",
-  "state": "planning",
+  "state": "building",
   "subtasks": {
-    "completed": 0,
-    "total": 0,
+    "completed": 1,
+    "total": 5,
     "in_progress": 1,
     "failed": 0
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 2,
+    "number": 3,
     "started_at": "2026-01-14T16:17:24.867898"
   },
-  "last_update": "2026-01-14T16:21:32.269374"
+  "last_update": "2026-01-14T16:22:37.805396"
 }
