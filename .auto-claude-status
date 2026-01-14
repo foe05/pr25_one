@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "010-wildarten-management",
-  "state": "building",
+  "spec": "017-remove-backup-and-legacy-files-cluttering-the-code",
+  "state": "planning",
   "subtasks": {
-    "completed": 10,
-    "total": 11,
+    "completed": 0,
+    "total": 0,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration & Testing",
+    "current": "Remove Backup and Legacy Files",
     "id": null,
-    "total": 2
+    "total": 5
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 163,
-    "started_at": "2026-01-13T00:02:33.000354"
+    "number": 2,
+    "started_at": "2026-01-14T16:17:24.867898"
   },
-  "last_update": "2026-01-13T02:02:51.769408"
+  "last_update": "2026-01-14T16:21:32.269374"
 }
