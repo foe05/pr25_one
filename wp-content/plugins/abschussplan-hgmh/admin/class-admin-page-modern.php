@@ -4241,12 +4241,8 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Get Meldegruppen for specific Wildart
      */
     public function ajax_get_meldegruppen_for_wildart() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Keine Berechtigung');
-        }
-        
+        AHGMH_Validation_Service::verify_ajax_request();
+
         $wildart = sanitize_text_field($_POST['wildart']);
         if (empty($wildart)) {
             wp_send_json_error('Wildart ist erforderlich');
@@ -4263,12 +4259,8 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Assign Obmann to Meldegruppe
      */
     public function ajax_assign_obmann_meldegruppe() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung', 'abschussplan-hgmh'));
-        }
-        
+        AHGMH_Validation_Service::verify_ajax_request();
+
         $user_id = intval($_POST['user_id']);
         $wildart = sanitize_text_field($_POST['wildart']);
         $meldegruppe = sanitize_text_field($_POST['meldegruppe']);
@@ -4344,17 +4336,8 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Remove Obmann Assignment
      */
     public function ajax_remove_obmann_assignment() {
-        // Debug logging
-        error_log('AHGMH DEBUG: ajax_remove_obmann_assignment called');
-        error_log('AHGMH DEBUG: POST data: ' . print_r($_POST, true));
-        
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            error_log('AHGMH DEBUG: User lacks manage_options capability');
-            wp_send_json_error(__('Keine Berechtigung', 'abschussplan-hgmh'));
-        }
-        
+        AHGMH_Validation_Service::verify_ajax_request();
+
         $user_id = intval($_POST['user_id']);
         $wildart = sanitize_text_field($_POST['wildart']);
         
@@ -4393,12 +4376,8 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Reset All Assignments
      */
     public function ajax_reset_all_assignments() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('Keine Berechtigung', 'abschussplan-hgmh'));
-        }
-        
+        AHGMH_Validation_Service::verify_ajax_request();
+
         global $wpdb;
         
         try {
@@ -4449,12 +4428,8 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Edit Obmann Assignment
      */
     public function ajax_edit_obmann_assignment() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Keine Berechtigung');
-        }
-        
+        AHGMH_Validation_Service::verify_ajax_request();
+
         $user_id = intval($_POST['user_id']);
         $wildart = sanitize_text_field($_POST['wildart']);
         $new_meldegruppe = sanitize_text_field($_POST['meldegruppe']);
@@ -4481,12 +4456,8 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Get all Obmann Assignments
      */
     public function ajax_get_obmann_assignments() {
-        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Keine Berechtigung');
-        }
-        
+        AHGMH_Validation_Service::verify_ajax_request();
+
         $assignments = $this->get_obmann_assignments();
         
         ob_start();
