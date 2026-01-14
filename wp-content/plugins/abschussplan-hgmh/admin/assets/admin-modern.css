@@ -1785,3 +1785,563 @@
         gap: 10px;
     }
 }
+
+/* === Edit Submission Form Styles === */
+.ahgmh-edit-submission-row {
+    padding: 0 !important;
+    background: #f8f9fa;
+}
+
+.ahgmh-edit-submission-form {
+    border: 2px solid #2271b1;
+    border-radius: 8px;
+    background: #fff;
+    margin: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ahgmh-edit-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #2271b1, #135e96);
+    color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.ahgmh-edit-form-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.ahgmh-edit-form-close {
+    font-size: 24px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    line-height: 1;
+    padding: 0 5px;
+}
+
+.ahgmh-edit-form-close:hover {
+    opacity: 1;
+}
+
+.ahgmh-edit-form-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    max-height: calc(70vh - 130px);
+}
+
+.ahgmh-edit-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.ahgmh-edit-form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.ahgmh-edit-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ahgmh-edit-form-group label {
+    font-weight: 600;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+.ahgmh-edit-form-group label .required {
+    color: #d63638;
+}
+
+.ahgmh-edit-form-group input,
+.ahgmh-edit-form-group select,
+.ahgmh-edit-form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ahgmh-edit-form-group input:focus,
+.ahgmh-edit-form-group select:focus,
+.ahgmh-edit-form-group textarea:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.15);
+    outline: none;
+}
+
+.ahgmh-edit-form-group input[readonly],
+.ahgmh-edit-form-group input[disabled] {
+    background: #f6f7f7;
+    color: #646970;
+    cursor: not-allowed;
+}
+
+.ahgmh-edit-form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.ahgmh-field-hint {
+    font-size: 11px;
+    color: #8c8f94;
+    font-style: italic;
+}
+
+.ahgmh-edit-form-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e0e0e0;
+}
+
+.ahgmh-edit-form-footer .button {
+    min-width: 100px;
+}
+
+/* Responsive Edit Form */
+@media (max-width: 900px) {
+    .ahgmh-edit-form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .ahgmh-edit-form-body {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 600px) {
+    .ahgmh-edit-submission-form {
+        margin: 5px;
+        max-height: 80vh;
+    }
+
+    .ahgmh-edit-form-header {
+        padding: 12px 15px;
+    }
+
+    .ahgmh-edit-form-header h3 {
+        font-size: 14px;
+    }
+
+    .ahgmh-edit-form-footer {
+        flex-direction: column;
+        padding: 12px 15px;
+    }
+
+    .ahgmh-edit-form-footer .button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* === Version Badge === */
+.ahgmh-version-badge {
+    font-size: 12px;
+    font-weight: 500;
+    background: linear-gradient(135deg, #2271b1, #72aee6);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+/* === This Month Status Panel === */
+.ahgmh-dashboard-row {
+    margin-bottom: 20px;
+}
+
+.ahgmh-month-status {
+    margin-bottom: 0;
+}
+
+.month-status-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    padding: 20px;
+}
+
+.status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 15px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.status-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.status-item .status-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+}
+
+.status-item .status-count {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.status-item .status-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #646970;
+}
+
+.status-item.status-pending {
+    background: #fff8e1;
+    border-color: #ffb900;
+}
+
+.status-item.status-pending .status-icon {
+    color: #996800;
+}
+
+.status-item.status-pending .status-count {
+    color: #996800;
+}
+
+.status-item.status-approved {
+    background: #e8f5e9;
+    border-color: #00a32a;
+}
+
+.status-item.status-approved .status-icon {
+    color: #00a32a;
+}
+
+.status-item.status-approved .status-count {
+    color: #00a32a;
+}
+
+.status-item.status-rejected {
+    background: #ffebee;
+    border-color: #d63638;
+}
+
+.status-item.status-rejected .status-icon {
+    color: #d63638;
+}
+
+.status-item.status-rejected .status-count {
+    color: #d63638;
+}
+
+.status-item.status-total {
+    background: #e3f2fd;
+    border-color: #2271b1;
+}
+
+.status-item.status-total .status-icon {
+    color: #2271b1;
+}
+
+.status-item.status-total .status-count {
+    color: #2271b1;
+}
+
+/* === Stat Trend === */
+.stat-trend {
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.stat-trend.positive {
+    color: #00a32a;
+    background: rgba(0, 163, 42, 0.1);
+}
+
+.stat-trend.negative {
+    color: #d63638;
+    background: rgba(214, 54, 56, 0.1);
+}
+
+/* === Species Status Table === */
+.species-status-content {
+    padding: 20px;
+}
+
+.ahgmh-species-status-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.ahgmh-species-status-table th,
+.ahgmh-species-status-table td {
+    padding: 12px 15px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.ahgmh-species-status-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+.ahgmh-species-status-table th:first-child,
+.ahgmh-species-status-table td:first-child {
+    text-align: left;
+}
+
+.ahgmh-species-status-table td.species-name {
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.ahgmh-species-status-table .status-count {
+    font-weight: 600;
+    font-size: 16px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    display: inline-block;
+    min-width: 40px;
+}
+
+.ahgmh-species-status-table .status-count.pending {
+    background: #fff8e1;
+    color: #996800;
+}
+
+.ahgmh-species-status-table .status-count.approved {
+    background: #e8f5e9;
+    color: #00a32a;
+}
+
+.ahgmh-species-status-table .status-count.rejected {
+    background: #ffebee;
+    color: #d63638;
+}
+
+.ahgmh-species-status-table .status-count.total {
+    background: #e3f2fd;
+    color: #2271b1;
+}
+
+.ahgmh-species-status-table th.status-col {
+    font-size: 12px;
+}
+
+/* === Plugin Info Panel === */
+.plugin-info-content {
+    padding: 20px;
+}
+
+.plugin-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.info-section h3 {
+    margin: 0 0 15px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d2327;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2271b1;
+}
+
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.info-table tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-table tr:last-child {
+    border-bottom: none;
+}
+
+.info-table td {
+    padding: 8px 0;
+    font-size: 13px;
+}
+
+.info-table td:first-child {
+    color: #646970;
+    padding-right: 15px;
+}
+
+.info-table td:last-child {
+    color: #1d2327;
+}
+
+.github-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.github-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #1d2327;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.github-link:hover {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: white;
+    transform: translateX(4px);
+}
+
+.github-link .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* === Shortcode Categories === */
+.shortcode-category {
+    margin-bottom: 25px;
+}
+
+.shortcode-category:last-child {
+    margin-bottom: 0;
+}
+
+.category-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2271b1;
+    margin: 0 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #72aee6;
+}
+
+.shortcode-code-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.copy-shortcode {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #646970;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.copy-shortcode:hover {
+    background: #2271b1;
+    color: white;
+}
+
+.copy-shortcode .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.shortcode-attributes {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #8c8f94;
+}
+
+/* === No Data State === */
+.no-data {
+    text-align: center;
+    color: #646970;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+/* === Responsive Adjustments for New Elements === */
+@media (max-width: 1024px) {
+    .month-status-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .month-status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .status-item {
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 15px;
+    }
+
+    .status-item .status-icon {
+        order: 1;
+    }
+
+    .status-item .status-label {
+        order: 2;
+        flex: 1;
+        text-align: left;
+        margin-left: 10px;
+    }
+
+    .status-item .status-count {
+        order: 3;
+    }
+
+    .plugin-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ahgmh-species-status-table {
+        font-size: 12px;
+    }
+
+    .ahgmh-species-status-table th,
+    .ahgmh-species-status-table td {
+        padding: 8px 5px;
+    }
+}

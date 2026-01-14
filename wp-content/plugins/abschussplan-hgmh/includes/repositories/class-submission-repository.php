@@ -82,10 +82,10 @@ class HGMH_Submission_Repository {
     public function __construct() {
         global $wpdb;
         $this->wpdb = $wpdb;
-        $this->submissions_table = $wpdb->prefix . 'hgmh_submissions_v2';
-        $this->wildart_table = $wpdb->prefix . 'hgmh_wildarten';
-        $this->eigenjagdbezirk_table = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
-        $this->meldegruppe_table = $wpdb->prefix . 'hgmh_meldegruppen';
+        $this->submissions_table = $wpdb->prefix . 'ahgmh_submissions_v2';
+        $this->wildart_table = $wpdb->prefix . 'ahgmh_wildart';
+        $this->eigenjagdbezirk_table = $wpdb->prefix . 'ahgmh_eigenjagdbezirk';
+        $this->meldegruppe_table = $wpdb->prefix . 'ahgmh_meldegruppe';
     }
 
     /**
@@ -261,7 +261,6 @@ class HGMH_Submission_Repository {
      *
      * Retrieves submissions filtered by the obmann's assigned meldegruppen.
      * Returns enriched data with joined reference tables.
-     * Ensures proper wildart-meldegruppe matching based on user meta assignments.
      *
      * @param int $user_id WordPress user ID of the obmann
      * @param int|null $wildart_id Optional wildart ID to filter by
@@ -287,22 +286,21 @@ class HGMH_Submission_Repository {
 
         $prepare_args = array();
 
-        // Filter by obmann's assigned meldegruppen (with wildart matching)
-        // The user meta key format is: ahgmh_assigned_meldegruppe_{wildart}
-        // We need to ensure the meldegruppe belongs to the correct wildart
+        // Filter by obmann's assigned meldegruppen
+        // Get all user meta keys for meldegruppe assignments
         $usermeta_table = $this->wpdb->usermeta;
-        $meta_prefix = 'ahgmh_assigned_meldegruppe_';
+        $meta_like = 'ahgmh_assigned_meldegruppe_%';
 
         // Subquery to get meldegruppe IDs for user's assigned meldegruppen
-        // Matches meldegruppe name AND verifies wildart association via meta key
-        $sql .= " AND EXISTS (
-            SELECT 1 FROM {$usermeta_table} um
+        $sql .= " AND s.meldegruppe_id IN (
+            SELECT mg.id
+            FROM {$this->meldegruppe_table} mg
+            INNER JOIN {$usermeta_table} um ON mg.name = um.meta_value
             WHERE um.user_id = %d
-            AND um.meta_key = CONCAT(%s, LOWER(w.name))
-            AND um.meta_value = m.name
+            AND um.meta_key LIKE %s
         )";
         $prepare_args[] = (int) $user_id;
-        $prepare_args[] = $meta_prefix;
+        $prepare_args[] = $meta_like;
 
         // Apply optional wildart_id filter
         if ($wildart_id !== null) {
@@ -339,44 +337,41 @@ class HGMH_Submission_Repository {
      * Count submissions by status
      *
      * Returns the number of submissions with a specific status.
-     * Optionally filters by obmann's assigned meldegruppen (with proper wildart matching).
+     * Optionally filters by obmann's assigned meldegruppen.
      *
      * @param string $status Status to count (e.g., 'pending', 'approved', 'rejected')
      * @param int|null $obmann_user_id Optional obmann user ID to filter by their meldegruppen
      * @return int Count of submissions matching the criteria
      */
     public function count_by_status($status, $obmann_user_id = null) {
+        // Start building the query
+        $sql = "SELECT COUNT(*) as count
+            FROM {$this->submissions_table} s";
+
         $prepare_args = array();
 
         // Add obmann meldegruppen filter if user_id is provided
         if ($obmann_user_id !== null) {
-            // Start building the query with JOINs for proper wildart matching
-            $sql = "SELECT COUNT(*) as count
-                FROM {$this->submissions_table} s
-                LEFT JOIN {$this->wildart_table} w ON s.wildart_id = w.id
-                LEFT JOIN {$this->meldegruppe_table} m ON s.meldegruppe_id = m.id";
-
             $usermeta_table = $this->wpdb->usermeta;
-            $meta_prefix = 'ahgmh_assigned_meldegruppe_';
+            $meta_like = 'ahgmh_assigned_meldegruppe_%';
 
-            // Filter by obmann's assigned meldegruppen with wildart matching
-            $sql .= " WHERE EXISTS (
-                SELECT 1 FROM {$usermeta_table} um
+            // Subquery to filter by obmann's assigned meldegruppen
+            $sql .= " WHERE s.meldegruppe_id IN (
+                SELECT mg.id
+                FROM {$this->meldegruppe_table} mg
+                INNER JOIN {$usermeta_table} um ON mg.name = um.meta_value
                 WHERE um.user_id = %d
-                AND um.meta_key = CONCAT(%s, LOWER(w.name))
-                AND um.meta_value = m.name
+                AND um.meta_key LIKE %s
             )";
             $prepare_args[] = (int) $obmann_user_id;
-            $prepare_args[] = $meta_prefix;
+            $prepare_args[] = $meta_like;
 
             // Add status filter with AND
             $sql .= " AND s.status = %s";
             $prepare_args[] = sanitize_text_field($status);
         } else {
             // No obmann filter, just count by status
-            $sql = "SELECT COUNT(*) as count
-                FROM {$this->submissions_table} s
-                WHERE s.status = %s";
+            $sql .= " WHERE s.status = %s";
             $prepare_args[] = sanitize_text_field($status);
         }
 

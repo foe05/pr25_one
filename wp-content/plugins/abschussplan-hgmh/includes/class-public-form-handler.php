@@ -55,7 +55,7 @@ class AHGMH_Public_Form_Handler {
             'ahgmh-public-form-validation',
             AHGMH_PLUGIN_URL . 'assets/js/public-form-validation.js',
             array('jquery'),
-            AHGMH_VERSION,
+            AHGMH_PLUGIN_VERSION,
             true
         );
 

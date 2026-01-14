@@ -12,6 +12,7 @@
         initAutoRefresh();
         initWildartConfig();
         initObmannManagement();
+        initShortcodeCopy();
     }
 
     // Initialize on document ready
@@ -148,91 +149,196 @@
     }
 
     /**
-     * Handle edit submission
+     * Handle edit submission - loads data via AJAX and shows improved edit form
      */
     function handleEditSubmission(id, $button) {
         const $row = $button.closest('tr');
-        const $cells = $row.find('td');
-        
-        // Extract current values from table cells
-        const currentData = {
-            id: id,
-            wildart: $cells.eq(1).text().trim(),
-            kategorie: $cells.eq(2).text().trim(),  
-            wus_nummer: $cells.eq(3).text().trim(),
-            interne_notiz: $cells.eq(4).text().trim(),
-            bemerkung: $cells.eq(5).text().trim(),
-            jagdbezirk: $cells.eq(6).text().trim(),
-            datum: $cells.eq(7).text().trim()
-        };
-        
-        // Create inline edit form
+
+        // Show loading state
+        $button.prop('disabled', true).text('Lade...');
+
+        // Load submission data via AJAX
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_get_submission_data',
+                id: id,
+                nonce: ahgmh_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showEditForm($row, id, response.data);
+                } else {
+                    showNotification(response.data || 'Fehler beim Laden der Daten', 'error');
+                    $button.prop('disabled', false).text('Bearbeiten');
+                }
+            },
+            error: function() {
+                showNotification('Fehler beim Laden der Daten', 'error');
+                $button.prop('disabled', false).text('Bearbeiten');
+            }
+        });
+    }
+
+    /**
+     * Show the edit form with loaded data
+     */
+    function showEditForm($row, id, data) {
+        const submission = data.submission;
+        const options = data.options;
+
+        // Build category options
+        let categoryOptions = '<option value="">-- Kategorie waehlen --</option>';
+        if (options.categories && options.categories.length > 0) {
+            options.categories.forEach(function(cat) {
+                const selected = cat === submission.kategorie ? 'selected' : '';
+                categoryOptions += `<option value="${escapeHtml(cat)}" ${selected}>${escapeHtml(cat)}</option>`;
+            });
+        }
+
+        // Build jagdbezirk options
+        let jagdbezirkOptions = '<option value="">-- Jagdbezirk waehlen --</option>';
+        if (options.jagdbezirke && options.jagdbezirke.length > 0) {
+            options.jagdbezirke.forEach(function(jb) {
+                const jbName = jb.jagdbezirk || jb;
+                const selected = jbName === submission.jagdbezirk ? 'selected' : '';
+                jagdbezirkOptions += `<option value="${escapeHtml(jbName)}" ${selected}>${escapeHtml(jbName)}</option>`;
+            });
+        }
+
+        // Build meldegruppe options
+        let meldegruppeOptions = '<option value="">-- Meldegruppe waehlen --</option>';
+        if (options.meldegruppen && options.meldegruppen.length > 0) {
+            options.meldegruppen.forEach(function(mg) {
+                const selected = mg === submission.meldegruppe ? 'selected' : '';
+                meldegruppeOptions += `<option value="${escapeHtml(mg)}" ${selected}>${escapeHtml(mg)}</option>`;
+            });
+        }
+
+        // Build user options
+        let userOptions = '<option value="0">-- Kein Erfasser --</option>';
+        if (options.users && options.users.length > 0) {
+            options.users.forEach(function(user) {
+                const selected = parseInt(user.id) === parseInt(submission.user_id) ? 'selected' : '';
+                userOptions += `<option value="${user.id}" ${selected}>${escapeHtml(user.display_name)}</option>`;
+            });
+        }
+
+        // Format date for datetime-local input
+        const dateValue = convertToDateTimeLocal(submission.created_at);
+
+        // Create improved inline edit form with 2-column layout
         const editFormHtml = `
-            <td colspan="9" class="ahgmh-edit-submission-row">
+            <td colspan="10" class="ahgmh-edit-submission-row">
                 <form class="ahgmh-edit-submission-form" data-id="${id}">
-                    <table class="ahgmh-edit-table">
-                        <tr>
-                            <td><label>Wildart:</label><input type="text" name="wildart" value="${currentData.wildart}" class="regular-text" readonly></td>
-                            <td><label>Kategorie:</label><input type="text" name="kategorie" value="${currentData.kategorie}" class="regular-text"></td>
-                            <td><label>WUS-Nummer:</label><input type="text" name="wus_nummer" value="${currentData.wus_nummer}" class="regular-text"></td>
-                            <td><label>Interne Notiz:</label><textarea name="interne_notiz" class="regular-text" rows="2">${currentData.interne_notiz}</textarea></td>
-                        </tr>
-                        <tr>
-                            <td><label>Bemerkung:</label><textarea name="bemerkung" class="regular-text" rows="2">${currentData.bemerkung}</textarea></td>
-                            <td><label>Jagdbezirk:</label><input type="text" name="jagdbezirk" value="${currentData.jagdbezirk}" class="regular-text"></td>
-                            <td><label>Datum:</label><input type="datetime-local" name="datum" value="${convertToDateTimeLocal(currentData.datum)}" class="regular-text"></td>
-                            <td colspan="2">
-                                <button type="submit" class="button button-primary">Speichern</button>
-                                <button type="button" class="button button-secondary ahgmh-cancel-edit-submission">Abbrechen</button>
-                            </td>
-                        </tr>
-                    </table>
+                    <div class="ahgmh-edit-form-header">
+                        <h3>Meldung #${id} bearbeiten</h3>
+                        <span class="ahgmh-edit-form-close">&times;</span>
+                    </div>
+                    <div class="ahgmh-edit-form-body">
+                        <div class="ahgmh-edit-form-grid">
+                            <!-- Left Column -->
+                            <div class="ahgmh-edit-form-column">
+                                <div class="ahgmh-edit-form-group">
+                                    <label>Wildart:</label>
+                                    <input type="text" name="wildart" value="${escapeHtml(submission.wildart)}" class="regular-text" readonly disabled>
+                                    <span class="ahgmh-field-hint">Wildart kann nicht geaendert werden</span>
+                                </div>
+                                <div class="ahgmh-edit-form-group">
+                                    <label>Kategorie: <span class="required">*</span></label>
+                                    <select name="kategorie" class="regular-text" required>
+                                        ${categoryOptions}
+                                    </select>
+                                </div>
+                                <div class="ahgmh-edit-form-group">
+                                    <label>Meldegruppe:</label>
+                                    <select name="meldegruppe" class="regular-text">
+                                        ${meldegruppeOptions}
+                                    </select>
+                                </div>
+                                <div class="ahgmh-edit-form-group">
+                                    <label>Jagdbezirk:</label>
+                                    <select name="jagdbezirk" class="regular-text">
+                                        ${jagdbezirkOptions}
+                                    </select>
+                                </div>
+                                <div class="ahgmh-edit-form-group">
+                                    <label>WUS-Nummer:</label>
+                                    <input type="text" name="wus_nummer" value="${escapeHtml(submission.wus_nummer || '')}" class="regular-text">
+                                </div>
+                            </div>
+                            <!-- Right Column -->
+                            <div class="ahgmh-edit-form-column">
+                                <div class="ahgmh-edit-form-group">
+                                    <label>Erfasser:</label>
+                                    <select name="user_id" class="regular-text">
+                                        ${userOptions}
+                                    </select>
+                                </div>
+                                <div class="ahgmh-edit-form-group">
+                                    <label>Erfassungsdatum:</label>
+                                    <input type="datetime-local" name="datum" value="${dateValue}" class="regular-text">
+                                </div>
+                                <div class="ahgmh-edit-form-group">
+                                    <label>Interne Notiz:</label>
+                                    <textarea name="interne_notiz" class="regular-text" rows="2">${escapeHtml(submission.interne_notiz || '')}</textarea>
+                                </div>
+                                <div class="ahgmh-edit-form-group">
+                                    <label>Bemerkung:</label>
+                                    <textarea name="bemerkung" class="regular-text" rows="2">${escapeHtml(submission.bemerkung || '')}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ahgmh-edit-form-footer">
+                        <button type="button" class="button button-secondary ahgmh-cancel-edit-submission">Abbrechen</button>
+                        <button type="submit" class="button button-primary">Speichern</button>
+                    </div>
                 </form>
             </td>
         `;
-        
+
         // Hide current row and show edit form
         $row.hide().after(`<tr class="ahgmh-edit-submission-container">${editFormHtml}</tr>`);
-        
+
         // Get the newly created form element and add event handlers
         const $editRow = $('.ahgmh-edit-submission-container').last();
         const $editForm = $editRow.find('.ahgmh-edit-submission-form');
-        
+
         // Handle form submission
         $editForm.on('submit', function(e) {
             e.preventDefault();
-            
+
             const $form = $(this);
             const $submitBtn = $form.find('button[type="submit"]');
-            
+
             // Prevent multiple submissions
             if ($submitBtn.prop('disabled')) {
                 return false;
             }
-            
+
             $submitBtn.prop('disabled', true).text('Speichere...');
-            
+
             const formData = {
                 action: 'ahgmh_edit_submission',
                 id: id,
                 nonce: ahgmh_admin.nonce,
-                wildart: $form.find('input[name="wildart"]').val(),
-                kategorie: $form.find('input[name="kategorie"]').val(),
+                wildart: submission.wildart, // Keep original wildart
+                kategorie: $form.find('select[name="kategorie"]').val(),
                 wus_nummer: $form.find('input[name="wus_nummer"]').val(),
                 interne_notiz: $form.find('textarea[name="interne_notiz"]').val(),
                 bemerkung: $form.find('textarea[name="bemerkung"]').val(),
-                jagdbezirk: $form.find('input[name="jagdbezirk"]').val(),
-                datum: $form.find('input[name="datum"]').val()
+                jagdbezirk: $form.find('select[name="jagdbezirk"]').val(),
+                datum: $form.find('input[name="datum"]').val(),
+                user_id: $form.find('select[name="user_id"]').val()
             };
-            
-            console.log('Sending edit data:', formData); // Debug
-            
+
             $.ajax({
                 url: ahgmh_admin.ajax_url,
                 type: 'POST',
                 data: formData,
                 success: function(response) {
-                    console.log('Edit response:', response); // Debug
                     if (response.success) {
                         showNotification('Meldung aktualisiert', 'success');
                         // Refresh page to show updated data
@@ -241,42 +347,94 @@
                         }, 1000);
                     } else {
                         const errorMsg = response.data || 'Speichern fehlgeschlagen';
-                        console.error('Edit error:', errorMsg);
                         showNotification(errorMsg, 'error');
                         $submitBtn.prop('disabled', false).text('Speichern');
                     }
                 },
-                error: function(xhr, status, error) {
-                    console.error('AJAX Edit error:', xhr, status, error);
+                error: function() {
                     showNotification('Speichern fehlgeschlagen - Netzwerkfehler', 'error');
                     $submitBtn.prop('disabled', false).text('Speichern');
                 }
             });
         });
-        
-        // Handle cancel button
-        $editRow.find('.ahgmh-cancel-edit-submission').on('click', function() {
+
+        // Handle cancel button and close icon
+        $editRow.find('.ahgmh-cancel-edit-submission, .ahgmh-edit-form-close').on('click', function() {
             $editRow.remove();
             $row.show();
+            $row.find('.ahgmh-edit-submission').prop('disabled', false).text('Bearbeiten');
+        });
+
+        // Handle meldegruppe change to filter jagdbezirke
+        $editRow.find('select[name="meldegruppe"]').on('change', function() {
+            const selectedMeldegruppe = $(this).val();
+            const $jagdbezirkSelect = $editRow.find('select[name="jagdbezirk"]');
+
+            if (selectedMeldegruppe) {
+                // Load jagdbezirke filtered by meldegruppe (using admin endpoint)
+                $.ajax({
+                    url: ahgmh_admin.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'ahgmh_admin_get_jagdbezirke_by_meldegruppe',
+                        meldegruppe: selectedMeldegruppe,
+                        nonce: ahgmh_admin.nonce
+                    },
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            let newOptions = '<option value="">-- Jagdbezirk waehlen --</option>';
+                            response.data.forEach(function(jb) {
+                                const jbName = jb.jagdbezirk || jb;
+                                newOptions += `<option value="${escapeHtml(jbName)}">${escapeHtml(jbName)}</option>`;
+                            });
+                            $jagdbezirkSelect.html(newOptions);
+                        }
+                    }
+                });
+            }
         });
     }
 
     /**
+     * Helper function to escape HTML
+     */
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
      * Helper function to convert date string to datetime-local format
+     * Supports both German format (23.12.2024 14:30) and MySQL format (2024-12-23 14:30:00)
      */
     function convertToDateTimeLocal(dateStr) {
-        // dateStr format: "23.12.2024 14:30"
         if (!dateStr || dateStr.trim() === '') return '';
-        
+
         try {
+            dateStr = dateStr.trim();
+
+            // Check if MySQL format (YYYY-MM-DD HH:MM:SS)
+            if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+                const parts = dateStr.split(' ');
+                if (parts.length >= 2) {
+                    const datePart = parts[0];
+                    const timePart = parts[1].substring(0, 5); // Take only HH:MM
+                    return `${datePart}T${timePart}`;
+                }
+                return dateStr.substring(0, 10) + 'T00:00';
+            }
+
+            // German format (DD.MM.YYYY HH:MM)
             const parts = dateStr.split(' ');
             if (parts.length !== 2) return '';
-            
+
             const dateParts = parts[0].split('.');
             const timeParts = parts[1].split(':');
-            
-            if (dateParts.length !== 3 || timeParts.length !== 2) return '';
-            
+
+            if (dateParts.length !== 3 || timeParts.length < 2) return '';
+
             // Format: YYYY-MM-DDTHH:MM
             return `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}T${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
         } catch (error) {
@@ -446,7 +604,7 @@
         });
 
         // Update totals when individual limits change + validate
-        $(document).on('input', '.limit-input, .hegegemeinschaft-limit-input', function () {
+        $(document).on('input', '.limit-input, .total-limit-input', function () {
             updateGesamt();
             validateLimitInputs();
         });
@@ -845,11 +1003,11 @@
     function validateLimitInputs() {
         var hasNegativeValues = false;
         var negativeFields = [];
-        
-        $('.limit-input, .hegegemeinschaft-limit-input').each(function() {
+
+        $('.limit-input:visible, .total-limit-input:visible').each(function() {
             var $input = $(this);
             var value = parseInt($input.val()) || 0;
-            
+
             if (value < 0) {
                 hasNegativeValues = true;
                 negativeFields.push($input);
@@ -860,7 +1018,7 @@
                 $input.css('border-color', '');
             }
         });
-        
+
         return { hasNegativeValues: hasNegativeValues, negativeFields: negativeFields };
     }
 
@@ -884,9 +1042,10 @@
             return false; // Stop saving
         }
 
-        $('.limit-input, .hegegemeinschaft-limit-input').each(function () {
+        // Collect limits from visible inputs only (based on active mode)
+        $('.limit-input:visible, .total-limit-input:visible').each(function () {
             var $input = $(this);
-            var meldegruppe = $input.data('meldegruppe') || 'gesamt';
+            var meldegruppe = $input.data('meldegruppe') || 'total';
             var kategorie = $input.data('kategorie');
             var value = Math.max(0, parseInt($input.val()) || 0); // Ensure non-negative
 
@@ -917,7 +1076,7 @@
                 if (response.success) {
                     showNotification('Limits erfolgreich gespeichert!', 'success');
                     // Clear any error styling
-                    $('.limit-input, .hegegemeinschaft-limit-input').removeClass('error-field').css('border-color', '');
+                    $('.limit-input, .total-limit-input').removeClass('error-field').css('border-color', '');
                 } else {
                     showNotification('Fehler beim Speichern der Limits: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
@@ -1403,5 +1562,75 @@
     
     // Make resetAllAssignments globally available
     window.resetAllAssignments = resetAllAssignments;
+
+    /**
+     * Initialize shortcode copy functionality
+     */
+    function initShortcodeCopy() {
+        $(document).on('click', '.copy-shortcode', function(e) {
+            e.preventDefault();
+            var $button = $(this);
+            var shortcode = $button.data('shortcode');
+
+            if (shortcode) {
+                copyToClipboard(shortcode, $button);
+            }
+        });
+    }
+
+    /**
+     * Copy text to clipboard
+     */
+    function copyToClipboard(text, $button) {
+        // Modern clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showCopySuccess($button);
+            }).catch(function() {
+                fallbackCopyToClipboard(text, $button);
+            });
+        } else {
+            fallbackCopyToClipboard(text, $button);
+        }
+    }
+
+    /**
+     * Fallback copy method for older browsers
+     */
+    function fallbackCopyToClipboard(text, $button) {
+        var $temp = $('<textarea>');
+        $('body').append($temp);
+        $temp.val(text).select();
+
+        try {
+            document.execCommand('copy');
+            showCopySuccess($button);
+        } catch (err) {
+            showNotification('Kopieren fehlgeschlagen', 'error');
+        }
+
+        $temp.remove();
+    }
+
+    /**
+     * Show copy success feedback
+     */
+    function showCopySuccess($button) {
+        var $icon = $button.find('.dashicons');
+        var originalClass = $icon.attr('class');
+
+        // Change icon to checkmark
+        $icon.removeClass('dashicons-clipboard').addClass('dashicons-yes');
+        $button.css('color', '#00a32a');
+
+        // Show notification
+        showNotification('Shortcode kopiert!', 'success');
+
+        // Reset after 2 seconds
+        setTimeout(function() {
+            $icon.attr('class', originalClass);
+            $button.css('color', '');
+        }, 2000);
+    }
 
 })(jQuery);

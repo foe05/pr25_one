@@ -1,0 +1,22 @@
+{
+    "name": "foe05/abschussplan-hgmh",
+    "description": "WordPress plugin for game shoot collection and reporting for German hunting authorities",
+    "type": "wordpress-plugin",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": ">=7.4",
+        "dompdf/dompdf": "^2.0"
+    },
+    "autoload": {
+        "classmap": [
+            "includes/",
+            "admin/services/",
+            "admin/controllers/",
+            "admin/views/"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

@@ -20,10 +20,13 @@ class AHGMH_Admin_Page_Modern {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
-        add_action('wp_ajax_ahgmh_quick_export', array($this, 'ajax_quick_export'));
-        add_action('wp_ajax_ahgmh_export_data', array($this, 'ajax_export_data'));
+        // Export handlers now use central AHGMH_Export_Controller (Bug #2 Fix)
+        // Removed: add_action('wp_ajax_ahgmh_quick_export', array($this, 'ajax_quick_export'));
+        // Removed: add_action('wp_ajax_ahgmh_export_data', array($this, 'ajax_export_data'));
         add_action('wp_ajax_ahgmh_delete_submission', array($this, 'ajax_delete_submission'));
         add_action('wp_ajax_ahgmh_edit_submission', array($this, 'ajax_edit_submission'));
+        add_action('wp_ajax_ahgmh_get_submission_data', array($this, 'ajax_get_submission_data'));
+        add_action('wp_ajax_ahgmh_admin_get_jagdbezirke_by_meldegruppe', array($this, 'ajax_admin_get_jagdbezirke_by_meldegruppe'));
         add_action('wp_ajax_ahgmh_danger_action', array($this, 'ajax_danger_action'));
         // Jagdbezirk handlers moved to emergency file
         // Legacy handlers - these are now handled by AHGMH_Wildart_Controller
@@ -105,26 +108,6 @@ class AHGMH_Admin_Page_Modern {
             array($this, 'render_obmann_management')
         );
 
-        // Migrations (Migrationen)
-        add_submenu_page(
-            'abschussplan-hgmh',
-            __('Migrationen', 'abschussplan-hgmh'),
-            __('🔄 Migrationen', 'abschussplan-hgmh'),
-            'manage_options',
-            'abschussplan-hgmh-migrations',
-            array($this, 'render_migrations')
-        );
-
-        // Wildarten Configuration
-        add_submenu_page(
-            'abschussplan-hgmh',
-            __('Wildarten-Konfiguration', 'abschussplan-hgmh'),
-            __('🦌 Wildarten', 'abschussplan-hgmh'),
-            'manage_options',
-            'abschussplan-hgmh-wildarten',
-            array($this, 'render_wildarten_management')
-        );
-
         // Settings (Einstellungen)
         add_submenu_page(
             'abschussplan-hgmh',
@@ -198,13 +181,15 @@ class AHGMH_Admin_Page_Modern {
     public function render_dashboard() {
         $database = abschussplan_hgmh()->database;
         $stats = $this->get_dashboard_stats();
+        $plugin_info = $this->get_plugin_info();
         ?>
         <div class="wrap ahgmh-admin-modern">
             <h1 class="ahgmh-page-title">
                 <span class="dashicons dashicons-chart-pie"></span>
                 <?php echo esc_html__('Abschussplan HGMH - Dashboard', 'abschussplan-hgmh'); ?>
+                <span class="ahgmh-version-badge">v<?php echo esc_html($plugin_info['version']); ?></span>
             </h1>
-            
+
             <!-- Top Stats Cards -->
             <div class="ahgmh-dashboard-stats">
                 <div class="ahgmh-stat-card">
@@ -214,16 +199,24 @@ class AHGMH_Admin_Page_Modern {
                         <div class="stat-label"><?php echo esc_html__('Gesamte Meldungen', 'abschussplan-hgmh'); ?></div>
                     </div>
                 </div>
-                
+
                 <div class="ahgmh-stat-card">
                     <div class="stat-icon dashicons dashicons-calendar-alt"></div>
                     <div class="stat-content">
-                        <div class="stat-number"><?php echo esc_html($stats['this_month']); ?></div>
+                        <div class="stat-number"><?php echo esc_html($stats['submissions_this_month']); ?></div>
                         <div class="stat-label"><?php echo esc_html__('Dieser Monat', 'abschussplan-hgmh'); ?></div>
+                        <?php if ($stats['submissions_last_month'] > 0): ?>
+                        <div class="stat-details stat-trend <?php echo $stats['month_change'] >= 0 ? 'positive' : 'negative'; ?>">
+                            <?php
+                            $arrow = $stats['month_change'] >= 0 ? '&#9650;' : '&#9660;';
+                            echo $arrow . ' ' . abs($stats['month_change_percent']) . '% ' . esc_html__('ggü. Vormonat', 'abschussplan-hgmh');
+                            ?>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
-                
-                <?php 
+
+                <?php
                 $last_submission = $this->get_last_submission_info();
                 if ($last_submission): ?>
                 <div class="ahgmh-stat-card highlight">
@@ -245,12 +238,44 @@ class AHGMH_Admin_Page_Modern {
                     </div>
                 </div>
                 <?php endif; ?>
-                
+
                 <div class="ahgmh-stat-card">
                     <div class="stat-icon dashicons dashicons-location"></div>
                     <div class="stat-content">
                         <div class="stat-number"><?php echo esc_html($stats['species_count']); ?></div>
                         <div class="stat-label"><?php echo esc_html__('Wildarten', 'abschussplan-hgmh'); ?></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- This Month Status Panel -->
+            <div class="ahgmh-dashboard-row">
+                <div class="ahgmh-panel ahgmh-month-status">
+                    <h2 class="panel-title">
+                        <span class="dashicons dashicons-calendar-alt"></span>
+                        <?php echo esc_html__('Dieser Monat - Status-Übersicht', 'abschussplan-hgmh'); ?>
+                    </h2>
+                    <div class="month-status-grid">
+                        <div class="status-item status-pending">
+                            <span class="status-icon dashicons dashicons-clock"></span>
+                            <span class="status-count"><?php echo esc_html($stats['this_month_by_status']['pending']); ?></span>
+                            <span class="status-label"><?php echo esc_html__('Ausstehend', 'abschussplan-hgmh'); ?></span>
+                        </div>
+                        <div class="status-item status-approved">
+                            <span class="status-icon dashicons dashicons-yes-alt"></span>
+                            <span class="status-count"><?php echo esc_html($stats['this_month_by_status']['approved']); ?></span>
+                            <span class="status-label"><?php echo esc_html__('Genehmigt', 'abschussplan-hgmh'); ?></span>
+                        </div>
+                        <div class="status-item status-rejected">
+                            <span class="status-icon dashicons dashicons-dismiss"></span>
+                            <span class="status-count"><?php echo esc_html($stats['this_month_by_status']['rejected']); ?></span>
+                            <span class="status-label"><?php echo esc_html__('Abgelehnt', 'abschussplan-hgmh'); ?></span>
+                        </div>
+                        <div class="status-item status-total">
+                            <span class="status-icon dashicons dashicons-chart-bar"></span>
+                            <span class="status-count"><?php echo esc_html($stats['this_month_by_status']['total']); ?></span>
+                            <span class="status-label"><?php echo esc_html__('Gesamt', 'abschussplan-hgmh'); ?></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -282,11 +307,22 @@ class AHGMH_Admin_Page_Modern {
                     </div>
                 </div>
 
-                <!-- Species Progress Panel -->
-                <div class="ahgmh-panel ahgmh-species-progress">
+                <!-- Species Status Panel -->
+                <div class="ahgmh-panel ahgmh-species-status">
                     <h2 class="panel-title">
                         <span class="dashicons dashicons-chart-line"></span>
                         <?php echo esc_html__('Status nach Wildart', 'abschussplan-hgmh'); ?>
+                    </h2>
+                    <div class="species-status-content">
+                        <?php $this->render_species_status($stats['species_status_counts']); ?>
+                    </div>
+                </div>
+
+                <!-- Species Progress Panel -->
+                <div class="ahgmh-panel ahgmh-species-progress">
+                    <h2 class="panel-title">
+                        <span class="dashicons dashicons-chart-area"></span>
+                        <?php echo esc_html__('Erfüllungsstand Abschussplan', 'abschussplan-hgmh'); ?>
                     </h2>
                     <div class="species-progress-content">
                         <?php $this->render_species_progress($stats['species_progress']); ?>
@@ -312,6 +348,17 @@ class AHGMH_Admin_Page_Modern {
                     </h2>
                     <div class="shortcodes-content">
                         <?php $this->render_shortcode_reference(); ?>
+                    </div>
+                </div>
+
+                <!-- Plugin Info Panel -->
+                <div class="ahgmh-panel ahgmh-plugin-info">
+                    <h2 class="panel-title">
+                        <span class="dashicons dashicons-info"></span>
+                        <?php echo esc_html__('Plugin-Informationen', 'abschussplan-hgmh'); ?>
+                    </h2>
+                    <div class="plugin-info-content">
+                        <?php $this->render_plugin_info($plugin_info); ?>
                     </div>
                 </div>
             </div>
@@ -428,6 +475,11 @@ class AHGMH_Admin_Page_Modern {
                     <span class="dashicons dashicons-location"></span>
                     <?php echo esc_html__('Jagdbezirke', 'abschussplan-hgmh'); ?>
                 </a>
+                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=migrations'); ?>"
+                   class="ahgmh-tab <?php echo $active_tab === 'migrations' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-update"></span>
+                    <?php echo esc_html__('Migrationen', 'abschussplan-hgmh'); ?>
+                </a>
             </nav>
 
             <!-- Tab Content -->
@@ -445,6 +497,9 @@ class AHGMH_Admin_Page_Modern {
                         break;
                     case 'jagdbezirke':
                         $this->render_jagdbezirke_settings();
+                        break;
+                    case 'migrations':
+                        $this->render_migrations_tab();
                         break;
                     default:
                         $this->render_database_settings();
@@ -483,30 +538,46 @@ class AHGMH_Admin_Page_Modern {
      */
     private function get_dashboard_stats() {
         $database = abschussplan_hgmh()->database;
-        
+
         $total_submissions = $database->count_submissions();
         $submissions_this_month = $database->count_submissions_this_month();
+        $submissions_last_month = $database->count_submissions_last_month();
+        $this_month_by_status = $database->count_submissions_this_month_by_status();
         $active_users = $database->count_active_users();
         $species = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
         $species_progress = $this->get_species_progress();
         $recent_submissions = $database->get_submissions(5, 0);
         $category_counts = $database->get_category_counts();
-        
+        $species_status_counts = $database->get_status_counts_by_species();
+
         // Get species statistics
         $species_stats = array();
         foreach ($species as $species_name) {
             $species_stats[$species_name] = $database->count_submissions_by_species($species_name);
         }
-        
+
+        // Calculate month comparison
+        $month_change = 0;
+        $month_change_percent = 0;
+        if ($submissions_last_month > 0) {
+            $month_change = $submissions_this_month - $submissions_last_month;
+            $month_change_percent = round(($month_change / $submissions_last_month) * 100, 1);
+        }
+
         return array(
             'total_submissions' => $total_submissions,
             'submissions_this_month' => $submissions_this_month,
+            'submissions_last_month' => $submissions_last_month,
+            'this_month_by_status' => $this_month_by_status,
+            'month_change' => $month_change,
+            'month_change_percent' => $month_change_percent,
             'active_users' => $active_users,
             'species_count' => count($species),
             'species_progress' => $species_progress,
             'recent_submissions' => $recent_submissions,
             'category_counts' => $category_counts,
-            'species_stats' => $species_stats
+            'species_stats' => $species_stats,
+            'species_status_counts' => $species_status_counts
         );
     }
 
@@ -605,57 +676,242 @@ class AHGMH_Admin_Page_Modern {
     }
 
     /**
+     * Render species status counts by approval state
+     */
+    private function render_species_status($species_status_counts) {
+        if (empty($species_status_counts)) {
+            echo '<p class="no-data">' . esc_html__('Keine Daten vorhanden.', 'abschussplan-hgmh') . '</p>';
+            return;
+        }
+
+        ?>
+        <table class="ahgmh-species-status-table">
+            <thead>
+                <tr>
+                    <th><?php echo esc_html__('Wildart', 'abschussplan-hgmh'); ?></th>
+                    <th class="status-col status-pending"><?php echo esc_html__('Ausstehend', 'abschussplan-hgmh'); ?></th>
+                    <th class="status-col status-approved"><?php echo esc_html__('Genehmigt', 'abschussplan-hgmh'); ?></th>
+                    <th class="status-col status-rejected"><?php echo esc_html__('Abgelehnt', 'abschussplan-hgmh'); ?></th>
+                    <th class="status-col status-total"><?php echo esc_html__('Gesamt', 'abschussplan-hgmh'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($species_status_counts as $species => $counts): ?>
+                <tr>
+                    <td class="species-name"><?php echo esc_html($species); ?></td>
+                    <td class="status-count pending"><?php echo esc_html($counts['pending']); ?></td>
+                    <td class="status-count approved"><?php echo esc_html($counts['approved']); ?></td>
+                    <td class="status-count rejected"><?php echo esc_html($counts['rejected']); ?></td>
+                    <td class="status-count total"><?php echo esc_html($counts['total']); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php
+    }
+
+    /**
+     * Get plugin information from plugin header
+     */
+    private function get_plugin_info() {
+        $plugin_file = AHGMH_PLUGIN_DIR . 'abschussplan-hgmh.php';
+        $plugin_data = get_file_data($plugin_file, array(
+            'name' => 'Plugin Name',
+            'version' => 'Version',
+            'plugin_uri' => 'Plugin URI',
+            'description' => 'Description',
+            'author' => 'Author',
+            'author_uri' => 'Author URI',
+            'requires_wp' => 'Requires at least',
+            'tested_up_to' => 'Tested up to',
+            'requires_php' => 'Requires PHP',
+            'update_uri' => 'Update URI'
+        ));
+
+        return array(
+            'name' => $plugin_data['name'],
+            'version' => defined('AHGMH_PLUGIN_VERSION') ? AHGMH_PLUGIN_VERSION : $plugin_data['version'],
+            'plugin_uri' => $plugin_data['plugin_uri'],
+            'description' => $plugin_data['description'],
+            'author' => $plugin_data['author'],
+            'author_uri' => $plugin_data['author_uri'],
+            'requires_wp' => $plugin_data['requires_wp'],
+            'tested_up_to' => $plugin_data['tested_up_to'],
+            'requires_php' => $plugin_data['requires_php'],
+            'github_repo' => 'https://github.com/foe05/pr25_one',
+            'github_issues' => 'https://github.com/foe05/pr25_one/issues',
+            'db_version' => defined('AHGMH_DB_VERSION') ? AHGMH_DB_VERSION : get_option('ahgmh_db_version', 'N/A'),
+            'wp_version' => get_bloginfo('version'),
+            'php_version' => phpversion()
+        );
+    }
+
+    /**
+     * Render plugin information panel
+     */
+    private function render_plugin_info($plugin_info) {
+        ?>
+        <div class="plugin-info-grid">
+            <div class="info-section">
+                <h3><?php echo esc_html__('Versionen', 'abschussplan-hgmh'); ?></h3>
+                <table class="info-table">
+                    <tr>
+                        <td><?php echo esc_html__('Plugin-Version:', 'abschussplan-hgmh'); ?></td>
+                        <td><strong><?php echo esc_html($plugin_info['version']); ?></strong></td>
+                    </tr>
+                    <tr>
+                        <td><?php echo esc_html__('Datenbank-Version:', 'abschussplan-hgmh'); ?></td>
+                        <td><?php echo esc_html($plugin_info['db_version']); ?></td>
+                    </tr>
+                    <tr>
+                        <td><?php echo esc_html__('WordPress:', 'abschussplan-hgmh'); ?></td>
+                        <td><?php echo esc_html($plugin_info['wp_version']); ?></td>
+                    </tr>
+                    <tr>
+                        <td><?php echo esc_html__('PHP:', 'abschussplan-hgmh'); ?></td>
+                        <td><?php echo esc_html($plugin_info['php_version']); ?></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-section">
+                <h3><?php echo esc_html__('Anforderungen', 'abschussplan-hgmh'); ?></h3>
+                <table class="info-table">
+                    <tr>
+                        <td><?php echo esc_html__('WordPress mind.:', 'abschussplan-hgmh'); ?></td>
+                        <td><?php echo esc_html($plugin_info['requires_wp']); ?></td>
+                    </tr>
+                    <tr>
+                        <td><?php echo esc_html__('Getestet bis:', 'abschussplan-hgmh'); ?></td>
+                        <td><?php echo esc_html($plugin_info['tested_up_to']); ?></td>
+                    </tr>
+                    <tr>
+                        <td><?php echo esc_html__('PHP mind.:', 'abschussplan-hgmh'); ?></td>
+                        <td><?php echo esc_html($plugin_info['requires_php']); ?></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-section">
+                <h3><?php echo esc_html__('Links', 'abschussplan-hgmh'); ?></h3>
+                <div class="github-links">
+                    <a href="<?php echo esc_url($plugin_info['github_repo']); ?>" target="_blank" class="github-link">
+                        <span class="dashicons dashicons-admin-site-alt3"></span>
+                        <?php echo esc_html__('GitHub Repository', 'abschussplan-hgmh'); ?>
+                    </a>
+                    <a href="<?php echo esc_url($plugin_info['github_issues']); ?>" target="_blank" class="github-link">
+                        <span class="dashicons dashicons-warning"></span>
+                        <?php echo esc_html__('Fehler melden', 'abschussplan-hgmh'); ?>
+                    </a>
+                    <a href="<?php echo esc_url($plugin_info['github_repo'] . '#readme'); ?>" target="_blank" class="github-link">
+                        <span class="dashicons dashicons-book"></span>
+                        <?php echo esc_html__('Dokumentation', 'abschussplan-hgmh'); ?>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
      * Render shortcode reference
      */
     private function render_shortcode_reference() {
         $shortcodes = array(
+            // Erfassungsformular
             array(
                 'code' => '[abschuss_form species="Rotwild"]',
-                'description' => __('Zeigt das Abschussformular für eine bestimmte Wildart an', 'abschussplan-hgmh'),
-                'attributes' => __('species: Wildart (Rotwild, Damwild, etc.)', 'abschussplan-hgmh')
+                'description' => __('Erfassungsformular - Zeigt das Abschussformular für eine bestimmte Wildart an (nur für angemeldete Benutzer)', 'abschussplan-hgmh'),
+                'attributes' => __('species (Pflicht): Wildart (z.B. Rotwild, Damwild)', 'abschussplan-hgmh'),
+                'category' => 'form'
+            ),
+            // Tabellen mit Moderation
+            array(
+                'code' => '[abschuss_table species="Rotwild" limit="10"]',
+                'description' => __('Meldungstabelle mit Moderation - Zeigt alle Abschussmeldungen in einer Tabelle mit Bearbeitungsmöglichkeiten', 'abschussplan-hgmh'),
+                'attributes' => __('species: Wildart filtern | limit: Einträge pro Seite (Standard: 10) | page: Seitennummer', 'abschussplan-hgmh'),
+                'category' => 'table'
             ),
             array(
-                'code' => '[abschuss_table limit="10" species="Rotwild"]',
-                'description' => __('Zeigt eine Tabelle mit Abschussmeldungen an', 'abschussplan-hgmh'),
-                'attributes' => __('limit: Anzahl Einträge, species: Wildart filtern, page: Seitennummer', 'abschussplan-hgmh')
+                'code' => '[abschuss_summary_table species="Rotwild"]',
+                'description' => __('Zusammenfassungstabelle - Zeigt eine öffentliche Tabelle mit genehmigten Meldungen', 'abschussplan-hgmh'),
+                'attributes' => __('species: Wildart filtern | meldegruppe: Jagdbezirk filtern', 'abschussplan-hgmh'),
+                'category' => 'table'
             ),
+            array(
+                'code' => '[ahgmh_submissions]',
+                'description' => __('Alternative Meldungstabelle - Legacy-Shortcode für Abschussmeldungen', 'abschussplan-hgmh'),
+                'attributes' => __('Keine Parameter erforderlich', 'abschussplan-hgmh'),
+                'category' => 'table'
+            ),
+            // Zusammenfassungen
             array(
                 'code' => '[abschuss_summary species="Rotwild"]',
-                'description' => __('Zeigt eine Zusammenfassung für eine bestimmte Wildart an', 'abschussplan-hgmh'),
-                'attributes' => __('species: Wildart (Rotwild, Damwild, etc.)', 'abschussplan-hgmh')
+                'description' => __('Wildart-Zusammenfassung - Zeigt Statistiken und Ist/Soll-Vergleich für eine Wildart', 'abschussplan-hgmh'),
+                'attributes' => __('species (Pflicht): Wildart für die Zusammenfassung', 'abschussplan-hgmh'),
+                'category' => 'summary'
             ),
             array(
                 'code' => '[abschuss_summary meldegruppe="Revier_Nord"]',
-                'description' => __('Zeigt eine Zusammenfassung für einen bestimmten Jagdbezirk an', 'abschussplan-hgmh'),
-                'attributes' => __('meldegruppe: Name des Jagdbezirks (wird intern als Jagdbezirk behandelt)', 'abschussplan-hgmh')
+                'description' => __('Jagdbezirk-Zusammenfassung - Zeigt Statistiken für einen bestimmten Jagdbezirk', 'abschussplan-hgmh'),
+                'attributes' => __('meldegruppe: Name des Jagdbezirks (intern als Jagdbezirk behandelt)', 'abschussplan-hgmh'),
+                'category' => 'summary'
             ),
             array(
                 'code' => '[abschuss_summary species="Rotwild" meldegruppe="Revier_Nord"]',
-                'description' => __('Zeigt eine Zusammenfassung für Wildart + Jagdbezirk Kombination an', 'abschussplan-hgmh'),
-                'attributes' => __('Kombinierbare Filter: species und meldegruppe können gemeinsam verwendet werden', 'abschussplan-hgmh')
+                'description' => __('Kombinierte Zusammenfassung - Zeigt Daten für Wildart + Jagdbezirk', 'abschussplan-hgmh'),
+                'attributes' => __('Beide Filter kombinierbar für detaillierte Auswertung', 'abschussplan-hgmh'),
+                'category' => 'summary'
             ),
+            // Administration
             array(
                 'code' => '[abschuss_limits species="Rotwild"]',
-                'description' => __('Zeigt die Limits-Konfiguration für eine Wildart an (nur für Administratoren)', 'abschussplan-hgmh'),
-                'attributes' => __('species: Wildart für Limits-Verwaltung', 'abschussplan-hgmh')
+                'description' => __('Limits-Verwaltung - Zeigt und bearbeitet Abschusskontingente (nur für Administratoren)', 'abschussplan-hgmh'),
+                'attributes' => __('species (Pflicht): Wildart für die Limits-Konfiguration', 'abschussplan-hgmh'),
+                'category' => 'admin'
             ),
             array(
                 'code' => '[abschuss_admin]',
-                'description' => __('Zeigt die Admin-Konfiguration an (nur für Administratoren)', 'abschussplan-hgmh'),
-                'attributes' => __('Keine Attribute erforderlich', 'abschussplan-hgmh')
+                'description' => __('Admin-Bereich - Zeigt die vollständige Admin-Konfiguration auf einer Frontend-Seite', 'abschussplan-hgmh'),
+                'attributes' => __('Keine Parameter - nur für Administratoren sichtbar', 'abschussplan-hgmh'),
+                'category' => 'admin'
             ),
         );
-        
-        foreach ($shortcodes as $shortcode) {
-            ?>
-            <div class="shortcode-item">
-                <code class="shortcode-code"><?php echo esc_html($shortcode['code']); ?></code>
-                <div class="shortcode-info">
-                    <span class="shortcode-description"><?php echo esc_html($shortcode['description']); ?></span>
-                    <small class="shortcode-attributes"><?php echo esc_html($shortcode['attributes']); ?></small>
+
+        // Group by category
+        $categories = array(
+            'form' => __('Formulare', 'abschussplan-hgmh'),
+            'table' => __('Tabellen', 'abschussplan-hgmh'),
+            'summary' => __('Zusammenfassungen', 'abschussplan-hgmh'),
+            'admin' => __('Administration', 'abschussplan-hgmh')
+        );
+
+        foreach ($categories as $cat_key => $cat_label) {
+            $cat_shortcodes = array_filter($shortcodes, function($s) use ($cat_key) {
+                return isset($s['category']) && $s['category'] === $cat_key;
+            });
+
+            if (!empty($cat_shortcodes)) {
+                ?>
+                <div class="shortcode-category">
+                    <h4 class="category-title"><?php echo esc_html($cat_label); ?></h4>
+                    <?php foreach ($cat_shortcodes as $shortcode): ?>
+                    <div class="shortcode-item">
+                        <div class="shortcode-code-wrapper">
+                            <code class="shortcode-code"><?php echo esc_html($shortcode['code']); ?></code>
+                            <button class="copy-shortcode" title="<?php echo esc_attr__('Kopieren', 'abschussplan-hgmh'); ?>" data-shortcode="<?php echo esc_attr($shortcode['code']); ?>">
+                                <span class="dashicons dashicons-clipboard"></span>
+                            </button>
+                        </div>
+                        <div class="shortcode-info">
+                            <span class="shortcode-description"><?php echo esc_html($shortcode['description']); ?></span>
+                            <small class="shortcode-attributes"><?php echo esc_html($shortcode['attributes']); ?></small>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
-            </div>
-            <?php
+                <?php
+            }
         }
     }
 
@@ -787,6 +1043,7 @@ class AHGMH_Admin_Page_Modern {
                         <th scope="col"><?php echo esc_html__('WUS-Nummer', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Interne Notiz', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Datum', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Aktionen', 'abschussplan-hgmh'); ?></th>
@@ -795,7 +1052,7 @@ class AHGMH_Admin_Page_Modern {
                 <tbody>
                     <?php if (empty($submissions)): ?>
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 20px;">
+                            <td colspan="10" style="text-align: center; padding: 20px;">
                                 <?php echo esc_html__('Keine Meldungen gefunden.', 'abschussplan-hgmh'); ?>
                             </td>
                         </tr>
@@ -808,6 +1065,7 @@ class AHGMH_Admin_Page_Modern {
                                 <td><?php echo esc_html($submission['field3']); ?></td>
                                 <td><?php echo esc_html($submission['field6'] ?? ''); ?></td>
                                 <td><?php echo esc_html($submission['field4']); ?></td>
+                                <td><?php echo esc_html($submission['meldegruppe'] ?? ''); ?></td>
                                 <td><?php echo esc_html($submission['field5']); ?></td>
                                 <td><?php echo esc_html(mysql2date('d.m.Y H:i', $submission['created_at'])); ?></td>
                                 <td>
@@ -1112,51 +1370,24 @@ class AHGMH_Admin_Page_Modern {
 
     /**
      * AJAX handler for quick export
+     * Bug #2 Fix: Verwendet jetzt zentrale AHGMH_Export_Service
      */
     public function ajax_quick_export() {
         AHGMH_Validation_Service::verify_ajax_request();
-        
+
         $species = sanitize_text_field($_POST['species'] ?? '');
         $format = sanitize_text_field($_POST['format'] ?? 'csv');
-        
+
         try {
-            $filename = AHGMH_Validation_Service::generate_secure_filename('abschuss_export', $format);
-            $upload_dir = wp_upload_dir();
-            $filepath = $upload_dir['path'] . '/' . $filename;
-            
-            // Get submissions
-            global $wpdb;
-            $table_name = $wpdb->prefix . 'ahgmh_submissions';
-            
-            if (!empty($species)) {
-                $query = $wpdb->prepare("SELECT datum, art, kategorie, meldegruppe, anzahl FROM $table_name WHERE art = %s ORDER BY datum DESC", $species);
-            } else {
-                $query = "SELECT datum, art, kategorie, meldegruppe, anzahl FROM $table_name ORDER BY datum DESC";
-            }
-            
-            $submissions = $wpdb->get_results($query);
-            
-            $fp = fopen($filepath, 'w');
-            fputcsv($fp, ['Datum', 'Art', 'Kategorie', 'Meldegruppe', 'Anzahl']);
-            
-            foreach ($submissions as $submission) {
-                fputcsv($fp, [
-                    esc_html($submission->datum),
-                    esc_html($submission->art),
-                    esc_html($submission->kategorie),
-                    esc_html($submission->meldegruppe),
-                    absint($submission->anzahl)
-                ]);
-            }
-            fclose($fp);
-            
-            $download_url = $upload_dir['url'] . '/' . $filename;
-            
-            wp_send_json_success([
-                'download_url' => esc_url($download_url),
-                'filename' => esc_html($filename)
-            ]);
-            
+            // Zentrale Export-Service verwenden (Bug #2 Fix)
+            $export_service = new AHGMH_Export_Service();
+            $result = $export_service->export_submissions(array(
+                'wildart' => $species,
+                'format' => $format
+            ));
+
+            wp_send_json_success($result);
+
         } catch (Exception $e) {
             error_log('AHGMH Export Error: ' . $e->getMessage());
             wp_send_json_error(__('Fehler beim Export. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh'));
@@ -1200,7 +1431,7 @@ class AHGMH_Admin_Page_Modern {
                 <div class="ahgmh-wp-stat-item">
                     <span class="dashicons dashicons-calendar-alt ahgmh-wp-stat-icon"></span>
                     <div class="ahgmh-wp-stat-content">
-                        <strong><?php echo esc_html($stats['this_month']); ?></strong>
+                        <strong><?php echo esc_html($stats['submissions_this_month']); ?></strong>
                         <span><?php echo esc_html__('Dieser Monat', 'abschussplan-hgmh'); ?></span>
                     </div>
                 </div>
@@ -2282,52 +2513,288 @@ class AHGMH_Admin_Page_Modern {
         echo $jagdbezirk_controller->render_tab_content();
     }
 
+    /**
+     * Render Migrations settings tab
+     */
+    private function render_migrations_tab() {
+        // Initialize migration manager
+        $migration_manager = new AHGMH_Migration_Manager();
+        $current_version = $migration_manager->get_current_version();
+        $migrations = $migration_manager->get_available_migrations();
+        $latest_version = !empty($migrations) ? max(array_keys($migrations)) : 0;
+        $is_up_to_date = ($current_version >= $latest_version);
+        ?>
+        <div class="ahgmh-settings-panel">
+            <h2 class="panel-title">
+                <span class="dashicons dashicons-update"></span>
+                <?php echo esc_html__('Datenbank-Migrationen', 'abschussplan-hgmh'); ?>
+            </h2>
+            <p class="panel-description">
+                <?php echo esc_html__('Verwalten Sie die Datenbankschema-Versionen und Migrationen.', 'abschussplan-hgmh'); ?>
+            </p>
+
+            <!-- Current Status -->
+            <div class="ahgmh-migration-status">
+                <div class="status-card <?php echo $is_up_to_date ? 'status-success' : 'status-warning'; ?>">
+                    <div class="status-icon">
+                        <span class="dashicons <?php echo $is_up_to_date ? 'dashicons-yes-alt' : 'dashicons-warning'; ?>"></span>
+                    </div>
+                    <div class="status-content">
+                        <h3><?php echo esc_html__('Aktuelle Schema-Version', 'abschussplan-hgmh'); ?>: <?php echo esc_html($current_version); ?></h3>
+                        <p>
+                            <?php if ($is_up_to_date): ?>
+                                <?php echo esc_html__('Ihre Datenbank ist auf dem neuesten Stand.', 'abschussplan-hgmh'); ?>
+                            <?php else: ?>
+                                <?php echo sprintf(
+                                    esc_html__('Es sind %d ausstehende Migration(en) verfuegbar. Neueste Version: %d', 'abschussplan-hgmh'),
+                                    $latest_version - $current_version,
+                                    $latest_version
+                                ); ?>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Migration Actions -->
+            <div class="ahgmh-migration-actions">
+                <button type="button" class="button button-primary" id="run-all-migrations" <?php echo $is_up_to_date ? 'disabled' : ''; ?>>
+                    <span class="dashicons dashicons-update"></span>
+                    <?php echo esc_html__('Alle Migrationen ausfuehren', 'abschussplan-hgmh'); ?>
+                </button>
+                <button type="button" class="button" id="refresh-migration-status">
+                    <span class="dashicons dashicons-image-rotate"></span>
+                    <?php echo esc_html__('Status aktualisieren', 'abschussplan-hgmh'); ?>
+                </button>
+            </div>
+
+            <!-- Migrations List -->
+            <div class="ahgmh-migrations-list">
+                <h3><?php echo esc_html__('Verfuegbare Migrationen', 'abschussplan-hgmh'); ?></h3>
+                <?php if (empty($migrations)): ?>
+                    <p class="no-migrations"><?php echo esc_html__('Keine Migrationen gefunden.', 'abschussplan-hgmh'); ?></p>
+                <?php else: ?>
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th><?php echo esc_html__('Version', 'abschussplan-hgmh'); ?></th>
+                                <th><?php echo esc_html__('Name', 'abschussplan-hgmh'); ?></th>
+                                <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                                <th><?php echo esc_html__('Aktionen', 'abschussplan-hgmh'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($migrations as $version => $migration): ?>
+                                <tr class="migration-row <?php echo $migration['applied'] ? 'applied' : 'pending'; ?>">
+                                    <td><strong><?php echo esc_html($version); ?></strong></td>
+                                    <td><?php echo esc_html(ucfirst($migration['name'])); ?></td>
+                                    <td>
+                                        <?php if ($migration['applied']): ?>
+                                            <span class="migration-status applied">
+                                                <span class="dashicons dashicons-yes-alt"></span>
+                                                <?php echo esc_html__('Angewendet', 'abschussplan-hgmh'); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="migration-status pending">
+                                                <span class="dashicons dashicons-clock"></span>
+                                                <?php echo esc_html__('Ausstehend', 'abschussplan-hgmh'); ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!$migration['applied']): ?>
+                                            <button type="button" class="button button-small run-single-migration" data-version="<?php echo esc_attr($version); ?>">
+                                                <?php echo esc_html__('Ausfuehren', 'abschussplan-hgmh'); ?>
+                                            </button>
+                                        <?php elseif ($version > 0): ?>
+                                            <button type="button" class="button button-small button-link-delete rollback-migration" data-version="<?php echo esc_attr($version - 1); ?>">
+                                                <?php echo esc_html__('Zuruecksetzen', 'abschussplan-hgmh'); ?>
+                                            </button>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+
+            <!-- Migration Log -->
+            <div class="ahgmh-migration-log" id="migration-log" style="display: none;">
+                <h3><?php echo esc_html__('Migrationsprotokoll', 'abschussplan-hgmh'); ?></h3>
+                <div class="log-content" id="migration-log-content"></div>
+            </div>
+        </div>
+
+        <style>
+            .ahgmh-migration-status { margin: 20px 0; }
+            .status-card { display: flex; align-items: center; padding: 15px 20px; border-radius: 4px; background: #f0f0f1; border-left: 4px solid #72aee6; }
+            .status-card.status-success { background: #edfaef; border-left-color: #00a32a; }
+            .status-card.status-warning { background: #fcf9e8; border-left-color: #dba617; }
+            .status-icon { margin-right: 15px; }
+            .status-icon .dashicons { font-size: 36px; width: 36px; height: 36px; }
+            .status-success .status-icon .dashicons { color: #00a32a; }
+            .status-warning .status-icon .dashicons { color: #dba617; }
+            .status-content h3 { margin: 0 0 5px; }
+            .status-content p { margin: 0; color: #646970; }
+            .ahgmh-migration-actions { margin: 20px 0; display: flex; gap: 10px; }
+            .ahgmh-migration-actions .dashicons { margin-right: 5px; vertical-align: middle; }
+            .ahgmh-migrations-list { margin: 20px 0; }
+            .migration-row.applied { background-color: #edfaef; }
+            .migration-row.pending { background-color: #fcf9e8; }
+            .migration-status { display: inline-flex; align-items: center; gap: 5px; }
+            .migration-status.applied { color: #00a32a; }
+            .migration-status.pending { color: #dba617; }
+            .migration-status .dashicons { font-size: 16px; width: 16px; height: 16px; }
+            .ahgmh-migration-log { margin-top: 20px; padding: 15px; background: #23282d; border-radius: 4px; }
+            .ahgmh-migration-log h3 { color: #fff; margin-top: 0; }
+            .log-content { font-family: monospace; font-size: 13px; color: #50c878; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        </style>
+
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Run all migrations
+            $('#run-all-migrations').on('click', function() {
+                var $btn = $(this);
+                $btn.prop('disabled', true).text('<?php echo esc_js(__('Migrationen werden ausgefuehrt...', 'abschussplan-hgmh')); ?>');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'ahgmh_run_migration',
+                        nonce: ahgmhAdmin.nonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showMigrationLog(response.data.log);
+                            location.reload();
+                        } else {
+                            alert(response.data.message || '<?php echo esc_js(__('Migration fehlgeschlagen', 'abschussplan-hgmh')); ?>');
+                            $btn.prop('disabled', false).html('<span class="dashicons dashicons-update"></span> <?php echo esc_js(__('Alle Migrationen ausfuehren', 'abschussplan-hgmh')); ?>');
+                        }
+                    },
+                    error: function() {
+                        alert('<?php echo esc_js(__('Fehler bei der Kommunikation mit dem Server', 'abschussplan-hgmh')); ?>');
+                        $btn.prop('disabled', false).html('<span class="dashicons dashicons-update"></span> <?php echo esc_js(__('Alle Migrationen ausfuehren', 'abschussplan-hgmh')); ?>');
+                    }
+                });
+            });
+
+            // Run single migration
+            $('.run-single-migration').on('click', function() {
+                var version = $(this).data('version');
+                var $btn = $(this);
+                $btn.prop('disabled', true);
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'ahgmh_run_migration',
+                        target_version: version,
+                        nonce: ahgmhAdmin.nonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showMigrationLog(response.data.log);
+                            location.reload();
+                        } else {
+                            alert(response.data.message || '<?php echo esc_js(__('Migration fehlgeschlagen', 'abschussplan-hgmh')); ?>');
+                            $btn.prop('disabled', false);
+                        }
+                    }
+                });
+            });
+
+            // Rollback migration
+            $('.rollback-migration').on('click', function() {
+                if (!confirm('<?php echo esc_js(__('Sind Sie sicher, dass Sie diese Migration zuruecksetzen moechten? Dies kann Datenverlust verursachen!', 'abschussplan-hgmh')); ?>')) {
+                    return;
+                }
+
+                var version = $(this).data('version');
+                var $btn = $(this);
+                $btn.prop('disabled', true);
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'ahgmh_rollback_migration',
+                        target_version: version,
+                        nonce: ahgmhAdmin.nonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showMigrationLog(response.data.log);
+                            location.reload();
+                        } else {
+                            alert(response.data.message || '<?php echo esc_js(__('Rollback fehlgeschlagen', 'abschussplan-hgmh')); ?>');
+                            $btn.prop('disabled', false);
+                        }
+                    }
+                });
+            });
+
+            // Refresh status
+            $('#refresh-migration-status').on('click', function() {
+                location.reload();
+            });
+
+            // Show migration log
+            function showMigrationLog(log) {
+                if (log && log.length > 0) {
+                    $('#migration-log').show();
+                    $('#migration-log-content').text(log.join('\n'));
+                }
+            }
+        });
+        </script>
+        <?php
+    }
+
     // ========================================
     // AJAX HANDLERS
     // ========================================
 
     /**
      * AJAX: Export data with filters
+     * Bug #2 Fix: Verwendet jetzt zentrale AHGMH_Export_Service
      */
     public function ajax_export_data() {
         check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
+
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
         }
-        
-        $format = sanitize_text_field($_POST['format'] ?? 'csv');
-        $species = sanitize_text_field($_POST['species'] ?? '');
-        
-        $database = abschussplan_hgmh()->database;
-        $submissions = $database->get_submissions_by_species(0, 0, $species);
-        
-        if (empty($submissions)) {
-            wp_send_json_error(__('Keine Daten zum Exportieren gefunden', 'abschussplan-hgmh'));
-        }
-        
-        // Generate CSV content
-        $csv_content = $this->generate_csv_content($submissions);
-        
-        // Create filename
-        $timestamp = date('Y-m-d_H-i-s');
-        $species_suffix = $species ? '_' . sanitize_file_name($species) : '';
-        $filename = "abschuss_export_{$timestamp}{$species_suffix}.csv";
-        
-        // Save to uploads directory
-        $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['path'] . '/' . $filename;
-        
-        if (file_put_contents($file_path, $csv_content) === false) {
+
+        try {
+            // Filter aus POST-Daten extrahieren (Bug #2 Fix)
+            $filters = array(
+                'wildart' => sanitize_text_field($_POST['species'] ?? $_POST['wildart'] ?? ''),
+                'meldegruppe' => sanitize_text_field($_POST['meldegruppe'] ?? ''),
+                'date_from' => sanitize_text_field($_POST['date_from'] ?? ''),
+                'date_to' => sanitize_text_field($_POST['date_to'] ?? ''),
+                'status' => sanitize_text_field($_POST['status'] ?? ''),
+                'format' => sanitize_text_field($_POST['format'] ?? 'csv')
+            );
+
+            // Zentrale Export-Service verwenden (Bug #2 Fix)
+            $export_service = new AHGMH_Export_Service();
+            $result = $export_service->export_submissions($filters);
+
+            if ($result['records'] === 0) {
+                wp_send_json_error(__('Keine Daten zum Exportieren gefunden', 'abschussplan-hgmh'));
+                return;
+            }
+
+            wp_send_json_success($result);
+
+        } catch (Exception $e) {
+            error_log('AHGMH Export Error: ' . $e->getMessage());
             wp_send_json_error(__('Fehler beim Erstellen der Export-Datei', 'abschussplan-hgmh'));
         }
-        
-        $download_url = $upload_dir['url'] . '/' . $filename;
-        
-        wp_send_json_success(array(
-            'download_url' => $download_url,
-            'filename' => $filename
-        ));
     }
 
     /**
@@ -2356,21 +2823,111 @@ class AHGMH_Admin_Page_Modern {
     }
 
     /**
+     * AJAX: Get submission data for edit form
+     */
+    public function ajax_get_submission_data() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
+        }
+
+        $id = intval($_POST['id'] ?? 0);
+
+        if ($id <= 0) {
+            wp_send_json_error(__('Ungueltige Meldungs-ID', 'abschussplan-hgmh'));
+        }
+
+        $database = abschussplan_hgmh()->database;
+        $submission = $database->get_submission_by_id($id);
+
+        if (!$submission) {
+            wp_send_json_error(__('Meldung nicht gefunden', 'abschussplan-hgmh'));
+        }
+
+        // Get user info
+        $user_display_name = '';
+        if (!empty($submission['user_id'])) {
+            $user = get_user_by('id', $submission['user_id']);
+            if ($user) {
+                $user_display_name = $user->display_name;
+            }
+        }
+
+        // Get available options for dropdowns
+        $wildart = $submission['game_species'];
+
+        // Get categories for this wildart
+        $categories = array();
+        if (class_exists('AHGMH_Wildart_Repository')) {
+            $wildart_repo = new AHGMH_Wildart_Repository();
+            $categories = $wildart_repo->get_categories($wildart);
+        }
+
+        // Get all jagdbezirke
+        $jagdbezirke = $database->get_jagdbezirke();
+
+        // Get meldegruppen for this wildart
+        $meldegruppen = $database->get_meldegruppen_for_wildart($wildart);
+
+        // Get all users for dropdown (only admins and editors)
+        $users = get_users(array(
+            'role__in' => array('administrator', 'editor', 'author', 'contributor', 'obmann'),
+            'orderby' => 'display_name',
+            'order' => 'ASC'
+        ));
+
+        $users_list = array();
+        foreach ($users as $user) {
+            $users_list[] = array(
+                'id' => $user->ID,
+                'display_name' => $user->display_name
+            );
+        }
+
+        // Format submission data for response
+        $response_data = array(
+            'submission' => array(
+                'id' => $submission['id'],
+                'wildart' => $submission['game_species'],
+                'kategorie' => $submission['field2'],
+                'wus_nummer' => $submission['field3'],
+                'bemerkung' => $submission['field4'],
+                'jagdbezirk' => $submission['field5'],
+                'interne_notiz' => $submission['field6'] ?? '',
+                'meldegruppe' => $submission['meldegruppe'] ?? '',
+                'user_id' => $submission['user_id'],
+                'user_display_name' => $user_display_name,
+                'created_at' => $submission['created_at'],
+                'status' => $submission['status'] ?? 'pending'
+            ),
+            'options' => array(
+                'categories' => $categories,
+                'jagdbezirke' => $jagdbezirke,
+                'meldegruppen' => $meldegruppen,
+                'users' => $users_list
+            )
+        );
+
+        wp_send_json_success($response_data);
+    }
+
+    /**
      * AJAX: Edit submission
      */
     public function ajax_edit_submission() {
         check_ajax_referer('ahgmh_admin_nonce', 'nonce');
-        
+
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
         }
-        
+
         $id = intval($_POST['id'] ?? 0);
-        
+
         if ($id <= 0) {
-            wp_send_json_error(__('Ungültige Meldungs-ID', 'abschussplan-hgmh'));
+            wp_send_json_error(__('Ungueltige Meldungs-ID', 'abschussplan-hgmh'));
         }
-        
+
         // Sanitize inputs
         $data = array(
             'game_species' => sanitize_text_field($_POST['wildart'] ?? ''),
@@ -2379,28 +2936,51 @@ class AHGMH_Admin_Page_Modern {
             'field4' => sanitize_textarea_field($_POST['bemerkung'] ?? ''),
             'field5' => sanitize_text_field($_POST['jagdbezirk'] ?? ''),
             'field6' => sanitize_textarea_field($_POST['interne_notiz'] ?? ''),
-            'created_at' => sanitize_text_field($_POST['datum'] ?? '')
+            'created_at' => sanitize_text_field($_POST['datum'] ?? ''),
+            'user_id' => intval($_POST['user_id'] ?? 0)
         );
-        
+
         // Convert datetime-local format to MySQL datetime format
         if ($data['created_at']) {
             // Input format: YYYY-MM-DDTHH:MM
             $datetime = str_replace('T', ' ', $data['created_at']);
             $data['created_at'] = $datetime . ':00'; // Add seconds
         }
-        
+
         // Validate required fields
         if (empty($data['game_species']) || empty($data['field2'])) {
             wp_send_json_error(__('Wildart und Kategorie sind Pflichtfelder', 'abschussplan-hgmh'));
         }
-        
+
         $database = abschussplan_hgmh()->database;
-        
+
         if ($database->update_submission($id, $data)) {
             wp_send_json_success(__('Meldung erfolgreich aktualisiert', 'abschussplan-hgmh'));
         } else {
             wp_send_json_error(__('Fehler beim Aktualisieren der Meldung', 'abschussplan-hgmh'));
         }
+    }
+
+    /**
+     * AJAX: Get Jagdbezirke filtered by Meldegruppe (Admin version)
+     */
+    public function ajax_admin_get_jagdbezirke_by_meldegruppe() {
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions', 'abschussplan-hgmh'));
+        }
+
+        $meldegruppe = sanitize_text_field($_POST['meldegruppe'] ?? '');
+
+        if (empty($meldegruppe)) {
+            wp_send_json_error(__('Meldegruppe ist erforderlich', 'abschussplan-hgmh'));
+        }
+
+        $database = abschussplan_hgmh()->database;
+        $jagdbezirke = $database->get_jagdbezirke_by_meldegruppe($meldegruppe);
+
+        wp_send_json_success($jagdbezirke);
     }
 
     /**
@@ -4376,18 +4956,6 @@ class AHGMH_Admin_Page_Modern {
             </div>
         </div>
         <?php
-    }
-
-    /**
-     * Render Wildarten Management Page
-     * Includes the standalone wildarten configuration page
-     */
-    public function render_wildarten_management() {
-        // Include the standalone wildarten management page
-        require_once plugin_dir_path(__FILE__) . 'wildarten/index.php';
-
-        // Call the rendering function
-        ahgmh_render_wildarten_management_page();
     }
 
     /**

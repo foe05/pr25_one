@@ -97,7 +97,24 @@ class AHGMH_Wildart_Service {
      * Get meldegruppen for wildart
      */
     public function get_meldegruppen($wildart) {
-        return $this->repository->get_meldegruppen($wildart);
+        $meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+
+        if (isset($meldegruppen[$wildart]) && !empty($meldegruppen[$wildart])) {
+            return AHGMH_Validation_Service::sanitize_text_array($meldegruppen[$wildart]);
+        }
+
+        // Initialize default meldegruppen if none configured
+        $this->initialize_default_meldegruppen($wildart);
+
+        // Re-fetch from database after initialization
+        $meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+
+        if (isset($meldegruppen[$wildart]) && !empty($meldegruppen[$wildart])) {
+            return AHGMH_Validation_Service::sanitize_text_array($meldegruppen[$wildart]);
+        }
+
+        // Final fallback
+        return ['Gruppe_A', 'Gruppe_B'];
     }
     
     /**
@@ -112,15 +129,34 @@ class AHGMH_Wildart_Service {
             return !empty(trim($item));
         });
 
-        // Save via repository
-        $result = $this->repository->save_meldegruppen($wildart, array_values($meldegruppen));
+        // Get current configuration
+        $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+        $wildart_meldegruppen[$wildart] = array_values($meldegruppen);
 
-        // Update the global meldegruppen list for backwards compatibility
+        // Save to database
+        $result = update_option('ahgmh_wildart_meldegruppen', $wildart_meldegruppen);
+
+        // Also update the global meldegruppen list for backwards compatibility
         $this->update_global_meldegruppen_list();
 
         return $result;
     }
     
+    /**
+     * Initialize default meldegruppen for new wildart
+     */
+    private function initialize_default_meldegruppen($wildart) {
+        $meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+
+        // Only initialize if not already set
+        if (!isset($meldegruppen[$wildart]) || empty($meldegruppen[$wildart])) {
+            $meldegruppen[$wildart] = ['Gruppe_A', 'Gruppe_B'];
+            update_option('ahgmh_wildart_meldegruppen', $meldegruppen);
+
+            // Also update the global meldegruppen list for backwards compatibility
+            $this->update_global_meldegruppen_list();
+        }
+    }
     
     
     /**

@@ -39,12 +39,6 @@ class AHGMH_Wildart_Controller {
         add_action('wp_ajax_ahgmh_save_wildart_meldegruppen', array($this, 'ajax_save_wildart_meldegruppen'));
         add_action('wp_ajax_ahgmh_toggle_limit_mode', array($this, 'ajax_toggle_limit_mode'));
         add_action('wp_ajax_ahgmh_save_limits', array($this, 'ajax_save_limits'));
-        add_action('wp_ajax_ahgmh_assign_obmann', array($this, 'ajax_assign_obmann'));
-        add_action('wp_ajax_ahgmh_remove_obmann', array($this, 'ajax_remove_obmann'));
-        add_action('wp_ajax_ahgmh_get_obmann_assignments', array($this, 'ajax_get_obmann_assignments'));
-        add_action('wp_ajax_ahgmh_save_wildart_order', array($this, 'ajax_save_wildart_order'));
-        add_action('wp_ajax_ahgmh_get_meldegruppen_for_wildart', array($this, 'ajax_get_meldegruppen_for_wildart'));
-        add_action('wp_ajax_ahgmh_reset_all_assignments', array($this, 'ajax_reset_all_assignments'));
     }
     
     /**
@@ -148,7 +142,7 @@ class AHGMH_Wildart_Controller {
             $meldegruppen = AHGMH_Validation_Service::sanitize_text_array($_POST['meldegruppen'] ?? []);
 
             if (empty($wildart)) {
-                wp_send_json_error('Wildart nicht angegeben');
+                wp_send_json_error(__('Wildart nicht angegeben', 'abschussplan-hgmh'));
                 return;
             }
 
@@ -158,7 +152,7 @@ class AHGMH_Wildart_Controller {
             ));
 
         } catch (Exception $e) {
-            wp_send_json_error('Fehler beim Speichern: ' . esc_html($e->getMessage()));
+            wp_send_json_error(__('Fehler beim Speichern: ', 'abschussplan-hgmh') . esc_html($e->getMessage()));
         }
     }
     

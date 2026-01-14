@@ -96,12 +96,12 @@ if (!defined('ABSPATH')) {
             <label for="field5" class="form-label"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></label>
             <select class="form-select" id="field5" name="field5" required>
                 <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'abschussplan-hgmh'); ?></option>
-                
-                <?php 
+
+                <?php
                 // Get meldegruppen from database with permission filtering
                 $database = abschussplan_hgmh()->database;
                 $user_id = get_current_user_id();
-                
+
                 if (!AHGMH_Permissions_Service::is_vorstand($user_id)) {
                     // Obmann: Only show their assigned meldegruppe for this wildart
                     $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
@@ -111,17 +111,30 @@ if (!defined('ABSPATH')) {
                     $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
                     $meldegruppen = isset($wildart_meldegruppen[$selected_species]) ? $wildart_meldegruppen[$selected_species] : ['Gruppe_A', 'Gruppe_B'];
                 }
-                
+
                 foreach ($meldegruppen as $meldegruppe) : ?>
                     <option value="<?php echo esc_attr($meldegruppe); ?>">
                         <?php echo esc_html($meldegruppe); ?>
                     </option>
                 <?php endforeach; ?>
-                
+
             </select>
             <div class="form-error"></div>
         </div>
-        
+
+        <!-- Jagdbezirk Dropdown - dynamically populated based on Meldegruppe selection -->
+        <div class="mb-3" id="jagdbezirk-container" style="display: none;">
+            <label for="field7" class="form-label"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></label>
+            <select class="form-select" id="field7" name="field7" required>
+                <option value="" selected disabled><?php echo esc_html__('Bitte zuerst Meldegruppe wählen...', 'abschussplan-hgmh'); ?></option>
+            </select>
+            <div class="form-error"></div>
+            <small class="text-muted" id="jagdbezirk-loading" style="display: none;">
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <?php echo esc_html__('Lade Jagdbezirke...', 'abschussplan-hgmh'); ?>
+            </small>
+        </div>
+
         <div class="mb-3">
             <label for="field4" class="form-label"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></label>
             <textarea class="form-control" id="field4" name="field4" rows="4"></textarea>

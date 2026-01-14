@@ -442,36 +442,72 @@ class AHGMH_Database_Handler {
      *
      * @param int $limit Number of results to get
      * @param int $offset Offset for pagination
+     * @param bool $approved_only If true, only return approved submissions (for public views)
      * @return array Array of submissions
      */
-    public function get_submissions($limit = 10, $offset = 0) {
+    public function get_submissions($limit = 10, $offset = 0, $approved_only = false) {
         global $wpdb;
-        
-        $query = "SELECT s.*, j.meldegruppe 
-                  FROM $this->table_name s 
-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk 
-                  ORDER BY s.created_at DESC";
-        
+
+        $query = "SELECT s.*, j.meldegruppe
+                  FROM $this->table_name s
+                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
+
+        // Bug #13b & #14: Only return approved submissions for public views
+        if ($approved_only) {
+            $query .= " WHERE s.status = 'approved'";
+        }
+
+        $query .= " ORDER BY s.created_at DESC";
+
         if ($limit > 0) {
             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
         }
-        
+
         $results = $wpdb->get_results($query, ARRAY_A);
-        
+
         return $results;
+    }
+
+    /**
+     * Get a single submission by ID
+     *
+     * @param int $id Submission ID
+     * @return array|null Submission data or null if not found
+     */
+    public function get_submission_by_id($id) {
+        global $wpdb;
+
+        $query = $wpdb->prepare(
+            "SELECT s.*, j.meldegruppe
+             FROM $this->table_name s
+             LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+             WHERE s.id = %d",
+            $id
+        );
+
+        $result = $wpdb->get_row($query, ARRAY_A);
+
+        return $result;
     }
 
     /**
      * Count total submissions
      *
+     * @param bool $approved_only If true, only count approved submissions (for public views)
      * @return int Total count of submissions
      */
-    public function count_submissions() {
+    public function count_submissions($approved_only = false) {
         global $wpdb;
-        
+
         $query = "SELECT COUNT(*) FROM $this->table_name";
+
+        // Bug #13b & #14: Only count approved submissions for public views
+        if ($approved_only) {
+            $query .= " WHERE status = 'approved'";
+        }
+
         $count = $wpdb->get_var($query);
-        
+
         return (int) $count;
     }
 
@@ -562,25 +598,32 @@ class AHGMH_Database_Handler {
      */
     public function update_submission($id, $data) {
         global $wpdb;
-        
-        // Remove any empty values except created_at which can be empty but valid
+
+        // Fields that should use integer format
+        $integer_fields = array('user_id', 'approved_by', 'rejected_by', 'time_to_approval');
+
+        // Remove any empty values except created_at and user_id which can be empty/zero but valid
         $filtered_data = array();
         foreach ($data as $key => $value) {
-            if ($value !== null && ($key === 'created_at' || $value !== '')) {
+            if ($value !== null && ($key === 'created_at' || $key === 'user_id' || $value !== '')) {
                 $filtered_data[$key] = $value;
             }
         }
-        
+
         if (empty($filtered_data)) {
             return false;
         }
-        
-        // Build format array dynamically based on filtered data
+
+        // Build format array dynamically based on filtered data with correct types
         $formats = array();
         foreach ($filtered_data as $key => $value) {
-            $formats[] = '%s';
+            if (in_array($key, $integer_fields)) {
+                $formats[] = '%d';
+            } else {
+                $formats[] = '%s';
+            }
         }
-        
+
         $result = $wpdb->update(
             $this->table_name,
             $filtered_data,
@@ -588,7 +631,7 @@ class AHGMH_Database_Handler {
             $formats,
             array('%d')
         );
-        
+
         return $result !== false;
     }
 
@@ -616,42 +659,48 @@ class AHGMH_Database_Handler {
      * @param string $species Filter by game species (optional)
      * @param string $meldegruppe Filter by meldegruppe (optional - legacy, maintained for compatibility)
      * @param string $jagdbezirk Filter by jagdbezirk (optional - direct filtering)
+     * @param bool $approved_only If true, only count approved submissions (for public views)
      * @return array Array with category counts
      */
-    public function get_category_counts($species = '', $meldegruppe = '', $jagdbezirk = '') {
+    public function get_category_counts($species = '', $meldegruppe = '', $jagdbezirk = '', $approved_only = false) {
         global $wpdb;
-        
-        $query = "SELECT s.field2 as category, COUNT(*) as count 
+
+        $query = "SELECT s.field2 as category, COUNT(*) as count
                   FROM $this->table_name s";
-        
+
         // Add JOIN only if meldegruppe filter is needed (legacy compatibility)
         if (!empty($meldegruppe)) {
             $query .= " LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
         }
-        
+
         $query .= " WHERE s.field2 != ''";
-        
+
+        // Bug #13b & #14: Only count approved submissions for public views
+        if ($approved_only) {
+            $query .= " AND s.status = 'approved'";
+        }
+
         if (!empty($species)) {
             $query .= $wpdb->prepare(" AND s.game_species = %s", $species);
         }
-        
+
         if (!empty($meldegruppe)) {
             $query .= $wpdb->prepare(" AND j.meldegruppe = %s", $meldegruppe);
         }
-        
+
         // Direct jagdbezirk filtering (no JOIN needed) - 3rd parameter is jagdbezirk value
         if (!empty($jagdbezirk)) {
             $query .= $wpdb->prepare(" AND s.field5 = %s", $jagdbezirk);
         }
-        
+
         $query .= " GROUP BY s.field2";
         $results = $wpdb->get_results($query, ARRAY_A);
-        
+
         $counts = array();
         foreach ($results as $result) {
             $counts[$result['category']] = (int) $result['count'];
         }
-        
+
         return $counts;
     }
 
@@ -661,104 +710,144 @@ class AHGMH_Database_Handler {
      * @param int $limit Number of results to get
      * @param int $offset Offset for pagination
      * @param string $species Filter by game species (optional)
+     * @param bool $approved_only If true, only return approved submissions (for public views)
      * @return array Array of submissions
      */
-    public function get_submissions_by_species($limit = 10, $offset = 0, $species = '') {
+    public function get_submissions_by_species($limit = 10, $offset = 0, $species = '', $approved_only = false) {
         global $wpdb;
-        
-        $query = "SELECT s.*, j.meldegruppe 
-                  FROM $this->table_name s 
+
+        $query = "SELECT s.*, j.meldegruppe
+                  FROM $this->table_name s
                   LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
-        
+
+        $where_clauses = array();
+
         if (!empty($species)) {
-            $query .= $wpdb->prepare(" WHERE s.game_species = %s", $species);
+            $where_clauses[] = $wpdb->prepare("s.game_species = %s", $species);
         }
-        
+
+        // Bug #13b & #14: Only return approved submissions for public views
+        if ($approved_only) {
+            $where_clauses[] = "s.status = 'approved'";
+        }
+
+        if (!empty($where_clauses)) {
+            $query .= " WHERE " . implode(" AND ", $where_clauses);
+        }
+
         $query .= " ORDER BY s.created_at DESC";
-        
+
         if ($limit > 0) {
             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
         }
-        
+
         $results = $wpdb->get_results($query, ARRAY_A);
-        
+
         return $results;
     }
 
     /**
-    * Count submissions filtered by species
-    *
-    * @param string $species Filter by game species (optional)
-    * @return int Total count of submissions
-    */
-    public function count_submissions_by_species($species = '') {
-    global $wpdb;
-    
-    $query = "SELECT COUNT(*) FROM $this->table_name";
-    
-    if (!empty($species)) {
-    $query .= $wpdb->prepare(" WHERE game_species = %s", $species);
-    }
-    
-    $count = $wpdb->get_var($query);
-    
-    return (int) $count;
+     * Count submissions filtered by species
+     *
+     * @param string $species Filter by game species (optional)
+     * @param bool $approved_only If true, only count approved submissions (for public views)
+     * @return int Total count of submissions
+     */
+    public function count_submissions_by_species($species = '', $approved_only = false) {
+        global $wpdb;
+
+        $query = "SELECT COUNT(*) FROM $this->table_name";
+
+        $where_clauses = array();
+
+        if (!empty($species)) {
+            $where_clauses[] = $wpdb->prepare("game_species = %s", $species);
+        }
+
+        // Bug #13b & #14: Only count approved submissions for public views
+        if ($approved_only) {
+            $where_clauses[] = "status = 'approved'";
+        }
+
+        if (!empty($where_clauses)) {
+            $query .= " WHERE " . implode(" AND ", $where_clauses);
+        }
+
+        $count = $wpdb->get_var($query);
+
+        return (int) $count;
     }
      
-     /**
-      * Get submissions filtered by species and meldegruppe
-      *
-      * @param string $species Game species
-      * @param string $meldegruppe Meldegruppe name
-      * @param int $limit Number of results to return
-      * @param int $offset Number of results to skip
-      * @return array Array of submission records
-      */
-     public function get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit = 10, $offset = 0) {
-         global $wpdb;
-         
-         if (empty($species) || empty($meldegruppe)) {
-             return array();
-         }
-         
-         $query = "SELECT s.*, j.meldegruppe 
-                   FROM $this->table_name s 
-                   LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
-                   WHERE s.game_species = %s AND j.meldegruppe = %s
-                   ORDER BY s.created_at DESC";
-         
-         if ($limit > 0) {
-             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
-         }
-         
-         $results = $wpdb->get_results($wpdb->prepare($query, $species, $meldegruppe), ARRAY_A);
-         
-         return $results ? $results : array();
-     }
-     
-     /**
-      * Count submissions filtered by species and meldegruppe
-      *
-      * @param string $species Game species
-      * @param string $meldegruppe Meldegruppe name
-      * @return int Total count of submissions
-      */
-     public function count_submissions_by_species_and_meldegruppe($species, $meldegruppe) {
-         global $wpdb;
-         
-         if (empty($species) || empty($meldegruppe)) {
-             return 0;
-         }
-         
-         $query = "SELECT COUNT(*) 
-                   FROM $this->table_name s 
-                   LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
-                   WHERE s.game_species = %s AND j.meldegruppe = %s";
-         
-         $count = $wpdb->get_var($wpdb->prepare($query, $species, $meldegruppe));
-         
-         return (int) $count;
-     }
+    /**
+     * Get submissions filtered by species and meldegruppe
+     *
+     * @param string $species Game species
+     * @param string $meldegruppe Meldegruppe name
+     * @param int $limit Number of results to return
+     * @param int $offset Number of results to skip
+     * @param bool $approved_only If true, only return approved submissions (for public views)
+     * @return array Array of submission records
+     */
+    public function get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit = 10, $offset = 0, $approved_only = false) {
+        global $wpdb;
+
+        if (empty($species) || empty($meldegruppe)) {
+            return array();
+        }
+
+        $where_clause = "WHERE s.game_species = %s AND j.meldegruppe = %s";
+
+        // Bug #13b & #14: Only return approved submissions for public views
+        if ($approved_only) {
+            $where_clause .= " AND s.status = 'approved'";
+        }
+
+        $query = "SELECT s.*, j.meldegruppe
+                  FROM $this->table_name s
+                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+                  {$where_clause}
+                  ORDER BY s.created_at DESC";
+
+        if ($limit > 0) {
+            $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
+        }
+
+        $results = $wpdb->get_results($wpdb->prepare($query, $species, $meldegruppe), ARRAY_A);
+
+        return $results ? $results : array();
+    }
+
+    /**
+     * Count submissions filtered by species and meldegruppe
+     *
+     * @param string $species Game species
+     * @param string $meldegruppe Meldegruppe name
+     * @param bool $approved_only If true, only count approved submissions (for public views)
+     * @return int Total count of submissions
+     */
+    public function count_submissions_by_species_and_meldegruppe($species, $meldegruppe, $approved_only = false) {
+        global $wpdb;
+
+        if (empty($species) || empty($meldegruppe)) {
+            return 0;
+        }
+
+        $where_clause = "WHERE s.game_species = %s AND j.meldegruppe = %s";
+
+        // Bug #13b & #14: Only count approved submissions for public views
+        if ($approved_only) {
+            $where_clause .= " AND s.status = 'approved'";
+        }
+
+        $query = "SELECT COUNT(*)
+                  FROM $this->table_name s
+                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+                  {$where_clause}";
+
+        $count = $wpdb->get_var($wpdb->prepare($query, $species, $meldegruppe));
+
+        return (int) $count;
+    }
 
     /**
      * Get submissions filtered by meldegruppe only
@@ -766,19 +855,27 @@ class AHGMH_Database_Handler {
      * @param string $meldegruppe The meldegruppe to filter by
      * @param int $limit Number of submissions to return
      * @param int $offset Offset for pagination
+     * @param bool $approved_only If true, only return approved submissions (for public views)
      * @return array Array of submissions
      */
-    public function get_submissions_by_meldegruppe($meldegruppe, $limit = 10, $offset = 0) {
+    public function get_submissions_by_meldegruppe($meldegruppe, $limit = 10, $offset = 0, $approved_only = false) {
         global $wpdb;
 
         if (empty($meldegruppe)) {
             return array();
         }
 
+        $where_clause = "WHERE j.meldegruppe = %s";
+
+        // Bug #13b & #14: Only return approved submissions for public views
+        if ($approved_only) {
+            $where_clause .= " AND s.status = 'approved'";
+        }
+
         $query = "SELECT s.*, j.meldegruppe
                   FROM $this->table_name s
                   LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
-                  WHERE j.meldegruppe = %s
+                  {$where_clause}
                   ORDER BY s.created_at DESC";
 
         if ($limit > 0) {
@@ -794,19 +891,27 @@ class AHGMH_Database_Handler {
      * Count submissions filtered by meldegruppe only
      *
      * @param string $meldegruppe The meldegruppe to filter by
+     * @param bool $approved_only If true, only count approved submissions (for public views)
      * @return int Number of submissions
      */
-    public function count_submissions_by_meldegruppe($meldegruppe) {
+    public function count_submissions_by_meldegruppe($meldegruppe, $approved_only = false) {
         global $wpdb;
 
         if (empty($meldegruppe)) {
             return 0;
         }
 
+        $where_clause = "WHERE j.meldegruppe = %s";
+
+        // Bug #13b & #14: Only count approved submissions for public views
+        if ($approved_only) {
+            $where_clause .= " AND s.status = 'approved'";
+        }
+
         $query = "SELECT COUNT(*)
                   FROM $this->table_name s
                   LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
-                  WHERE j.meldegruppe = %s";
+                  {$where_clause}";
 
         $count = $wpdb->get_var($wpdb->prepare($query, $meldegruppe));
 
@@ -1376,17 +1481,50 @@ class AHGMH_Database_Handler {
 
     /**
      * Get all meldegruppen (for public summary validation)
-     * 
+     *
      * @return array Array of all available meldegruppen
      */
     public function get_all_meldegruppen() {
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
+
         $query = "SELECT DISTINCT meldegruppe FROM $table_name WHERE meldegruppe != '' ORDER BY meldegruppe";
         $results = $wpdb->get_col($query);
-        
+
+        return $results ?: array();
+    }
+
+    /**
+     * Get Jagdbezirke by Meldegruppe name
+     * Returns all active Jagdbezirke assigned to a specific Meldegruppe
+     *
+     * @param string $meldegruppe Meldegruppe name
+     * @return array Array of Jagdbezirke
+     */
+    public function get_jagdbezirke_by_meldegruppe($meldegruppe) {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        $meldegruppe = sanitize_text_field($meldegruppe);
+
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        if (!$table_exists) {
+            return array();
+        }
+
+        // Get active Jagdbezirke for this Meldegruppe
+        $query = $wpdb->prepare(
+            "SELECT id, jagdbezirk, meldegruppe, bemerkung
+             FROM $table_name
+             WHERE meldegruppe = %s AND ungueltig = 0
+             ORDER BY jagdbezirk ASC",
+            $meldegruppe
+        );
+
+        $results = $wpdb->get_results($query, ARRAY_A);
+
         return $results ?: array();
     }
 
@@ -1519,8 +1657,8 @@ class AHGMH_Database_Handler {
                 }
                 $combined_limits[$category] += $limit_value;
                 
-                // Get counts for this species/category
-                $category_counts = $this->get_category_counts($species);
+                // Get counts for this species/category (Bug #13b & #14: only approved submissions)
+                $category_counts = $this->get_category_counts($species, '', '', true);
                 $count_value = isset($category_counts[$category]) ? (int) $category_counts[$category] : 0;
                 
                 // Accumulate counts
@@ -1592,8 +1730,9 @@ class AHGMH_Database_Handler {
             }
         }
         
-        $counts = $this->get_category_counts($species);
-        
+        // Bug #13b & #14: only count approved submissions for public summary
+        $counts = $this->get_category_counts($species, '', '', true);
+
         return array(
             'categories' => $categories,
             'limits' => $limits,
@@ -1650,8 +1789,8 @@ class AHGMH_Database_Handler {
                     $combined_limits[$category] = $limit_value;
                 }
                 
-                // Get counts for this species/category/meldegruppe (direct filtering as jagdbezirk)
-                $category_counts = $this->get_category_counts($species, '', $meldegruppe);
+                // Get counts for this species/category/meldegruppe (Bug #13b & #14: only approved, direct filtering as jagdbezirk)
+                $category_counts = $this->get_category_counts($species, '', $meldegruppe, true);
                 $count_value = isset($category_counts[$category]) ? (int) $category_counts[$category] : 0;
                 
                 // Accumulate counts across species for this jagdbezirk
@@ -1719,9 +1858,9 @@ class AHGMH_Database_Handler {
         $exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
         $allow_exceeding = get_option($exceeding_key, array());
         
-        // Get counts for specific species + meldegruppe (direct filtering as jagdbezirk)
-        $counts = $this->get_category_counts($species, '', $meldegruppe);
-        
+        // Get counts for specific species + meldegruppe (Bug #13b & #14: only approved, direct filtering as jagdbezirk)
+        $counts = $this->get_category_counts($species, '', $meldegruppe, true);
+
         return array(
             'categories' => $categories,
             'limits' => $limits,
@@ -1729,7 +1868,7 @@ class AHGMH_Database_Handler {
             'allow_exceeding' => $allow_exceeding
         );
     }
-    
+
     /**
      * Save wildart (creates or updates wildart-specific settings)
      */
@@ -2160,5 +2299,104 @@ class AHGMH_Database_Handler {
         $count = $wpdb->get_var($query);
 
         return (int) $count > 0;
+    }
+
+    /**
+     * Count submissions this month by status
+     *
+     * @return array Array with counts per status
+     */
+    public function count_submissions_this_month_by_status() {
+        global $wpdb;
+
+        $current_month = date('m');
+        $current_year = date('Y');
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT status, COUNT(*) as count FROM $this->table_name
+             WHERE MONTH(created_at) = %s
+             AND YEAR(created_at) = %s
+             GROUP BY status",
+            $current_month, $current_year
+        ));
+
+        $status_counts = array(
+            'pending' => 0,
+            'approved' => 0,
+            'rejected' => 0,
+            'total' => 0
+        );
+
+        foreach ($results as $row) {
+            $status = strtolower($row->status);
+            if (isset($status_counts[$status])) {
+                $status_counts[$status] = (int) $row->count;
+            }
+            $status_counts['total'] += (int) $row->count;
+        }
+
+        return $status_counts;
+    }
+
+    /**
+     * Count submissions last month
+     *
+     * @return int Count of submissions last month
+     */
+    public function count_submissions_last_month() {
+        global $wpdb;
+
+        $last_month = date('m', strtotime('-1 month'));
+        $last_month_year = date('Y', strtotime('-1 month'));
+
+        $query = $wpdb->prepare(
+            "SELECT COUNT(*) FROM $this->table_name
+             WHERE MONTH(created_at) = %s
+             AND YEAR(created_at) = %s",
+            $last_month, $last_month_year
+        );
+
+        $count = $wpdb->get_var($query);
+
+        return (int) $count;
+    }
+
+    /**
+     * Get status counts by species
+     *
+     * @return array Array with species as keys and status counts as values
+     */
+    public function get_status_counts_by_species() {
+        global $wpdb;
+
+        $results = $wpdb->get_results(
+            "SELECT game_species, status, COUNT(*) as count
+             FROM $this->table_name
+             GROUP BY game_species, status
+             ORDER BY game_species, status"
+        );
+
+        $species_status = array();
+
+        foreach ($results as $row) {
+            $species = $row->game_species;
+            $status = strtolower($row->status);
+
+            if (!isset($species_status[$species])) {
+                $species_status[$species] = array(
+                    'pending' => 0,
+                    'approved' => 0,
+                    'rejected' => 0,
+                    'total' => 0
+                );
+            }
+
+            if (isset($species_status[$species][$status])) {
+                $species_status[$species][$status] = (int) $row->count;
+            }
+            $species_status[$species]['total'] += (int) $row->count;
+        }
+
+        return $species_status;
     }
 }

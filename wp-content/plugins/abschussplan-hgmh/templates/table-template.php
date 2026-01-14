@@ -37,6 +37,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                 <thead>
                     <tr>
                         <th scope="col"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></th>
@@ -62,13 +63,11 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                                 }
                                 ?>
                             </td>
+                            <td data-label="<?php echo esc_attr__('Meldegruppe', 'abschussplan-hgmh'); ?>">
+                                <?php echo esc_html($submission['meldegruppe'] ?? ''); ?>
+                            </td>
                             <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>">
-                                <?php 
-                                echo esc_html($submission['field5'] ?? '');
-                                if (!empty($submission['meldegruppe'])) {
-                                    echo ' (' . esc_html($submission['meldegruppe']) . ')';
-                                }
-                                ?>
+                                <?php echo esc_html($submission['field5'] ?? ''); ?>
                             </td>
                             <td data-label="<?php echo esc_attr__('Abschuss', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field2']); ?></td>
                             <td data-label="<?php echo esc_attr__('WUS', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field3']); ?></td>

@@ -1,0 +1,10 @@
+{
+  "discovered_files": {
+    "wp-content/plugins/abschussplan-hgmh/admin/services/class-pdf-service.php": {
+      "description": "Created comprehensive PDF service wrapper for DOMPDF with UTF-8 support, multiple output methods (generate, save, stream, base64), template loading, and graceful error handling when library is not installed",
+      "category": "pdf-generation",
+      "discovered_at": "2026-01-12T10:55:58.887521+00:00"
+    }
+  },
+  "last_updated": "2026-01-12T10:55:58.887601+00:00"
+}

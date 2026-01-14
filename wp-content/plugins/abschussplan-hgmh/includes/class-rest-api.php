@@ -313,21 +313,23 @@ class AHGMH_REST_API {
         $database = abschussplan_hgmh()->database;
         $offset = ($page - 1) * $per_page;
 
-        // Get submissions based on filters
+        // Bug #13b & #14: Only show approved submissions in public API
+        // Get submissions based on filters - always use approved_only = true
         if (!empty($species) && !empty($meldegruppe)) {
             $submissions = $database->get_submissions_by_species_and_meldegruppe(
                 $species,
                 $meldegruppe,
                 $per_page,
-                $offset
+                $offset,
+                true // approved_only
             );
-            $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $meldegruppe);
+            $total_count = $database->count_submissions_by_species_and_meldegruppe($species, $meldegruppe, true);
         } elseif (!empty($species)) {
-            $submissions = $database->get_submissions_by_species($per_page, $offset, $species);
-            $total_count = $database->count_submissions_by_species($species);
+            $submissions = $database->get_submissions_by_species($per_page, $offset, $species, true);
+            $total_count = $database->count_submissions_by_species($species, true);
         } else {
-            $submissions = $database->get_submissions($per_page, $offset);
-            $total_count = $database->count_submissions();
+            $submissions = $database->get_submissions($per_page, $offset, true);
+            $total_count = $database->count_submissions(true);
         }
 
         // Format submissions for API (remove sensitive data)
@@ -387,9 +389,9 @@ class AHGMH_REST_API {
         $allow_exceeding_key = 'abschuss_category_allow_exceeding_' . sanitize_key($species);
         $allow_exceeding = get_option($allow_exceeding_key, array());
 
-        // Get current counts
+        // Get current counts (Bug #13b & #14: only approved submissions for public API)
         $database = abschussplan_hgmh()->database;
-        $counts = $database->get_category_counts($species, '');
+        $counts = $database->get_category_counts($species, '', '', true);
 
         // Build response
         $categories_data = array();

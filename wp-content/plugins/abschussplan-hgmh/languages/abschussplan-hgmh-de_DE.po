@@ -7,8 +7,8 @@ msgstr ""
 "Project-Id-Version: Abschussplan HGMH 2.2.0\n"
 "Report-Msgid-Bugs-To: https://github.com/foe05/pr25_one\n"
 "POT-Creation-Date: 2024-08-19 12:00+0000\n"
-"PO-Revision-Date: 2024-08-19 12:00+0000\n"
-"Last-Translator: Developer <dev@example.com>\n"
+"PO-Revision-Date: 2026-01-12 15:30+0000\n"
+"Last-Translator: Claude AI <noreply@anthropic.com>\n"
 "Language-Team: German <de@li.org>\n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
@@ -105,6 +105,24 @@ msgstr "Kategorie"
 msgid "Jagdbezirk"
 msgstr "Jagdbezirk"
 
+msgid "Bitte zuerst Meldegruppe wählen..."
+msgstr "Bitte zuerst Meldegruppe wählen..."
+
+msgid "Lade Jagdbezirke..."
+msgstr "Lade Jagdbezirke..."
+
+msgid "Bitte wählen Sie einen Jagdbezirk aus."
+msgstr "Bitte wählen Sie einen Jagdbezirk aus."
+
+msgid "Bitte waehlen Sie einen Jagdbezirk aus."
+msgstr "Bitte wählen Sie einen Jagdbezirk aus."
+
+msgid "Bitte waehlen Sie einen gueltigen Jagdbezirk aus."
+msgstr "Bitte wählen Sie einen gültigen Jagdbezirk aus."
+
+msgid "Meldegruppe ist erforderlich."
+msgstr "Meldegruppe ist erforderlich."
+
 msgid "Meldegruppe"
 msgstr "Meldegruppe"
 
@@ -174,12 +192,53 @@ msgstr "Fehler beim Export. Bitte versuchen Sie es erneut."
 msgid "Fehler beim Laden der Statistiken. Bitte versuchen Sie es erneut."
 msgstr "Fehler beim Laden der Statistiken. Bitte versuchen Sie es erneut."
 
-# CSV Export
+# CSV Export (Bug #2 Fix - zentralisierter Export)
 msgid "Export URL generieren"
 msgstr "Export URL generieren"
 
 msgid "Direkter Download"
 msgstr "Direkter Download"
+
+# Export Service Status Übersetzungen
+msgid "Ausstehend"
+msgstr "Ausstehend"
+
+msgid "E-Mail-Bestätigung ausstehend"
+msgstr "E-Mail-Bestätigung ausstehend"
+
+msgid "Genehmigung ausstehend"
+msgstr "Genehmigung ausstehend"
+
+msgid "Genehmigt"
+msgstr "Genehmigt"
+
+msgid "Abgelehnt"
+msgstr "Abgelehnt"
+
+msgid "Verifiziert"
+msgstr "Verifiziert"
+
+# Export Filter
+msgid "Nicht unterstütztes Format"
+msgstr "Nicht unterstütztes Format"
+
+msgid "Export-Datei konnte nicht erstellt werden"
+msgstr "Export-Datei konnte nicht erstellt werden"
+
+msgid "Sicherheitsprüfung fehlgeschlagen"
+msgstr "Sicherheitsprüfung fehlgeschlagen"
+
+msgid "Keine Berechtigung für diese Aktion"
+msgstr "Keine Berechtigung für diese Aktion"
+
+msgid "Fehler beim Export: "
+msgstr "Fehler beim Export: "
+
+msgid "Fehler beim Laden der Optionen"
+msgstr "Fehler beim Laden der Optionen"
+
+msgid "Export fehlgeschlagen: "
+msgstr "Export fehlgeschlagen: "
 
 msgid "URL kopieren"
 msgstr "URL kopieren"
@@ -256,3 +315,559 @@ msgstr "Gesamtstatistik"
 
 msgid "Keine Daten verfügbar"
 msgstr "Keine Daten verfügbar"
+
+# Compliance Dashboard (Advanced Reporting Feature)
+msgid "Compliance Dashboard"
+msgstr "Compliance-Dashboard"
+
+msgid "Zuletzt aktualisiert:"
+msgstr "Zuletzt aktualisiert:"
+
+msgid "Jagdjahr:"
+msgstr "Jagdjahr:"
+
+msgid "Aktuelles Jagdjahr"
+msgstr "Aktuelles Jagdjahr"
+
+msgid "Alle Wildarten"
+msgstr "Alle Wildarten"
+
+msgid "Alle Meldegruppen"
+msgstr "Alle Meldegruppen"
+
+msgid "Aktualisieren"
+msgstr "Aktualisieren"
+
+msgid "Keine Compliance-Daten verfügbar."
+msgstr "Keine Compliance-Daten verfügbar."
+
+msgid "Gesamtübersicht"
+msgstr "Gesamtübersicht"
+
+msgid "Meldegruppen-Übersicht"
+msgstr "Meldegruppen-Übersicht"
+
+msgid "Gesamt:"
+msgstr "Gesamt:"
+
+msgid "Erfüllung:"
+msgstr "Erfüllung:"
+
+msgid "Verbleibend:"
+msgstr "Verbleibend:"
+
+msgid "Aktueller Status der Abschussplanerfüllung"
+msgstr "Aktueller Status der Abschussplanerfüllung"
+
+msgid "Compliance-Daten aktualisiert"
+msgstr "Compliance-Daten aktualisiert"
+
+msgid "Fehler beim Aktualisieren der Compliance-Daten. Bitte versuchen Sie es erneut."
+msgstr "Fehler beim Aktualisieren der Compliance-Daten. Bitte versuchen Sie es erneut."
+
+msgid "Fehler beim Filtern der Compliance-Daten. Bitte versuchen Sie es erneut."
+msgstr "Fehler beim Filtern der Compliance-Daten. Bitte versuchen Sie es erneut."
+
+msgid "Filter angewendet"
+msgstr "Filter angewendet"
+
+# Reports (Advanced Reporting Feature)
+msgid "Berichte"
+msgstr "Berichte"
+
+msgid "Bericht konfigurieren"
+msgstr "Bericht konfigurieren"
+
+msgid "Berichtstyp"
+msgstr "Berichtstyp"
+
+msgid "Saisonbericht"
+msgstr "Saisonbericht"
+
+msgid "Übersicht über eine komplette Jagdsaison"
+msgstr "Übersicht über eine komplette Jagdsaison"
+
+msgid "Zeitraumbericht"
+msgstr "Zeitraumbericht"
+
+msgid "Bericht für einen benutzerdefinierten Zeitraum"
+msgstr "Bericht für einen benutzerdefinierten Zeitraum"
+
+msgid "Compliance-Bericht"
+msgstr "Compliance-Bericht"
+
+msgid "Trendanalyse"
+msgstr "Trendanalyse"
+
+msgid "Vergleich und Trends über mehrere Saisons"
+msgstr "Vergleich und Trends über mehrere Saisons"
+
+msgid "Schnellauswahl"
+msgstr "Schnellauswahl"
+
+msgid "Aktuelle Saison"
+msgstr "Aktuelle Saison"
+
+msgid "Letzte Saison"
+msgstr "Letzte Saison"
+
+msgid "Zeitraum wählen"
+msgstr "Zeitraum wählen"
+
+msgid "Startdatum:"
+msgstr "Startdatum:"
+
+msgid "Enddatum:"
+msgstr "Enddatum:"
+
+msgid "Jagdjahr wählen"
+msgstr "Jagdjahr wählen"
+
+msgid "Filter (optional)"
+msgstr "Filter (optional)"
+
+msgid "Ausgabeformat"
+msgstr "Ausgabeformat"
+
+msgid "Vorschau anzeigen"
+msgstr "Vorschau anzeigen"
+
+msgid "CSV herunterladen"
+msgstr "CSV herunterladen"
+
+msgid "PDF herunterladen"
+msgstr "PDF herunterladen"
+
+msgid "Per E-Mail senden"
+msgstr "Per E-Mail senden"
+
+msgid "E-Mail-Adresse:"
+msgstr "E-Mail-Adresse:"
+
+msgid "empfaenger@beispiel.de"
+msgstr "empfaenger@beispiel.de"
+
+msgid "Bericht erstellen"
+msgstr "Bericht erstellen"
+
+msgid "Zurücksetzen"
+msgstr "Zurücksetzen"
+
+msgid "Konfigurieren Sie einen Bericht und klicken Sie auf \"Vorschau anzeigen\", um das Ergebnis zu sehen."
+msgstr "Konfigurieren Sie einen Bericht und klicken Sie auf \"Vorschau anzeigen\", um das Ergebnis zu sehen."
+
+msgid "Bericht erfolgreich erstellt"
+msgstr "Bericht erfolgreich erstellt"
+
+msgid "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+msgstr "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+
+msgid "Ungültiger Berichtstyp"
+msgstr "Ungültiger Berichtstyp"
+
+msgid "Unbekannter Berichtstyp"
+msgstr "Unbekannter Berichtstyp"
+
+msgid "Start- und Enddatum sind erforderlich"
+msgstr "Start- und Enddatum sind erforderlich"
+
+msgid "Startdatum muss vor Enddatum liegen"
+msgstr "Startdatum muss vor Enddatum liegen"
+
+msgid "Ungültiges Datumsformat"
+msgstr "Ungültiges Datumsformat"
+
+msgid "Ungültiges Saisonformat"
+msgstr "Ungültiges Saisonformat"
+
+msgid "Ungültiges Saisonformat für aktuelle Saison"
+msgstr "Ungültiges Saisonformat für aktuelle Saison"
+
+msgid "CSV-Daten konnten nicht generiert werden"
+msgstr "CSV-Daten konnten nicht generiert werden"
+
+msgid "Vorschau geladen"
+msgstr "Vorschau geladen"
+
+msgid "Fehler beim Laden der Zusammenfassung."
+msgstr "Fehler beim Laden der Zusammenfassung."
+
+msgid "Bericht erfolgreich an %s gesendet"
+msgstr "Bericht erfolgreich an %s gesendet"
+
+msgid "Gültige E-Mail-Adresse ist erforderlich"
+msgstr "Gültige E-Mail-Adresse ist erforderlich"
+
+msgid "E-Mail konnte nicht gesendet werden"
+msgstr "E-Mail konnte nicht gesendet werden"
+
+msgid "PDF-Bibliothek nicht verfügbar. Bitte installieren Sie Composer-Abhängigkeiten."
+msgstr "PDF-Bibliothek nicht verfügbar. Bitte installieren Sie Composer-Abhängigkeiten."
+
+msgid "PDF-HTML konnte nicht generiert werden"
+msgstr "PDF-HTML konnte nicht generiert werden"
+
+msgid "PDF konnte nicht erstellt werden"
+msgstr "PDF konnte nicht erstellt werden"
+
+# Scheduled Reports (Advanced Reporting Feature)
+msgid "Geplante Berichte"
+msgstr "Geplante Berichte"
+
+msgid "Zeitpläne"
+msgstr "Zeitpläne"
+
+msgid "Aktiv"
+msgstr "Aktiv"
+
+msgid "Ausführungen"
+msgstr "Ausführungen"
+
+msgid "Erfolgreich"
+msgstr "Erfolgreich"
+
+msgid "Bestehende Zeitpläne"
+msgstr "Bestehende Zeitpläne"
+
+msgid "Neuer Zeitplan"
+msgstr "Neuer Zeitplan"
+
+msgid "Noch keine Zeitpläne konfiguriert."
+msgstr "Noch keine Zeitpläne konfiguriert."
+
+msgid "Klicken Sie auf \"Neuer Zeitplan\", um Ihren ersten geplanten Bericht zu erstellen."
+msgstr "Klicken Sie auf \"Neuer Zeitplan\", um Ihren ersten geplanten Bericht zu erstellen."
+
+msgid "Ausführungsverlauf"
+msgstr "Ausführungsverlauf"
+
+msgid "Wählen Sie einen Zeitplan aus, um dessen Verlauf anzuzeigen."
+msgstr "Wählen Sie einen Zeitplan aus, um dessen Verlauf anzuzeigen."
+
+msgid "Grundinformationen"
+msgstr "Grundinformationen"
+
+msgid "Name des Zeitplans"
+msgstr "Name des Zeitplans"
+
+msgid "Berichtstyp:"
+msgstr "Berichtstyp:"
+
+msgid "Saisonberichte"
+msgstr "Saisonberichte"
+
+msgid "Zeitraumberichte"
+msgstr "Zeitraumberichte"
+
+msgid "Compliance-Berichte"
+msgstr "Compliance-Berichte"
+
+msgid "Trendanalysen"
+msgstr "Trendanalysen"
+
+msgid "Zeitplan-Einstellungen"
+msgstr "Zeitplan-Einstellungen"
+
+msgid "Häufigkeit"
+msgstr "Häufigkeit"
+
+msgid "Täglich"
+msgstr "Täglich"
+
+msgid "Wöchentlich"
+msgstr "Wöchentlich"
+
+msgid "Monatlich"
+msgstr "Monatlich"
+
+msgid "Uhrzeit (HH:MM)"
+msgstr "Uhrzeit (HH:MM)"
+
+msgid "Wochentag"
+msgstr "Wochentag"
+
+msgid "Montag"
+msgstr "Montag"
+
+msgid "Dienstag"
+msgstr "Dienstag"
+
+msgid "Mittwoch"
+msgstr "Mittwoch"
+
+msgid "Donnerstag"
+msgstr "Donnerstag"
+
+msgid "Freitag"
+msgstr "Freitag"
+
+msgid "Samstag"
+msgstr "Samstag"
+
+msgid "Sonntag"
+msgstr "Sonntag"
+
+msgid "Tag des Monats (1-28)"
+msgstr "Tag des Monats (1-28)"
+
+msgid "Empfänger"
+msgstr "Empfänger"
+
+msgid "E-Mail-Adressen (eine pro Zeile)"
+msgstr "E-Mail-Adressen (eine pro Zeile)"
+
+msgid "Geben Sie eine E-Mail-Adresse pro Zeile ein."
+msgstr "Geben Sie eine E-Mail-Adresse pro Zeile ein."
+
+msgid "Test-E-Mail senden"
+msgstr "Test-E-Mail senden"
+
+msgid "Zeitplan aktivieren"
+msgstr "Zeitplan aktivieren"
+
+msgid "Zeitplan speichern"
+msgstr "Zeitplan speichern"
+
+msgid "Abbrechen"
+msgstr "Abbrechen"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Häufigkeit:"
+msgstr "Häufigkeit:"
+
+msgid "Empfänger:"
+msgstr "Empfänger:"
+
+msgid "Nächste Ausführung:"
+msgstr "Nächste Ausführung:"
+
+msgid "Letzte Ausführung:"
+msgstr "Letzte Ausführung:"
+
+msgid "Konfiguration testen"
+msgstr "Konfiguration testen"
+
+msgid "Zeitplan bearbeiten"
+msgstr "Zeitplan bearbeiten"
+
+msgid "Inaktiv"
+msgstr "Inaktiv"
+
+msgid "Aktuell"
+msgstr "Aktuell"
+
+msgid "Filter anwenden"
+msgstr "Filter anwenden"
+
+msgid "Aktuell:"
+msgstr "Aktuell:"
+
+msgid "Verbleibend"
+msgstr "Verbleibend"
+
+msgid "Zeitplan erfolgreich erstellt"
+msgstr "Zeitplan erfolgreich erstellt"
+
+msgid "Zeitplan erfolgreich aktualisiert"
+msgstr "Zeitplan erfolgreich aktualisiert"
+
+msgid "Zeitplan erfolgreich gelöscht"
+msgstr "Zeitplan erfolgreich gelöscht"
+
+msgid "Schedule ID ist erforderlich"
+msgstr "Schedule ID ist erforderlich"
+
+msgid "Zeitplan aktiviert"
+msgstr "Zeitplan aktiviert"
+
+msgid "Zeitplan deaktiviert"
+msgstr "Zeitplan deaktiviert"
+
+msgid "Zeitplan-Konfiguration ist gültig"
+msgstr "Zeitplan-Konfiguration ist gültig"
+
+msgid "Konfiguration ist gültig!"
+msgstr "Konfiguration ist gültig!"
+
+msgid "E-Mail-Konfiguration erfolgreich!"
+msgstr "E-Mail-Konfiguration erfolgreich!"
+
+msgid "Test-E-Mail erfolgreich an %s gesendet"
+msgstr "Test-E-Mail erfolgreich an %s gesendet"
+
+msgid "Fehler beim Senden der Test-E-Mail"
+msgstr "Fehler beim Senden der Test-E-Mail"
+
+msgid "Ungültige E-Mail-Adresse"
+msgstr "Ungültige E-Mail-Adresse"
+
+msgid "Bitte geben Sie mindestens eine E-Mail-Adresse ein."
+msgstr "Bitte geben Sie mindestens eine E-Mail-Adresse ein."
+
+msgid "Keine Ausführungen gefunden."
+msgstr "Keine Ausführungen gefunden."
+
+msgid "Gesendet:"
+msgstr "Gesendet:"
+
+msgid "Fehler:"
+msgstr "Fehler:"
+
+msgid "Fehlgeschlagen"
+msgstr "Fehlgeschlagen"
+
+msgid "Gesendet am: %s"
+msgstr "Gesendet am: %s"
+
+msgid "Gesendet am %s"
+msgstr "Gesendet am %s"
+
+msgid "Fehlgeschlagen:"
+msgstr "Fehlgeschlagen:"
+
+msgid "Nicht geplant"
+msgstr "Nicht geplant"
+
+msgid "Noch nie"
+msgstr "Noch nie"
+
+msgid "Jagdjahr %d/%d"
+msgstr "Jagdjahr %d/%d"
+
+msgid "Jagdjahr %s"
+msgstr "Jagdjahr %s"
+
+# WP Cron Intervals
+msgid "Once Weekly"
+msgstr "Einmal wöchentlich"
+
+msgid "Once Monthly"
+msgstr "Einmal monatlich"
+
+# JavaScript Localization Strings
+msgid "Lädt..."
+msgstr "Lädt..."
+
+msgid "Ein Fehler ist aufgetreten."
+msgstr "Ein Fehler ist aufgetreten."
+
+msgid "Bitte wählen Sie Start- und Enddatum."
+msgstr "Bitte wählen Sie Start- und Enddatum."
+
+msgid "Startdatum muss vor Enddatum liegen."
+msgstr "Startdatum muss vor Enddatum liegen."
+
+msgid "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+msgstr "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+
+msgid "Fehler beim Laden der Vorschau."
+msgstr "Fehler beim Laden der Vorschau."
+
+msgid "CSV-Download wurde gestartet."
+msgstr "CSV-Download wurde gestartet."
+
+msgid "PDF-Download wurde gestartet."
+msgstr "PDF-Download wurde gestartet."
+
+msgid "Sendet E-Mail..."
+msgstr "Sendet E-Mail..."
+
+msgid "Sind Sie sicher, dass Sie diesen Zeitplan löschen möchten?"
+msgstr "Sind Sie sicher, dass Sie diesen Zeitplan löschen möchten?"
+
+msgid "Bitte füllen Sie alle Pflichtfelder aus."
+msgstr "Bitte füllen Sie alle Pflichtfelder aus."
+
+msgid "Speichert..."
+msgstr "Speichert..."
+
+msgid "Keine Verlaufsdaten verfügbar."
+msgstr "Keine Verlaufsdaten verfügbar."
+
+msgid "E-Mail erfolgreich gesendet."
+msgstr "E-Mail erfolgreich gesendet."
+
+msgid "Fehler beim Senden der E-Mail."
+msgstr "Fehler beim Senden der E-Mail."
+
+msgid "Fehler beim Aktualisieren."
+msgstr "Fehler beim Aktualisieren."
+
+# Status Indicators
+msgid "Gut"
+msgstr "Gut"
+
+msgid "Achtung"
+msgstr "Achtung"
+
+msgid "Kritisch"
+msgstr "Kritisch"
+
+msgid "Überschritten"
+msgstr "Überschritten"
+
+# Email Templates
+msgid "Abschussplan HGMH - Hegering Management System"
+msgstr "Abschussplan HGMH - Hegering Management System"
+
+msgid "Sehr geehrte Damen und Herren,"
+msgstr "Sehr geehrte Damen und Herren,"
+
+msgid "anbei erhalten Sie den automatisch generierten %s für den Zeitraum %s."
+msgstr "anbei erhalten Sie den automatisch generierten %s für den Zeitraum %s."
+
+msgid "Der vollständige Bericht ist als PDF-Datei im Anhang dieser E-Mail enthalten."
+msgstr "Der vollständige Bericht ist als PDF-Datei im Anhang dieser E-Mail enthalten."
+
+msgid "📎 Anhang:"
+msgstr "📎 Anhang:"
+
+msgid "Bericht"
+msgstr "Bericht"
+
+msgid "Zusammenfassung:"
+msgstr "Zusammenfassung:"
+
+msgid "Zeitraum:"
+msgstr "Zeitraum:"
+
+msgid "Wildarten: %d"
+msgstr "Wildarten: %d"
+
+msgid "Gesamte Meldungen: %d"
+msgstr "Gesamte Meldungen: %d"
+
+msgid "Bei Fragen oder Anmerkungen wenden Sie sich bitte an Ihren Administrator."
+msgstr "Bei Fragen oder Anmerkungen wenden Sie sich bitte an Ihren Administrator."
+
+msgid "Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht auf diese E-Mail."
+msgstr "Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht auf diese E-Mail."
+
+msgid "Website:"
+msgstr "Website:"
+
+msgid "Test Email"
+msgstr "Test-E-Mail"
+
+msgid "Dies ist eine Test-E-Mail vom Abschussplan HGMH Plugin."
+msgstr "Dies ist eine Test-E-Mail vom Abschussplan HGMH Plugin."
+
+msgid "Wenn Sie diese E-Mail erhalten, bedeutet das, dass Ihre E-Mail-Konfiguration korrekt funktioniert und bereit ist, Berichte zu versenden."
+msgstr "Wenn Sie diese E-Mail erhalten, bedeutet das, dass Ihre E-Mail-Konfiguration korrekt funktioniert und bereit ist, Berichte zu versenden."
+
+msgid "Diese Test-E-Mail wurde manuell vom Administrator angefordert."
+msgstr "Diese Test-E-Mail wurde manuell vom Administrator angefordert."
+
+msgid "Zeitstempel:"
+msgstr "Zeitstempel:"
+
+msgid "Plugin-Version:"
+msgstr "Plugin-Version:"
+
+msgid "[Abschussplan] Test Email"
+msgstr "[Abschussplan] Test-E-Mail"
+
+msgid "[Abschussplan] %s"
+msgstr "[Abschussplan] %s"

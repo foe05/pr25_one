@@ -146,43 +146,8 @@ class AHGMH_Wildart_View {
                 </div>
             </div>
         </div>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            // Add category
-            $(document).on('click', '.add-category', function(e) {
-                e.preventDefault();
-                var newRow = '<div class="category-row">' +
-                    '<input type="text" class="category-input" value="" placeholder="Neue Kategorie" />' +
-                    '<button class="button remove-category">Entfernen</button>' +
-                    '</div>';
-                $(this).before(newRow);
-            });
-            
-            // Remove category
-            $(document).on('click', '.remove-category', function(e) {
-                e.preventDefault();
-                $(this).closest('.category-row').remove();
-            });
-            
-            // Add meldegruppe
-            $(document).on('click', '.add-meldegruppe', function(e) {
-                e.preventDefault();
-                var newRow = '<div class="meldegruppe-row">' +
-                    '<input type="text" class="meldegruppe-input" value="" placeholder="Neue Meldegruppe" />' +
-                    '<button class="button remove-meldegruppe">Entfernen</button>' +
-                    '</div>';
-                $(this).before(newRow);
-            });
-            
-            // Remove meldegruppe
-            $(document).on('click', '.remove-meldegruppe', function(e) {
-                e.preventDefault();
-                $(this).closest('.meldegruppe-row').remove();
-            });
-        });
-        </script>
         <?php
+        // Note: All JavaScript handlers are in admin-modern.js
         return ob_get_clean();
     }
     
@@ -281,56 +246,7 @@ class AHGMH_Wildart_View {
                 </table>
             <?php endif; ?>
         </div>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            // Validate negative values on input
-            $(document).on('input', '.limit-validation', function() {
-                var value = parseInt($(this).val());
-                if (isNaN(value) || value < 0) {
-                    $(this).val('0');
-                    $(this).css('border-color', '#dc3232');
-                    showLimitValidationError('Negative Werte sind nicht erlaubt. Wert wurde auf 0 gesetzt.');
-                } else {
-                    $(this).css('border-color', '');
-                }
-                
-                // Update totals for meldegruppen_specific mode
-                updateGesamtTotals();
-            });
-            
-            function showLimitValidationError(message) {
-                if ($('.limit-validation-notice').length === 0) {
-                    $('<div class="notice notice-error limit-validation-notice"><p>' + message + '</p></div>')
-                        .insertBefore('.limits-table-container')
-                        .delay(3000)
-                        .fadeOut(function() { $(this).remove(); });
-                }
-            }
-            
-            function updateGesamtTotals() {
-                var totals = {};
-                $('.limit-input').each(function() {
-                    if ($(this).data('meldegruppe') === 'gesamt') return; // Skip total mode inputs
-                    
-                    var kategorie = $(this).data('kategorie');
-                    var value = parseInt($(this).val()) || 0;
-                    
-                    if (!totals[kategorie]) totals[kategorie] = 0;
-                    totals[kategorie] += value;
-                });
-                
-                // Update gesamt displays
-                for (var kategorie in totals) {
-                    var gesamtId = 'gesamt-' + kategorie.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                    $('#' + gesamtId).text(totals[kategorie]);
-                }
-            }
-            
-            // Initialize totals
-            updateGesamtTotals();
-        });
-        </script>
         <?php
+        // Note: All JavaScript handlers are in admin-modern.js
     }
 }
