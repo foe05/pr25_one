@@ -36,14 +36,14 @@
                     link.click();
                     document.body.removeChild(link);
 
-                    showNotification('CSV Export erfolgreich!', 'success');
+                    window.AHGMH.showNotification('CSV Export erfolgreich!', 'success');
                 } else {
                     var errorMsg = response.data && response.data.message ? response.data.message : (response.data || 'Unbekannter Fehler');
-                    showNotification('Fehler beim CSV Export: ' + errorMsg, 'error');
+                    window.AHGMH.showNotification('Fehler beim CSV Export: ' + errorMsg, 'error');
                 }
             },
             error: function () {
-                showNotification('Netzwerkfehler beim CSV Export.', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim CSV Export.', 'error');
             },
             complete: function () {
                 $button.prop('disabled', false).text(originalText);
@@ -70,13 +70,13 @@
                     $row.fadeOut(300, function() {
                         $(this).remove();
                     });
-                    showNotification('Meldung gelöscht', 'success');
+                    window.AHGMH.showNotification('Meldung gelöscht', 'success');
                 } else {
-                    showNotification(response.data || 'Löschen fehlgeschlagen', 'error');
+                    window.AHGMH.showNotification(response.data || 'Löschen fehlgeschlagen', 'error');
                 }
             },
             error: function() {
-                showNotification('Löschen fehlgeschlagen', 'error');
+                window.AHGMH.showNotification('Löschen fehlgeschlagen', 'error');
             }
         });
     }
@@ -165,19 +165,19 @@
                 data: formData,
                 success: function(response) {
                     if (response.success) {
-                        showNotification('Meldung aktualisiert', 'success');
+                        window.AHGMH.showNotification('Meldung aktualisiert', 'success');
                         // Refresh page to show updated data
                         setTimeout(function() {
                             location.reload();
                         }, 1000);
                     } else {
                         const errorMsg = response.data || 'Speichern fehlgeschlagen';
-                        showNotification(errorMsg, 'error');
+                        window.AHGMH.showNotification(errorMsg, 'error');
                         $submitBtn.prop('disabled', false).text('Speichern');
                     }
                 },
                 error: function(xhr, status, error) {
-                    showNotification('Speichern fehlgeschlagen - Netzwerkfehler', 'error');
+                    window.AHGMH.showNotification('Speichern fehlgeschlagen - Netzwerkfehler', 'error');
                     $submitBtn.prop('disabled', false).text('Speichern');
                 }
             });
@@ -214,31 +214,62 @@
     }
 
     /**
-     * Show notification
+     * Initialize Quick Actions event handlers
      */
-    function showNotification(message, type) {
-        type = type || 'info';
+    function init() {
+        // Quick CSV export - main button
+        $(document).on('click', '#quick-export', function (e) {
+            e.preventDefault();
+            handleQuickExport($(this));
+        });
 
-        var notification = $('<div class="ahgmh-notification ahgmh-notification-' + type + '">' + message + '</div>');
-        $('body').append(notification);
+        // Export buttons in tables
+        $(document).on('click', '.ahgmh-export-btn', function (e) {
+            e.preventDefault();
+            var species = $(this).data('species') || '';
+            var format = $(this).data('format') || 'csv';
+            handleQuickExport($(this), species, format);
+        });
 
-        setTimeout(function () {
-            notification.addClass('show');
-        }, 100);
+        // Quick refresh button
+        $('.ahgmh-quick-refresh').on('click', function (e) {
+            e.preventDefault();
+            location.reload();
+        });
 
-        setTimeout(function () {
-            notification.removeClass('show');
-            setTimeout(function () {
-                notification.remove();
-            }, 300);
-        }, 3000);
+        // Delete submission buttons
+        $(document).on('click', '.ahgmh-delete-submission', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            const nonce = $(this).data('nonce');
+
+            if (confirm('Diese Meldung wirklich löschen?')) {
+                handleDeleteSubmission(id, nonce, $(this));
+            }
+        });
+
+        // Edit submission buttons
+        $(document).on('click', '.ahgmh-edit-submission', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            handleEditSubmission(id, $(this));
+        });
     }
 
     // Export functions to global scope for use by other modules
     window.AHGMH_QuickActions = {
+        init: init,
         handleQuickExport: handleQuickExport,
         handleDeleteSubmission: handleDeleteSubmission,
         handleEditSubmission: handleEditSubmission
     };
+
+    // Auto-initialize on document ready
+    $(document).ready(function () {
+        // Check if we're on a page that needs quick actions
+        if ($('.ahgmh-data-management').length > 0 || $('#quick-export').length > 0 || $('.ahgmh-delete-submission').length > 0) {
+            init();
+        }
+    });
 
 })(jQuery);

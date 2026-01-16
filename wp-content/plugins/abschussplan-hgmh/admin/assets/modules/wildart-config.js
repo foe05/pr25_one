@@ -203,7 +203,7 @@
             },
             success: function(response) {
                 if (response.success) {
-                    showNotification('Reihenfolge gespeichert!', 'success');
+                    window.AHGMH.showNotification('Reihenfolge gespeichert!', 'success');
                     $btn.fadeOut();
 
                     // Update data-order attributes
@@ -211,11 +211,11 @@
                         $(this).attr('data-order', index);
                     });
                 } else {
-                    showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                    window.AHGMH.showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
             },
             error: function() {
-                showNotification('Netzwerkfehler beim Speichern.', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Speichern.', 'error');
             },
             complete: function() {
                 $btn.prop('disabled', false).html(originalText);
@@ -237,17 +237,17 @@
             },
             success: function (response) {
                 if (response.success) {
-                    showNotification('Wildart erfolgreich erstellt!', 'success');
+                    window.AHGMH.showNotification('Wildart erfolgreich erstellt!', 'success');
                     // Reload to show new wildart and refresh all lists
                     setTimeout(function () {
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Fehler beim Erstellen der Wildart: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                    window.AHGMH.showNotification('Fehler beim Erstellen der Wildart: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
             },
             error: function () {
-                showNotification('Netzwerkfehler beim Erstellen der Wildart.', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Erstellen der Wildart.', 'error');
             }
         });
     }
@@ -268,11 +268,11 @@
                 if (response.success) {
                     location.reload(); // Reload to remove deleted wildart
                 } else {
-                    showNotification('Fehler beim Löschen der Wildart: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                    window.AHGMH.showNotification('Fehler beim Löschen der Wildart: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
             },
             error: function () {
-                showNotification('Netzwerkfehler beim Löschen der Wildart.', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Löschen der Wildart.', 'error');
             }
         });
     }
@@ -332,17 +332,17 @@
             },
             success: function (response) {
                 if (response.success) {
-                    showNotification('Kategorien gespeichert!', 'success');
+                    window.AHGMH.showNotification('Kategorien gespeichert!', 'success');
                     // Reload the wildart config to update limits section
                     setTimeout(function () {
                         loadWildartConfig(wildart);
                     }, 500);
                 } else {
-                    showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                    window.AHGMH.showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
             },
             error: function () {
-                showNotification('Netzwerkfehler beim Speichern.', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Speichern.', 'error');
             },
             complete: function () {
                 $btn.prop('disabled', false).text(originalText);
@@ -377,17 +377,17 @@
             },
             success: function (response) {
                 if (response.success) {
-                    showNotification('Meldegruppen gespeichert!', 'success');
+                    window.AHGMH.showNotification('Meldegruppen gespeichert!', 'success');
                     // TEMP FIX: Reload entire page instead of just config
                     setTimeout(function () {
                         location.reload();
                     }, 1000);
                 } else {
-                    showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                    window.AHGMH.showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
             },
             error: function () {
-                showNotification('Netzwerkfehler beim Speichern.', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Speichern.', 'error');
             },
             complete: function () {
                 $btn.prop('disabled', false).text(originalText);
@@ -420,17 +420,17 @@
             },
             success: function (response) {
                 if (response.success) {
-                    showNotification('Limit-Modus geändert!', 'success');
+                    window.AHGMH.showNotification('Limit-Modus geändert!', 'success');
                     // Reload the entire wildart config to rebuild limits section
                     setTimeout(function () {
                         loadWildartConfig(wildart);
                     }, 500);
                 } else {
-                    showNotification('Fehler beim Ändern des Modus: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                    window.AHGMH.showNotification('Fehler beim Ändern des Modus: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
             },
             error: function () {
-                showNotification('Netzwerkfehler beim Ändern des Modus.', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Ändern des Modus.', 'error');
             }
         });
     }
@@ -495,7 +495,7 @@
 
         if (validation.hasNegativeValues) {
             var fieldCount = validation.negativeFields.length;
-            showNotification('Fehler: ' + fieldCount + ' Feld(er) enthalten negative Werte. Bitte korrigieren Sie diese vor dem Speichern.', 'error');
+            window.AHGMH.showNotification('Fehler: ' + fieldCount + ' Feld(er) enthalten negative Werte. Bitte korrigieren Sie diese vor dem Speichern.', 'error');
 
             // Focus on first negative field
             if (validation.negativeFields.length > 0) {
@@ -532,15 +532,15 @@
             },
             success: function (response) {
                 if (response.success) {
-                    showNotification('Limits erfolgreich gespeichert!', 'success');
+                    window.AHGMH.showNotification('Limits erfolgreich gespeichert!', 'success');
                     // Clear any error styling
                     $('.limit-input, .hegegemeinschaft-limit-input').removeClass('error-field').css('border-color', '');
                 } else {
-                    showNotification('Fehler beim Speichern der Limits: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                    window.AHGMH.showNotification('Fehler beim Speichern der Limits: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
             },
             error: function () {
-                showNotification('Netzwerkfehler beim Speichern der Limits.', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Speichern der Limits.', 'error');
             },
             complete: function () {
                 $btn.prop('disabled', false).text(originalText);
@@ -548,27 +548,6 @@
         });
 
         return true;
-    }
-
-    /**
-     * Show notification
-     */
-    function showNotification(message, type) {
-        type = type || 'info';
-
-        var notification = $('<div class="ahgmh-notification ahgmh-notification-' + type + '">' + message + '</div>');
-        $('body').append(notification);
-
-        setTimeout(function () {
-            notification.addClass('show');
-        }, 100);
-
-        setTimeout(function () {
-            notification.removeClass('show');
-            setTimeout(function () {
-                notification.remove();
-            }, 300);
-        }, 3000);
     }
 
     // Initialize when document is ready

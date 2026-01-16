@@ -82,4 +82,10 @@
     window.AHGMH.initTooltips = initTooltips;
     window.AHGMH.initTabSwitching = initTabSwitching;
 
+    // Auto-initialize core functionality on all admin pages
+    $(document).ready(function () {
+        initTooltips();
+        initTabSwitching();
+    });
+
 })(jQuery);

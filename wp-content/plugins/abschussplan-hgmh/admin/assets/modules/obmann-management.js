@@ -90,7 +90,7 @@
             },
             error: function () {
                 $meldegruppenSelect.html('<option value="">Fehler beim Laden</option>');
-                showNotification('Fehler beim Laden der Meldegruppen', 'error');
+                window.AHGMH.showNotification('Fehler beim Laden der Meldegruppen', 'error');
             }
         });
     };
@@ -122,7 +122,7 @@
             success: function (response) {
                 if (response.success) {
                     var message = isEditMode ? 'Zuweisung erfolgreich aktualisiert!' : 'Obmann erfolgreich zugewiesen!';
-                    showNotification(message, 'success');
+                    window.AHGMH.showNotification(message, 'success');
 
                     // Reset form and clear edit mode
                     $('#obmann-assignment-form')[0].reset();
@@ -133,11 +133,11 @@
                     refreshObmannTable();
                 } else {
                     var errorMsg = response.data && response.data.message ? response.data.message : (response.data || 'Fehler beim Speichern der Zuweisung');
-                    showNotification(errorMsg, 'error');
+                    window.AHGMH.showNotification(errorMsg, 'error');
                 }
             },
             error: function () {
-                showNotification('Netzwerkfehler beim Speichern der Zuweisung', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Speichern der Zuweisung', 'error');
             },
             complete: function () {
                 // Re-enable submit button
@@ -219,7 +219,7 @@
             },
             success: function (response) {
                 if (response.success) {
-                    showNotification('Zuweisung erfolgreich entfernt!', 'success');
+                    window.AHGMH.showNotification('Zuweisung erfolgreich entfernt!', 'success');
 
                     // Clear edit mode if we're editing this assignment
                     var $form = $('#obmann-assignment-form');
@@ -233,7 +233,7 @@
                     refreshObmannTable();
                 } else {
                     var errorMsg = response.data && response.data.message ? response.data.message : (response.data || 'Fehler beim Entfernen der Zuweisung');
-                    showNotification(errorMsg, 'error');
+                    window.AHGMH.showNotification(errorMsg, 'error');
 
                     // Restore button state on error
                     $button.prop('disabled', false);
@@ -241,7 +241,7 @@
                 }
             },
             error: function (xhr, status, error) {
-                showNotification('Netzwerkfehler beim Entfernen der Zuweisung', 'error');
+                window.AHGMH.showNotification('Netzwerkfehler beim Entfernen der Zuweisung', 'error');
 
                 // Restore button state on error
                 $button.prop('disabled', false);
@@ -305,42 +305,21 @@
                 },
                 success: function (response) {
                     if (response.success) {
-                        showNotification(response.data.message, 'success');
+                        window.AHGMH.showNotification(response.data.message, 'success');
                         // Clear form and refresh table
                         $('#obmann-assignment-form')[0].reset();
                         $('#meldegruppe').prop('disabled', true).html('<option value="">Erst Wildart auswählen...</option>');
                         clearEditMode();
                         refreshObmannTable();
                     } else {
-                        showNotification(response.data.message || 'Fehler beim Zurücksetzen aller Zuweisungen', 'error');
+                        window.AHGMH.showNotification(response.data.message || 'Fehler beim Zurücksetzen aller Zuweisungen', 'error');
                     }
                 },
                 error: function () {
-                    showNotification('Netzwerkfehler beim Zurücksetzen', 'error');
+                    window.AHGMH.showNotification('Netzwerkfehler beim Zurücksetzen', 'error');
                 }
             });
         }
-    }
-
-    /**
-     * Show notification
-     */
-    function showNotification(message, type) {
-        type = type || 'info';
-
-        var notification = $('<div class="ahgmh-notification ahgmh-notification-' + type + '">' + message + '</div>');
-        $('body').append(notification);
-
-        setTimeout(function () {
-            notification.addClass('show');
-        }, 100);
-
-        setTimeout(function () {
-            notification.removeClass('show');
-            setTimeout(function () {
-                notification.remove();
-            }, 300);
-        }, 3000);
     }
 
     // Make functions globally available

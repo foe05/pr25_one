@@ -76,4 +76,12 @@
         animateNumber: animateNumber
     };
 
+    // Auto-initialize on document ready
+    $(document).ready(function () {
+        // Check if we're on a page that needs dashboard functionality
+        if ($('.ahgmh-dashboard').length > 0 || $('.ahgmh-stat-card').length > 0 || $('.progress-fill').length > 0) {
+            init();
+        }
+    });
+
 })(jQuery);
