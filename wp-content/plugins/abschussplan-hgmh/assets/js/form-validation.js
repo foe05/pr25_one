@@ -107,15 +107,14 @@
                         if (response.data.errors) {
                             $.each(response.data.errors, function(field, error) {
                                 const $field = $form.find(`[name="${field}"]`);
-                                
-                                // Special handling for WUS duplicate error - show popup like 7-digit validation
-                                if (field === 'field3' && error.includes('bereits vergeben')) {
-                                    alert(error);
-                                    $field.focus(); // Focus the field after popup
-                                } else {
-                                    // Standard error display for other fields
-                                    $field.addClass('is-invalid');
-                                    $field.siblings('.form-error').text(error).show();
+
+                                // Standard inline error display for all fields
+                                $field.addClass('is-invalid');
+                                $field.siblings('.form-error').text(error).show();
+
+                                // Focus on first error field (especially for server-side validation like duplicate WUS)
+                                if (field === 'field3') {
+                                    $field.focus();
                                 }
                             });
                         }
