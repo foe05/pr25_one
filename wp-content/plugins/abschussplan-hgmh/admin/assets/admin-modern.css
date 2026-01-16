@@ -7,6 +7,14 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* === Accessibility - Focus Indicators === */
+/* WCAG 2.1 Level AA 2.4.7 - Focus Visible */
+.ahgmh-admin-modern a:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+    border-radius: 2px;
+}
+
 .ahgmh-page-title {
     display: flex;
     align-items: center;
@@ -141,6 +149,11 @@
     color: white;
     border-color: #2271b1;
     transform: translateY(-2px);
+}
+
+.quick-action-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
 }
 
 .quick-action-btn .dashicons {
@@ -357,6 +370,11 @@
     background: #f6f7f7;
 }
 
+.ahgmh-tab:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+}
+
 .ahgmh-tab .dashicons {
     font-size: 16px;
     width: 16px;
@@ -508,6 +526,11 @@
     color: white;
 }
 
+.ahgmh-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+}
+
 .ahgmh-btn.secondary {
     background: #f6f7f7;
     color: #1d2327;
@@ -517,6 +540,11 @@
 .ahgmh-btn.secondary:hover {
     background: #e5e5e5;
     color: #1d2327;
+}
+
+.ahgmh-btn.secondary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
 }
 
 /* === Tab Content Styling === */
@@ -769,6 +797,11 @@
 .ahgmh-modal-close:hover {
     background-color: #f0f0f0;
     color: #333;
+}
+
+.ahgmh-modal-close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
 }
 
 .ahgmh-modal-body {
@@ -1060,6 +1093,12 @@
     color: white;
 }
 
+.wildart-delete:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+    opacity: 1;
+}
+
 .wildart-delete .dashicons {
     font-size: 16px;
     width: 16px;
@@ -1281,6 +1320,12 @@
 .remove-item:hover {
     opacity: 1;
     background: rgba(214, 54, 56, 0.1);
+}
+
+.remove-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+    opacity: 1;
 }
 
 .remove-item .dashicons {
