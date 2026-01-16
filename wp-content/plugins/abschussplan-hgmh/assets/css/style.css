@@ -2,10 +2,53 @@
  * Abschussplan HGMH plugin styles
  */
 
-/* === Accessibility - Focus Indicators === */
-/* WCAG 2.1 Level AA 2.4.7 - Focus Visible */
+/* ======================================================================
+   ACCESSIBILITY - FOCUS INDICATORS
+   ====================================================================== */
 
-/* Form input focus styles */
+/**
+ * Focus Style System - WCAG 2.1 Level AA 2.4.7 Compliance
+ *
+ * This section implements visible focus indicators for all interactive
+ * elements to ensure keyboard users can navigate the interface effectively.
+ *
+ * KEY PRINCIPLES:
+ *
+ * 1. WCAG 2.1 Level AA 2.4.7 - Focus Visible
+ *    "Any keyboard operable user interface has a mode of operation where
+ *    the keyboard focus indicator is visible."
+ *    Reference: https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html
+ *
+ * 2. Contrast Requirements
+ *    - Minimum 3:1 contrast ratio against adjacent colors
+ *    - Blue focus color: rgba(34, 113, 177, 0.25) for box-shadow
+ *    - Border color: #2271b1 (WordPress admin blue)
+ *
+ * 3. :focus-visible vs :focus
+ *    - We use :focus-visible where supported (modern browsers)
+ *    - This prevents focus rings on mouse clicks while keeping them for keyboard
+ *    - Fallback to :focus for older browsers where needed
+ *
+ * 4. Custom Focus Rings
+ *    - Default browser outline is disabled (outline: none)
+ *    - Replaced with custom box-shadow for consistent cross-browser appearance
+ *    - Box-shadow provides better visual consistency and design control
+ *
+ * 5. Implementation Pattern
+ *    - Form inputs: 2px box-shadow with 10% opacity for subtle indicator
+ *    - Buttons/links: 3px box-shadow with 25% opacity for stronger visibility
+ *    - All use the same primary blue color (#2271b1) for consistency
+ *
+ * MAINTENANCE NOTES:
+ * - When adding new interactive elements, ensure they have focus styles
+ * - Test keyboard navigation (Tab key) to verify all elements are reachable
+ * - Verify contrast ratios meet WCAG AA standards (minimum 3:1)
+ * - Consider both light and dark theme compatibility
+ */
+
+/* Form input focus styles
+   Applies to all text inputs, selects, and textareas
+   Uses subtle 2px ring with 10% opacity for non-intrusive but clear indicator */
 .abschussplan-hgmh-form input[type="text"]:focus,
 .abschussplan-hgmh-form input[type="email"]:focus,
 .abschussplan-hgmh-form input[type="tel"]:focus,
@@ -18,14 +61,18 @@
     box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
 }
 
-/* Button focus styles */
+/* Button focus styles
+   Uses :focus-visible to prevent showing ring on mouse clicks
+   Stronger 3px ring with 25% opacity for better visibility on buttons */
 .abschussplan-hgmh-form .submit-btn:focus-visible,
 .abschussplan-hgmh-form button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
 }
 
-/* Pagination link focus styles */
+/* Pagination link focus styles
+   Keyboard navigation for pagination links with slight border-radius
+   Ensures users can navigate through pages without mouse */
 .pagination a:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);

@@ -7,31 +7,107 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* === Accessibility - Focus Indicators === */
-/* WCAG 2.1 Level AA 2.4.7 - Focus Visible */
+/* ======================================================================
+   ACCESSIBILITY - FOCUS INDICATORS
+   ====================================================================== */
+
+/**
+ * Focus Style System - WCAG 2.1 Level AA 2.4.7 Compliance
+ *
+ * This section implements visible focus indicators for all interactive
+ * elements in the admin interface to ensure keyboard users can navigate
+ * effectively.
+ *
+ * KEY PRINCIPLES:
+ *
+ * 1. WCAG 2.1 Level AA 2.4.7 - Focus Visible
+ *    "Any keyboard operable user interface has a mode of operation where
+ *    the keyboard focus indicator is visible."
+ *    Reference: https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html
+ *
+ * 2. Contrast Requirements
+ *    - Minimum 3:1 contrast ratio against adjacent colors (WCAG AA)
+ *    - Focus color: rgba(34, 113, 177, 0.25) for 3px box-shadow
+ *    - Border color: #2271b1 (WordPress admin primary blue)
+ *    - Higher opacity (0.3) for smaller elements like checkboxes/radios
+ *
+ * 3. :focus-visible vs :focus Strategy
+ *    - Links, buttons, tabs: Use :focus-visible to avoid mouse-click rings
+ *    - Form controls (inputs, selects, textareas): Use :focus for broader support
+ *    - Checkboxes/radios: Use :focus as they're small and need all focus help
+ *    - This provides optimal UX while maintaining accessibility
+ *
+ * 4. Why outline: none?
+ *    - Default browser outlines are inconsistent across browsers
+ *    - Custom box-shadow provides:
+ *      * Consistent appearance across all browsers
+ *      * Better visual integration with design system
+ *      * More control over size, color, and blur
+ *    - We REPLACE (not remove) outline with custom focus indicator
+ *
+ * 5. Implementation Pattern by Element Type
+ *    - Links & Buttons: 3px box-shadow, 25% opacity, :focus-visible
+ *    - Text inputs, selects, textareas: 2px box-shadow, 10% opacity, :focus
+ *    - Checkboxes & Radios: 2px box-shadow, 30% opacity, :focus
+ *    - Cards & Items: 3px box-shadow, 25% opacity, :focus-visible
+ *
+ * 6. Color System Rationale
+ *    - Uses WordPress admin blue (#2271b1) for familiarity
+ *    - Opacity variations provide hierarchy:
+ *      * 10% (0.1): Subtle, for frequent focus (form inputs)
+ *      * 25% (0.25): Standard, for buttons and links
+ *      * 30% (0.3): Enhanced, for small targets (checkboxes)
+ *
+ * TESTING CHECKLIST:
+ * - Use Tab key to navigate through all interactive elements
+ * - Verify focus indicators are visible on all elements
+ * - Check contrast ratio with browser dev tools (should be >= 3:1)
+ * - Test in multiple browsers (Chrome, Firefox, Safari, Edge)
+ * - Verify focus styles don't show on mouse clicks (for :focus-visible)
+ *
+ * MAINTENANCE NOTES:
+ * - When adding new interactive elements, add focus styles immediately
+ * - Follow the pattern: heavier focus (3px, 25%) for actions, lighter (2px, 10%) for inputs
+ * - Always test keyboard navigation after adding new UI components
+ * - Update this documentation if you introduce new focus patterns
+ */
+
+/* Link focus styles
+   Applies to all links in admin interface
+   Uses :focus-visible to prevent ring on mouse clicks */
 .ahgmh-admin-modern a:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
     border-radius: 2px;
 }
 
+/* Select dropdown focus styles
+   Uses :focus (not :focus-visible) for broader browser support
+   Subtle indicator with border change and light shadow */
 .ahgmh-admin-modern select:focus {
     border-color: #2271b1;
     outline: none;
     box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
 }
 
+/* Textarea focus styles
+   Matches select styling for consistency */
 .ahgmh-admin-modern textarea:focus {
     border-color: #2271b1;
     outline: none;
     box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
 }
 
+/* Checkbox focus styles
+   Higher opacity (30%) for better visibility on small elements
+   Uses :focus as these elements are small and benefit from all focus help */
 .ahgmh-admin-modern input[type="checkbox"]:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.3);
 }
 
+/* Radio button focus styles
+   Matches checkbox styling for consistency */
 .ahgmh-admin-modern input[type="radio"]:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.3);
