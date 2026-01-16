@@ -1,10 +1,10 @@
 {
   "active": true,
   "spec": "020-add-database-indexes-for-frequently-queried-column",
-  "state": "planning",
+  "state": "building",
   "subtasks": {
-    "completed": 0,
-    "total": 0,
+    "completed": 2,
+    "total": 4,
     "in_progress": 1,
     "failed": 0
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 2,
+    "number": 4,
     "started_at": "2026-01-16T14:17:16.697768"
   },
-  "last_update": "2026-01-16T14:22:23.129293"
+  "last_update": "2026-01-16T14:25:29.253021"
 }
