@@ -1,0 +1,102 @@
+/**
+ * Admin Modern Extracted Styles
+ *
+ * CSS extracted from admin-modern.js for better maintainability and performance.
+ * Includes notification, tooltip, and animation styles.
+ */
+
+/* Notification Container */
+.ahgmh-notifications {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    max-width: 400px;
+}
+
+/* Base Notification Style */
+.ahgmh-notification {
+    background: #fff;
+    border-left: 4px solid #0073aa;
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+/* Notification Show State */
+.ahgmh-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Notification Type Variants */
+.ahgmh-notification-success {
+    border-left-color: #46b450;
+}
+
+.ahgmh-notification-error {
+    border-left-color: #dc3232;
+}
+
+.ahgmh-notification-warning {
+    border-left-color: #ffb900;
+}
+
+/* Tooltip Styles */
+.ahgmh-tooltip {
+    position: absolute;
+    background: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 10000;
+    max-width: 200px;
+    word-wrap: break-word;
+}
+
+/* Tooltip Arrow */
+.ahgmh-tooltip:before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #333;
+}
+
+/* Spinning Animation */
+.ahgmh-spinning {
+    animation: ahgmh-spin 1s linear infinite;
+}
+
+@keyframes ahgmh-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Edit Notice */
+.ahgmh-edit-notice {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 20px;
+    color: #856404;
+    font-size: 14px;
+}
+
+/* Edit Mode Form */
+.ahgmh-form.edit-mode {
+    border-left: 4px solid #0073aa;
+    padding-left: 16px;
+    background: #f8f9fa;
+}
