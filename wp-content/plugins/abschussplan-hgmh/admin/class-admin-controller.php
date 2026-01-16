@@ -103,7 +103,7 @@ class AHGMH_Admin_Controller {
         if (strpos($hook, 'abschussplan-hgmh') === false) {
             return;
         }
-        
+
         // Main admin stylesheet
         wp_enqueue_style(
             'ahgmh-admin-modern',
@@ -111,7 +111,15 @@ class AHGMH_Admin_Controller {
             array(),
             AHGMH_PLUGIN_VERSION
         );
-        
+
+        // Extracted CSS (notifications, tooltips, animations)
+        wp_enqueue_style(
+            'ahgmh-admin-modern-extracted',
+            AHGMH_PLUGIN_URL . 'admin/assets/admin-modern-extracted.css',
+            array('ahgmh-admin-modern'),
+            AHGMH_PLUGIN_VERSION
+        );
+
         // Main admin script
         wp_enqueue_script(
             'ahgmh-admin-modern',

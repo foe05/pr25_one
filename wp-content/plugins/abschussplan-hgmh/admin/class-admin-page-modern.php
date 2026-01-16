@@ -128,14 +128,22 @@ class AHGMH_Admin_Page_Modern {
         if (strpos($hook, 'abschussplan-hgmh') === false) {
             return;
         }
-        
+
         wp_enqueue_style(
             'ahgmh-admin-modern',
             AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.css',
             array(),
             AHGMH_PLUGIN_VERSION
         );
-        
+
+        // Extracted CSS (notifications, tooltips, animations)
+        wp_enqueue_style(
+            'ahgmh-admin-modern-extracted',
+            AHGMH_PLUGIN_URL . 'admin/assets/admin-modern-extracted.css',
+            array('ahgmh-admin-modern'),
+            AHGMH_PLUGIN_VERSION
+        );
+
         // Sicherstellen, dass das Skript genau einmal geladen wird
         if (!wp_script_is('ahgmh-admin-modern', 'enqueued') && !wp_script_is('ahgmh-admin-modern', 'to_do')) {
             wp_enqueue_script(
