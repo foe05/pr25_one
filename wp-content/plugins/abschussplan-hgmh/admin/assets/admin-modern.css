@@ -79,6 +79,12 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.ahgmh-stat-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+    transform: translateY(-2px);
+}
+
 .stat-icon {
     font-size: 32px;
     width: 48px;
@@ -1024,6 +1030,12 @@
     background: #f0f6fc;
 }
 
+.wildart-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+    background: #f0f6fc;
+}
+
 .wildart-item.active {
     background: #2271b1;
     color: white;
@@ -1308,6 +1320,13 @@
 
 .config-item:hover {
     border-color: #72aee6;
+    background: #f0f6fc;
+}
+
+.config-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+    border-color: #2271b1;
     background: #f0f6fc;
 }
 

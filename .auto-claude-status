@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "010-wildarten-management",
+  "spec": "013-add-visible-focus-indicators-for-keyboard-navigati",
   "state": "building",
   "subtasks": {
-    "completed": 10,
-    "total": 11,
+    "completed": 2,
+    "total": 5,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration & Testing",
+    "current": "Add Focus Indicators",
     "id": null,
-    "total": 2
+    "total": 5
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 163,
-    "started_at": "2026-01-13T00:02:33.000354"
+    "number": 4,
+    "started_at": "2026-01-16T13:49:20.046269"
   },
-  "last_update": "2026-01-13T02:02:51.769408"
+  "last_update": "2026-01-16T13:58:08.258365"
 }
