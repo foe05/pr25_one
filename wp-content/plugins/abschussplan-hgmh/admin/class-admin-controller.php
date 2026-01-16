@@ -140,6 +140,17 @@ class AHGMH_Admin_Controller {
             );
         }
 
+        // Wildart Config module - only load on Wildarten page
+        if ($hook === 'abschussplan_page_abschussplan-hgmh-wildarten') {
+            wp_enqueue_script(
+                'ahgmh-wildart-config',
+                AHGMH_PLUGIN_URL . 'admin/assets/modules/wildart-config.js',
+                array('jquery', 'ahgmh-core'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
+
         // Main admin script
         wp_enqueue_script(
             'ahgmh-admin-modern',
