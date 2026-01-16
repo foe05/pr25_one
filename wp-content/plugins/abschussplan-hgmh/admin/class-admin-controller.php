@@ -151,6 +151,17 @@ class AHGMH_Admin_Controller {
             );
         }
 
+        // Obmann Management module - only load on Obleute page
+        if ($hook === 'abschussplan_page_abschussplan-hgmh-obleute') {
+            wp_enqueue_script(
+                'ahgmh-obmann-management',
+                AHGMH_PLUGIN_URL . 'admin/assets/modules/obmann-management.js',
+                array('jquery', 'ahgmh-core'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
+
         // Main admin script
         wp_enqueue_script(
             'ahgmh-admin-modern',
