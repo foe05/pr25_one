@@ -129,6 +129,17 @@ class AHGMH_Admin_Controller {
             true
         );
 
+        // Quick Actions module - only load on Meldungen page
+        if ($hook === 'abschussplan_page_abschussplan-hgmh-data') {
+            wp_enqueue_script(
+                'ahgmh-quick-actions',
+                AHGMH_PLUGIN_URL . 'admin/assets/modules/quick-actions.js',
+                array('jquery', 'ahgmh-core'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
+
         // Main admin script
         wp_enqueue_script(
             'ahgmh-admin-modern',
