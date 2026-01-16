@@ -120,11 +120,20 @@ class AHGMH_Admin_Controller {
             AHGMH_PLUGIN_VERSION
         );
 
+        // Core module (notifications, tooltips, tab switching) - loads on all admin pages
+        wp_enqueue_script(
+            'ahgmh-core',
+            AHGMH_PLUGIN_URL . 'admin/assets/modules/core.js',
+            array('jquery'),
+            AHGMH_PLUGIN_VERSION,
+            true
+        );
+
         // Main admin script
         wp_enqueue_script(
             'ahgmh-admin-modern',
             AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.js',
-            array('jquery'),
+            array('jquery', 'ahgmh-core'),
             AHGMH_PLUGIN_VERSION,
             true
         );
