@@ -2,6 +2,36 @@
  * Abschussplan HGMH plugin styles
  */
 
+/* === Accessibility - Focus Indicators === */
+/* WCAG 2.1 Level AA 2.4.7 - Focus Visible */
+
+/* Form input focus styles */
+.abschussplan-hgmh-form input[type="text"]:focus,
+.abschussplan-hgmh-form input[type="email"]:focus,
+.abschussplan-hgmh-form input[type="tel"]:focus,
+.abschussplan-hgmh-form input[type="number"]:focus,
+.abschussplan-hgmh-form input[type="date"]:focus,
+.abschussplan-hgmh-form select:focus,
+.abschussplan-hgmh-form textarea:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
+}
+
+/* Button focus styles */
+.abschussplan-hgmh-form .submit-btn:focus-visible,
+.abschussplan-hgmh-form button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+}
+
+/* Pagination link focus styles */
+.pagination a:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+    border-radius: 2px;
+}
+
 /* Form styles */
 .abschussplan-hgmh-form-container {
     margin: 2rem 0;
