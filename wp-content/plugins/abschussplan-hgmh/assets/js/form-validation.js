@@ -159,11 +159,15 @@
         $('#field3').on('input', function() {
             const $field = $(this);
             const fieldValue = $field.val();
-            
+
             // Show feedback message if WUS exceeds 7 digits
             if (fieldValue && fieldValue.length > 7) {
-                alert('WUS-Nummer darf maximal 7 Stellen haben.');
-                $field.focus();
+                $field.addClass('is-invalid');
+                $field.siblings('.form-error').text('WUS-Nummer darf maximal 7 Stellen haben.').show();
+            } else {
+                // Clear the error if the length is valid
+                $field.removeClass('is-invalid');
+                $field.siblings('.form-error').text('').hide();
             }
         });
         
