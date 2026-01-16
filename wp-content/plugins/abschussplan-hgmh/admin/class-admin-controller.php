@@ -129,6 +129,17 @@ class AHGMH_Admin_Controller {
             true
         );
 
+        // Dashboard module - only load on Dashboard page
+        if ($hook === 'toplevel_page_abschussplan-hgmh') {
+            wp_enqueue_script(
+                'ahgmh-dashboard',
+                AHGMH_PLUGIN_URL . 'admin/assets/modules/dashboard.js',
+                array('jquery', 'ahgmh-core'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
+
         // Quick Actions module - only load on Meldungen page
         if ($hook === 'abschussplan_page_abschussplan-hgmh-data') {
             wp_enqueue_script(
