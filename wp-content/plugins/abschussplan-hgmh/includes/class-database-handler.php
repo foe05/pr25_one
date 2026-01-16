@@ -91,7 +91,8 @@ class AHGMH_Database_Handler {
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
-            KEY wildart_active (wildart, active)
+            KEY wildart_active (wildart, active),
+            KEY jagdbezirk_idx (jagdbezirk)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
