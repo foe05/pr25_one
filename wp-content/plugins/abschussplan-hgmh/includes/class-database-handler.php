@@ -44,7 +44,14 @@ class AHGMH_Database_Handler {
             field5 text NOT NULL,
             field6 text,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id)
+            PRIMARY KEY  (id),
+            KEY game_species_idx (game_species),
+            KEY category_idx (field2(100)),
+            KEY jagdbezirk_idx (field5(100)),
+            KEY created_at_idx (created_at),
+            KEY species_category_idx (game_species, field2(100)),
+            KEY species_jagdbezirk_idx (game_species, field5(100)),
+            KEY species_date_idx (game_species, created_at)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
