@@ -241,8 +241,11 @@
 
         console.log('Refreshing table via AJAX...');
 
-        // Add loading indicator
-        $tableContainer.prepend('<div class="table-loading-overlay"><div class="spinner-border" role="status"><span class="sr-only">Lade...</span></div></div>');
+        // Replace table body with skeleton loading rows
+        const $tbody = $tableContainer.find('tbody');
+        if ($tbody.length > 0) {
+            $tbody.html(generateSkeletonRows());
+        }
 
         // Get current page data to maintain filters/pagination
         const currentPage = new URLSearchParams(window.location.search).get('ahgmh_page') || 1;
@@ -280,8 +283,7 @@
                 }, 1000);
             },
             complete: function() {
-                // Remove loading indicator
-                $('.table-loading-overlay').remove();
+                // Skeleton rows are automatically removed when table content is replaced
             }
         });
     }
