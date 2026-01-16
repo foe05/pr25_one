@@ -172,30 +172,6 @@ class AHGMH_Admin_Controller {
                 true
             );
         }
-
-        // Main admin script
-        wp_enqueue_script(
-            'ahgmh-admin-modern',
-            AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.js',
-            array('jquery', 'ahgmh-core'),
-            AHGMH_PLUGIN_VERSION,
-            true
-        );
-        
-        // Localize script
-        wp_localize_script(
-            'ahgmh-admin-modern',
-            'ahgmh_admin',
-            array(
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('ahgmh_admin_nonce'),
-                'strings' => array(
-                    'loading' => __('Lädt...', 'abschussplan-hgmh'),
-                    'error' => __('Ein Fehler ist aufgetreten', 'abschussplan-hgmh'),
-                    'success' => __('Erfolgreich gespeichert', 'abschussplan-hgmh'),
-                )
-            )
-        );
     }
     
     /**
