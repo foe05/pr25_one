@@ -3,13 +3,13 @@
   "spec": "021-reduce-admin-javascript-bundle-size-with-code-spli",
   "state": "building",
   "subtasks": {
-    "completed": 4,
+    "completed": 7,
     "total": 17,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Create Core Module",
+    "current": "Extract Wildart Config Module",
     "id": null,
     "total": 2
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 6,
+    "number": 9,
     "started_at": "2026-01-16T14:17:56.515644"
   },
-  "last_update": "2026-01-16T14:28:16.151806"
+  "last_update": "2026-01-16T14:34:39.157329"
 }
