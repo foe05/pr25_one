@@ -18,9 +18,12 @@ class AHGMH_Admin_Page {
     public function __construct() {
         // Add admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
-        
+
         // Register settings
         add_action('admin_init', array($this, 'register_settings'));
+
+        // Enqueue admin scripts
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
     }
 
     /**
@@ -106,6 +109,62 @@ class AHGMH_Admin_Page {
      */
     public function register_settings() {
         // Settings removed - no longer needed
+    }
+
+    /**
+     * Enqueue admin scripts and styles
+     */
+    public function enqueue_admin_scripts($hook) {
+        if (strpos($hook, 'abschussplan-hgmh') === false) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'ahgmh-admin-modern',
+            AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.css',
+            array(),
+            AHGMH_PLUGIN_VERSION
+        );
+
+        // Sicherstellen, dass das Skript genau einmal geladen wird
+        if (!wp_script_is('ahgmh-admin-modern', 'enqueued') && !wp_script_is('ahgmh-admin-modern', 'to_do')) {
+            wp_enqueue_script(
+                'ahgmh-admin-modern',
+                AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.js',
+                array('jquery'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
+
+        // Lokalisierung ausgeben, wenn das Handle in der Queue ist
+        if (wp_script_is('ahgmh-admin-modern', 'enqueued') || wp_script_is('ahgmh-admin-modern', 'to_do')) {
+            wp_localize_script(
+                'ahgmh-admin-modern',
+                'ahgmh_admin',
+                array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('ahgmh_admin_nonce'),
+                'strings' => array(
+                    'loading' => __('Lädt...', 'abschussplan-hgmh'),
+                    'error' => __('Ein Fehler ist aufgetreten', 'abschussplan-hgmh'),
+                    'success' => __('Erfolgreich gespeichert', 'abschussplan-hgmh'),
+                    'obmannAssignedSuccess' => __('Obmann erfolgreich zugewiesen!', 'abschussplan-hgmh'),
+                    'assignmentRemovedSuccess' => __('Zuweisung erfolgreich entfernt!', 'abschussplan-hgmh'),
+                    'configurationSaved' => __('Konfiguration gespeichert!', 'abschussplan-hgmh'),
+                    'errorOccurred' => __('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh'),
+                    'confirmDelete' => __('Sind Sie sicher, dass Sie diese Aktion durchführen möchten?', 'abschussplan-hgmh'),
+                    'pleaseSelectWildart' => __('Bitte wählen Sie eine Wildart aus.', 'abschussplan-hgmh'),
+                    'pleaseSelectMeldegruppe' => __('Bitte wählen Sie eine Meldegruppe aus.', 'abschussplan-hgmh'),
+                    'wildartNameEmpty' => __('Wildart-Name darf nicht leer sein.', 'abschussplan-hgmh'),
+                    'meldegruppeNameEmpty' => __('Meldegruppe-Name darf nicht leer sein.', 'abschussplan-hgmh'),
+                    'categoryNameEmpty' => __('Kategorie-Name darf nicht leer sein.', 'abschussplan-hgmh'),
+                    'limitsSaved' => __('Limits erfolgreich gespeichert!', 'abschussplan-hgmh'),
+                    'modeChanged' => __('Limit-Modus erfolgreich geändert!', 'abschussplan-hgmh'),
+                )
+                )
+            );
+        }
     }
 
     /**
