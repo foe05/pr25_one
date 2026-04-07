@@ -103,7 +103,7 @@ class AHGMH_Admin_Controller {
         if (strpos($hook, 'abschussplan-hgmh') === false) {
             return;
         }
-        
+
         // Main admin stylesheet
         wp_enqueue_style(
             'ahgmh-admin-modern',
@@ -111,30 +111,67 @@ class AHGMH_Admin_Controller {
             array(),
             AHGMH_PLUGIN_VERSION
         );
-        
-        // Main admin script
+
+        // Extracted CSS (notifications, tooltips, animations)
+        wp_enqueue_style(
+            'ahgmh-admin-modern-extracted',
+            AHGMH_PLUGIN_URL . 'admin/assets/admin-modern-extracted.css',
+            array('ahgmh-admin-modern'),
+            AHGMH_PLUGIN_VERSION
+        );
+
+        // Core module (notifications, tooltips, tab switching) - loads on all admin pages
         wp_enqueue_script(
-            'ahgmh-admin-modern',
-            AHGMH_PLUGIN_URL . 'admin/assets/admin-modern.js',
+            'ahgmh-core',
+            AHGMH_PLUGIN_URL . 'admin/assets/modules/core.js',
             array('jquery'),
             AHGMH_PLUGIN_VERSION,
             true
         );
-        
-        // Localize script
-        wp_localize_script(
-            'ahgmh-admin-modern',
-            'ahgmh_admin',
-            array(
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('ahgmh_admin_nonce'),
-                'strings' => array(
-                    'loading' => __('Lädt...', 'abschussplan-hgmh'),
-                    'error' => __('Ein Fehler ist aufgetreten', 'abschussplan-hgmh'),
-                    'success' => __('Erfolgreich gespeichert', 'abschussplan-hgmh'),
-                )
-            )
-        );
+
+        // Dashboard module - only load on Dashboard page
+        if ($hook === 'toplevel_page_abschussplan-hgmh') {
+            wp_enqueue_script(
+                'ahgmh-dashboard',
+                AHGMH_PLUGIN_URL . 'admin/assets/modules/dashboard.js',
+                array('jquery', 'ahgmh-core'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
+
+        // Quick Actions module - only load on Meldungen page
+        if ($hook === 'abschussplan_page_abschussplan-hgmh-data') {
+            wp_enqueue_script(
+                'ahgmh-quick-actions',
+                AHGMH_PLUGIN_URL . 'admin/assets/modules/quick-actions.js',
+                array('jquery', 'ahgmh-core'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
+
+        // Wildart Config module - only load on Wildarten page
+        if ($hook === 'abschussplan_page_abschussplan-hgmh-wildarten') {
+            wp_enqueue_script(
+                'ahgmh-wildart-config',
+                AHGMH_PLUGIN_URL . 'admin/assets/modules/wildart-config.js',
+                array('jquery', 'ahgmh-core'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
+
+        // Obmann Management module - only load on Obleute page
+        if ($hook === 'abschussplan_page_abschussplan-hgmh-obleute') {
+            wp_enqueue_script(
+                'ahgmh-obmann-management',
+                AHGMH_PLUGIN_URL . 'admin/assets/modules/obmann-management.js',
+                array('jquery', 'ahgmh-core'),
+                AHGMH_PLUGIN_VERSION,
+                true
+            );
+        }
     }
     
     /**
