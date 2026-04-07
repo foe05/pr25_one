@@ -119,15 +119,14 @@
                         if (response.data.errors) {
                             $.each(response.data.errors, function(field, error) {
                                 const $field = $form.find(`[name="${field}"]`);
-                                
-                                // Special handling for WUS duplicate error - show popup like 7-digit validation
-                                if (field === 'field3' && error.includes('bereits vergeben')) {
-                                    alert(error);
-                                    $field.focus(); // Focus the field after popup
-                                } else {
-                                    // Standard error display for other fields
-                                    $field.addClass('is-invalid');
-                                    $field.siblings('.form-error').text(error).show();
+
+                                // Standard inline error display for all fields
+                                $field.addClass('is-invalid');
+                                $field.siblings('.form-error').text(error).show();
+
+                                // Focus on first error field (especially for server-side validation like duplicate WUS)
+                                if (field === 'field3') {
+                                    $field.focus();
                                 }
                             });
                         }
@@ -171,11 +170,15 @@
         $('#field3').on('input', function() {
             const $field = $(this);
             const fieldValue = $field.val();
-            
+
             // Show feedback message if WUS exceeds 7 digits
             if (fieldValue && fieldValue.length > 7) {
-                alert('WUS-Nummer darf maximal 7 Stellen haben.');
-                $field.focus();
+                $field.addClass('is-invalid');
+                $field.siblings('.form-error').text('WUS-Nummer darf maximal 7 Stellen haben.').show();
+            } else {
+                // Clear the error if the length is valid
+                $field.removeClass('is-invalid');
+                $field.siblings('.form-error').text('').hide();
             }
         });
         
@@ -190,14 +193,22 @@
                 if (fieldValue.length === 7) {
                     // Check if WUS is in valid range (1000000-9999999)
                     if (isNaN(numValue) || numValue < 1000000 || numValue > 9999999) {
-                        alert('WUS-Nummer muss zwischen 1000000 und 9999999 liegen.');
-                        $field.focus();
+                        $field.addClass('is-invalid');
+                        $field.siblings('.form-error').text('WUS-Nummer muss zwischen 1000000 und 9999999 liegen.').show();
+                    } else {
+                        // Clear error if valid
+                        $field.removeClass('is-invalid');
+                        $field.siblings('.form-error').text('').hide();
                     }
                 } else if (fieldValue.length > 0 && fieldValue.length < 7) {
                     // If user entered something but not 7 digits, show helpful message
-                    alert('WUS-Nummer muss genau 7 Stellen haben (1000000-9999999).');
-                    $field.focus();
+                    $field.addClass('is-invalid');
+                    $field.siblings('.form-error').text('WUS-Nummer muss genau 7 Stellen haben (1000000-9999999).').show();
                 }
+            } else {
+                // Clear error if field is empty
+                $field.removeClass('is-invalid');
+                $field.siblings('.form-error').text('').hide();
             }
         });
 
