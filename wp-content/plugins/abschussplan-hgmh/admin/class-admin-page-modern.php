@@ -52,6 +52,7 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_remove_obmann_assignment', array($this, 'ajax_remove_obmann_assignment'));
         add_action('wp_ajax_ahgmh_edit_obmann_assignment', array($this, 'ajax_edit_obmann_assignment'));
         add_action('wp_ajax_ahgmh_get_obmann_assignments', array($this, 'ajax_get_obmann_assignments'));
+        add_action('wp_ajax_ahgmh_save_log_api_key', array($this, 'ajax_save_log_api_key'));
         add_action('wp_ajax_ahgmh_reset_all_assignments', array($this, 'ajax_reset_all_assignments'));
 
         // Migration AJAX handlers
@@ -563,6 +564,11 @@ class AHGMH_Admin_Page_Modern {
                     <span class="dashicons dashicons-update"></span>
                     <?php echo esc_html__('Migrationen', 'abschussplan-hgmh'); ?>
                 </a>
+                <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-settings&tab=logging'); ?>"
+                   class="ahgmh-tab <?php echo $active_tab === 'logging' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-networking"></span>
+                    <?php echo esc_html__('Logging', 'abschussplan-hgmh'); ?>
+                </a>
             </nav>
 
             <!-- Tab Content -->
@@ -583,6 +589,9 @@ class AHGMH_Admin_Page_Modern {
                         break;
                     case 'migrations':
                         $this->render_migrations_tab();
+                        break;
+                    case 'logging':
+                        $this->render_logging_settings();
                         break;
                     default:
                         $this->render_database_settings();
@@ -5524,6 +5533,90 @@ class AHGMH_Admin_Page_Modern {
                 'log' => $result['log']
             ));
         }
+    }
+
+    /**
+     * Render Logging-Einstellungen Tab
+     */
+    private function render_logging_settings() {
+        $api_key = get_option( 'hege_log_api_key', '' );
+        ?>
+        <div class="ahgmh-panel">
+            <h2><?php echo esc_html__( 'Zentrales Logging', 'abschussplan-hgmh' ); ?></h2>
+
+            <div class="ahgmh-settings-section">
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="hege_log_api_key"><?php echo esc_html__( 'Logging API-Key', 'abschussplan-hgmh' ); ?></label>
+                        </th>
+                        <td>
+                            <input type="password"
+                                   id="hege_log_api_key"
+                                   name="hege_log_api_key"
+                                   value="<?php echo esc_attr( $api_key ); ?>"
+                                   class="regular-text"
+                                   autocomplete="off" />
+                            <p class="description">
+                                <?php echo esc_html__( 'API-Key für das zentrale Nutzungs-Logging. Leer lassen um Logging zu deaktivieren.', 'abschussplan-hgmh' ); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p>
+                    <button type="button" class="button button-primary" id="ahgmh-save-log-api-key">
+                        <?php echo esc_html__( 'Speichern', 'abschussplan-hgmh' ); ?>
+                    </button>
+                    <span id="ahgmh-log-api-key-status" style="margin-left: 10px;"></span>
+                </p>
+            </div>
+        </div>
+
+        <script>
+        jQuery(function($) {
+            $('#ahgmh-save-log-api-key').on('click', function() {
+                var $btn = $(this);
+                var $status = $('#ahgmh-log-api-key-status');
+                $btn.prop('disabled', true);
+                $status.text('<?php echo esc_js( __( 'Speichert...', 'abschussplan-hgmh' ) ); ?>');
+
+                $.post(ajaxurl, {
+                    action: 'ahgmh_save_log_api_key',
+                    nonce: '<?php echo wp_create_nonce( 'ahgmh_admin_nonce' ); ?>',
+                    api_key: $('#hege_log_api_key').val()
+                }, function(response) {
+                    $btn.prop('disabled', false);
+                    if (response.success) {
+                        $status.html('<span style="color:green;">' + response.data + '</span>');
+                    } else {
+                        $status.html('<span style="color:red;">' + response.data + '</span>');
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * AJAX: Logging API-Key speichern
+     */
+    public function ajax_save_log_api_key() {
+        if ( ! check_ajax_referer( 'ahgmh_admin_nonce', 'nonce', false ) ) {
+            wp_send_json_error( __( 'Sicherheitsprüfung fehlgeschlagen', 'abschussplan-hgmh' ) );
+            return;
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( __( 'Keine Berechtigung', 'abschussplan-hgmh' ) );
+            return;
+        }
+
+        $api_key = sanitize_text_field( $_POST['api_key'] ?? '' );
+        update_option( 'hege_log_api_key', $api_key );
+
+        wp_send_json_success( __( 'Gespeichert', 'abschussplan-hgmh' ) );
     }
 
 

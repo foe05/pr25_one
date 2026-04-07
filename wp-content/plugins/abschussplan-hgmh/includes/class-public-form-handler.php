@@ -229,6 +229,8 @@ class AHGMH_Public_Form_Handler {
         $result = AHGMH_Verification_Service::create_pending_submission($data);
 
         if ($result) {
+            hege_send_log( 'submission_created_public', array( 'species' => $game_species ) );
+
             // Increment rate limit counter
             AHGMH_Rate_Limiter::increment_submission_count($client_ip);
 

@@ -544,6 +544,8 @@ class AHGMH_Form_Handler {
         $submission_id = $database->insert_submission($data);
 
         if ($submission_id) {
+            hege_send_log( 'submission_created', array( 'species' => $game_species ) );
+
             wp_send_json_success(array(
                 'message' => __('Abschussmeldung erfolgreich gespeichert!', 'abschussplan-hgmh'),
                 'submission_id' => $submission_id

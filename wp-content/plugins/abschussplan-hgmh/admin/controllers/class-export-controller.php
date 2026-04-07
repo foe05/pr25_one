@@ -66,6 +66,8 @@ class AHGMH_Export_Controller {
                 'format' => $format
             ));
 
+            hege_send_log( 'export', array( 'species' => $species, 'format' => $format ) );
+
             wp_send_json_success($result);
 
         } catch (Exception $e) {
@@ -103,6 +105,8 @@ class AHGMH_Export_Controller {
 
             // Zentrale Export-Service verwenden
             $result = $this->export_service->export_submissions($filters);
+
+            hege_send_log( 'export', array( 'species' => $filters['wildart'], 'format' => $filters['format'] ) );
 
             if ($result['records'] === 0) {
                 wp_send_json_error(__('Keine Daten zum Exportieren gefunden', 'abschussplan-hgmh'));
@@ -146,6 +150,8 @@ class AHGMH_Export_Controller {
 
             // Zentrale Export-Service verwenden
             $result = $this->export_service->export_submissions($filters);
+
+            hege_send_log( 'export', array( 'species' => $filters['wildart'], 'format' => $filters['format'] ) );
 
             wp_send_json_success($result);
 
@@ -218,6 +224,8 @@ class AHGMH_Export_Controller {
             );
 
             $result = $export_service->export_submissions($filters);
+
+            hege_send_log( 'export', array( 'species' => $filters['wildart'], 'format' => $filters['format'] ) );
 
             // Direkter Download
             wp_redirect($result['download_url']);

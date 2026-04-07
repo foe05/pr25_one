@@ -51,6 +51,7 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-verification-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rate-limiter.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-public-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-activity-logger.php';
+require_once AHGMH_PLUGIN_DIR . 'includes/logging.php';
 
 // Include admin-only architecture when needed
 if (is_admin()) {
