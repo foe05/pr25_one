@@ -64,7 +64,14 @@ class AHGMH_Database_Handler {
             KEY approved_by (approved_by),
             KEY rejected_by (rejected_by),
             KEY verification_token (verification_token),
-            KEY verification_status (verification_status)
+            KEY verification_status (verification_status),
+            KEY game_species_idx (game_species),
+            KEY category_idx (field2(100)),
+            KEY jagdbezirk_idx (field5(100)),
+            KEY created_at_idx (created_at),
+            KEY species_category_idx (game_species, field2(100)),
+            KEY species_jagdbezirk_idx (game_species, field5(100)),
+            KEY species_date_idx (game_species, created_at)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -161,7 +168,8 @@ class AHGMH_Database_Handler {
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
             PRIMARY KEY  (id),
-            KEY wildart_active (wildart, active)
+            KEY wildart_active (wildart, active),
+            KEY jagdbezirk_idx (jagdbezirk)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
