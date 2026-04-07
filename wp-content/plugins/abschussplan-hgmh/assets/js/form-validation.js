@@ -289,12 +289,45 @@
     });
 
     /**
+     * Generate skeleton loading rows for table
+     * @returns {string} HTML string with 5 skeleton rows × 8 cells
+     */
+    function generateSkeletonRows() {
+        const skeletonRows = [];
+        const labels = [
+            'Abschussdatum',
+            'Jagdbezirk',
+            'Abschuss',
+            'WUS',
+            'Interne Notiz',
+            'Bemerkung',
+            'Erstellt von',
+            'Erstellt am'
+        ];
+
+        // Generate 5 skeleton rows
+        for (let i = 0; i < 5; i++) {
+            let row = '<tr class="skeleton-row">';
+
+            // Generate 8 cells per row
+            for (let j = 0; j < 8; j++) {
+                row += '<td data-label="' + labels[j] + '"><div class="skeleton-loader"></div></td>';
+            }
+
+            row += '</tr>';
+            skeletonRows.push(row);
+        }
+
+        return skeletonRows.join('');
+    }
+
+    /**
      * Refresh the submissions table via AJAX
      */
     function refreshSubmissionsTable() {
         // Check if we're on a page with abschuss_table shortcode
         const $tableContainer = $('.abschussplan-hgmh-table, .submissions-table-container, .table-responsive');
-        
+
         if ($tableContainer.length === 0) {
             console.log('No table container found for refresh');
             // Fallback: reload page
@@ -303,16 +336,19 @@
             }, 1000);
             return;
         }
-        
+
         console.log('Refreshing table via AJAX...');
-        
-        // Add loading indicator
-        $tableContainer.prepend('<div class="table-loading-overlay"><div class="spinner-border" role="status"><span class="sr-only">Lade...</span></div></div>');
-        
+
+        // Replace table body with skeleton loading rows
+        const $tbody = $tableContainer.find('tbody');
+        if ($tbody.length > 0) {
+            $tbody.html(generateSkeletonRows());
+        }
+
         // Get current page data to maintain filters/pagination
         const currentPage = new URLSearchParams(window.location.search).get('ahgmh_page') || 1;
         const species = $('#species-filter').val() || '';
-        
+
         // Make AJAX request to refresh table content
         $.ajax({
             url: ahgmh_ajax.ajax_url,
@@ -345,8 +381,7 @@
                 }, 1000);
             },
             complete: function() {
-                // Remove loading indicator
-                $('.table-loading-overlay').remove();
+                // Skeleton rows are automatically removed when table content is replaced
             }
         });
     }

@@ -151,6 +151,94 @@
     color: var(--bs-secondary);
 }
 
+/* Skeleton loading styles */
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+    100% {
+        background-position: 468px 0;
+    }
+}
+
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 0%,
+        #f8f8f8 20%,
+        #f0f0f0 40%,
+        #f0f0f0 100%
+    );
+    background-size: 468px 100%;
+    animation: shimmer 1.2s ease-in-out infinite;
+    border-radius: 0.25rem;
+}
+
+.skeleton-row {
+    display: table-row;
+}
+
+.skeleton-cell {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+.skeleton-loader {
+    height: 1rem;
+    width: 80%;
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 0%,
+        #f8f8f8 20%,
+        #f0f0f0 40%,
+        #f0f0f0 100%
+    );
+    background-size: 468px 100%;
+    animation: shimmer 1.2s ease-in-out infinite;
+    border-radius: 0.25rem;
+}
+
+.skeleton-text {
+    height: 1rem;
+    margin: 0.25rem 0;
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 0%,
+        #f8f8f8 20%,
+        #f0f0f0 40%,
+        #f0f0f0 100%
+    );
+    background-size: 468px 100%;
+    animation: shimmer 1.2s ease-in-out infinite;
+    border-radius: 0.25rem;
+}
+
+.skeleton-text-short {
+    width: 60%;
+}
+
+.skeleton-text-medium {
+    width: 80%;
+}
+
+.skeleton-text-long {
+    width: 100%;
+}
+
+/* Dark theme skeleton compatibility */
+[data-bs-theme=dark] .skeleton,
+[data-bs-theme=dark] .skeleton-text,
+[data-bs-theme=dark] .skeleton-loader {
+    background: linear-gradient(
+        90deg,
+        #2a2a2a 0%,
+        #3a3a3a 20%,
+        #2a2a2a 40%,
+        #2a2a2a 100%
+    );
+    background-size: 468px 100%;
+}
+
 /* Responsive adjustments */
 @media (max-width: 767.98px) {
     .abschussplan-hgmh-form-container,
