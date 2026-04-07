@@ -13,6 +13,7 @@
         initWildartConfig();
         initObmannManagement();
         initShortcodeCopy();
+        initBulkActions();
     }
 
     // Initialize on document ready
@@ -1114,6 +1115,38 @@
     }
 
     /**
+     * Show undo notification with undo button
+     */
+    function showUndoNotification(message, logId) {
+        // Remove any existing undo notifications
+        $('.ahgmh-undo-notification').remove();
+
+        var notification = $('<div class="ahgmh-notification ahgmh-undo-notification ahgmh-notification-success">' +
+            message +
+            ' <button class="button button-small ahgmh-undo-btn" data-log-id="' + logId + '" style="margin-left: 10px;">Rückgängig machen</button>' +
+            '</div>');
+        $('body').append(notification);
+
+        setTimeout(function () {
+            notification.addClass('show');
+        }, 100);
+
+        // Keep undo notification longer (10 seconds)
+        setTimeout(function () {
+            notification.removeClass('show');
+            setTimeout(function () {
+                notification.remove();
+            }, 300);
+        }, 10000);
+
+        // Handle undo button click
+        notification.find('.ahgmh-undo-btn').on('click', function() {
+            handleUndo(logId);
+            notification.remove();
+        });
+    }
+
+    /**
      * Hide notification
      */
     function hideNotification() {
@@ -1482,6 +1515,57 @@
     }
 
     /**
+     * Initialize bulk actions functionality
+     */
+    function initBulkActions() {
+        // Select all checkbox handler
+        $(document).on('change', '#cb-select-all-1', function() {
+            const isChecked = $(this).prop('checked');
+            $('.ahgmh-submission-checkbox').prop('checked', isChecked);
+            updateBulkActionUI();
+        });
+
+        // Individual checkbox handler
+        $(document).on('change', '.ahgmh-submission-checkbox', function() {
+            updateBulkActionUI();
+
+            // Update select all checkbox state
+            const totalCheckboxes = $('.ahgmh-submission-checkbox').length;
+            const checkedCheckboxes = $('.ahgmh-submission-checkbox:checked').length;
+            $('#cb-select-all-1').prop('checked', totalCheckboxes === checkedCheckboxes && totalCheckboxes > 0);
+        });
+
+        // Bulk action apply button handler
+        $(document).on('click', '#doaction', function(e) {
+            e.preventDefault();
+
+            const action = $('#bulk-action-selector-top').val();
+            const selectedIds = getSelectedSubmissionIds();
+
+            if (action === '-1') {
+                showNotification('Bitte wählen Sie eine Massenaktion aus.', 'warning');
+                return;
+            }
+
+            if (selectedIds.length === 0) {
+                showNotification('Bitte wählen Sie mindestens eine Meldung aus.', 'warning');
+                return;
+            }
+
+            switch(action) {
+                case 'bulk_delete':
+                    handleBulkDelete(selectedIds);
+                    break;
+                case 'bulk_assign':
+                    handleBulkAssign(selectedIds);
+                    break;
+                default:
+                    showNotification('Unbekannte Aktion', 'error');
+            }
+        });
+    }
+
+    /**
      * Copy text to clipboard
      */
     function copyToClipboard(text, $button) {
@@ -1534,6 +1618,221 @@
             $icon.attr('class', originalClass);
             $button.css('color', '');
         }, 2000);
+    }
+
+    /**
+     * Update bulk action UI elements based on selection
+     */
+    function updateBulkActionUI() {
+        const selectedCount = $('.ahgmh-submission-checkbox:checked').length;
+
+        $('#bulk-selected-count').text(selectedCount);
+
+        if (selectedCount > 0) {
+            $('.bulk-select-info').show();
+            $('#doaction').prop('disabled', false);
+        } else {
+            $('.bulk-select-info').hide();
+            $('#doaction').prop('disabled', true);
+        }
+    }
+
+    /**
+     * Get array of selected submission IDs
+     */
+    function getSelectedSubmissionIds() {
+        const ids = [];
+        $('.ahgmh-submission-checkbox:checked').each(function() {
+            ids.push(parseInt($(this).val()));
+        });
+        return ids;
+    }
+
+    /**
+     * Handle bulk delete action
+     */
+    function handleBulkDelete(ids) {
+        const count = ids.length;
+
+        if (!confirm('Sind Sie sicher, dass Sie ' + count + ' Meldung(en) löschen möchten?\n\nDiese Aktion kann nicht rückgängig gemacht werden.')) {
+            return;
+        }
+
+        // Show loading state
+        const $button = $('#doaction');
+        const originalText = $button.text();
+        $button.prop('disabled', true).text('Lösche...');
+
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_bulk_delete',
+                nonce: ahgmh_admin.nonce,
+                record_ids: ids,
+                confirm_token: 'confirm_bulk_delete'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Show undo notification with undo button
+                    if (response.data.log_id) {
+                        showUndoNotification(response.data.deleted_count + ' Meldung(en) erfolgreich gelöscht!', response.data.log_id);
+                    } else {
+                        showNotification(response.data.deleted_count + ' Meldung(en) erfolgreich gelöscht!', 'success');
+                    }
+
+                    // Remove deleted rows from table
+                    ids.forEach(function(id) {
+                        $('input[value="' + id + '"].ahgmh-submission-checkbox').closest('tr').fadeOut(300, function() {
+                            $(this).remove();
+
+                            // Check if table is empty
+                            if ($('.ahgmh-submission-checkbox').length === 0) {
+                                location.reload();
+                            }
+                        });
+                    });
+
+                    // Reset UI
+                    $('#cb-select-all-1').prop('checked', false);
+                    updateBulkActionUI();
+                } else {
+                    showNotification('Fehler beim Löschen: ' + (response.data.message || 'Unbekannter Fehler'), 'error');
+                }
+            },
+            error: function() {
+                showNotification('Netzwerkfehler beim Löschen', 'error');
+            },
+            complete: function() {
+                $button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+
+    /**
+     * Handle bulk assign action
+     */
+    function handleBulkAssign(ids) {
+        const count = ids.length;
+
+        // Check if jagdbezirke data is available
+        if (typeof ahgmh_jagdbezirke === 'undefined' || !ahgmh_jagdbezirke || ahgmh_jagdbezirke.length === 0) {
+            showNotification('Keine Jagdbezirke verfügbar', 'error');
+            return;
+        }
+
+        // Create dialog HTML
+        const dialogHtml = `
+            <div class="ahgmh-bulk-assign-dialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                 background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 100000; min-width: 400px;">
+                <h3 style="margin-top: 0;">Jagdbezirk zuweisen</h3>
+                <p>Wählen Sie einen Jagdbezirk für <strong>${count}</strong> ausgewählte Meldung(en):</p>
+                <select id="ahgmh-bulk-assign-jagdbezirk" style="width: 100%; padding: 8px; margin-bottom: 15px;">
+                    <option value="">-- Jagdbezirk wählen --</option>
+                    ${ahgmh_jagdbezirke.map(jb => '<option value="' + jb + '">' + jb + '</option>').join('')}
+                </select>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="button button-secondary ahgmh-cancel-bulk-assign" style="margin-right: 10px;">Abbrechen</button>
+                    <button type="button" class="button button-primary ahgmh-confirm-bulk-assign">Zuweisen</button>
+                </div>
+            </div>
+            <div class="ahgmh-bulk-assign-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                 background: rgba(0,0,0,0.5); z-index: 99999;"></div>
+        `;
+
+        // Add dialog to page
+        $('body').append(dialogHtml);
+
+        // Cancel button handler
+        $(document).on('click', '.ahgmh-cancel-bulk-assign, .ahgmh-bulk-assign-overlay', function() {
+            $('.ahgmh-bulk-assign-dialog, .ahgmh-bulk-assign-overlay').remove();
+        });
+
+        // Confirm button handler
+        $(document).on('click', '.ahgmh-confirm-bulk-assign', function() {
+            const jagdbezirk = $('#ahgmh-bulk-assign-jagdbezirk').val();
+
+            if (!jagdbezirk) {
+                showNotification('Bitte wählen Sie einen Jagdbezirk aus.', 'warning');
+                return;
+            }
+
+            // Show loading state
+            $(this).prop('disabled', true).text('Weise zu...');
+
+            $.ajax({
+                url: ahgmh_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ahgmh_mass_assign',
+                    nonce: ahgmh_admin.nonce,
+                    record_ids: ids,
+                    jagdbezirk: jagdbezirk
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Show undo notification with undo button
+                        if (response.data.log_id) {
+                            showUndoNotification(response.data.updated_count + ' Meldung(en) erfolgreich zugewiesen!', response.data.log_id);
+                        } else {
+                            showNotification(response.data.updated_count + ' Meldung(en) erfolgreich zugewiesen!', 'success');
+                        }
+
+                        // Close dialog
+                        $('.ahgmh-bulk-assign-dialog, .ahgmh-bulk-assign-overlay').remove();
+
+                        // Reload page to show updated data
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showNotification('Fehler bei Zuweisung: ' + (response.data.message || 'Unbekannter Fehler'), 'error');
+                        $('.ahgmh-confirm-bulk-assign').prop('disabled', false).text('Zuweisen');
+                    }
+                },
+                error: function() {
+                    showNotification('Netzwerkfehler bei Zuweisung', 'error');
+                    $('.ahgmh-confirm-bulk-assign').prop('disabled', false).text('Zuweisen');
+                }
+            });
+        });
+    }
+
+    /**
+     * Handle undo operation
+     */
+    function handleUndo(logId) {
+        if (!confirm('Möchten Sie diese Operation wirklich rückgängig machen?')) {
+            return;
+        }
+
+        // Show loading notification
+        showNotification('Mache rückgängig...', 'info');
+
+        $.ajax({
+            url: ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'ahgmh_undo_operation',
+                nonce: ahgmh_admin.nonce,
+                log_id: logId
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(response.data.message, 'success');
+
+                    // Reload page to show restored data
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showNotification('Fehler beim Rückgängigmachen: ' + (response.data.message || 'Unbekannter Fehler'), 'error');
+                }
+            },
+            error: function() {
+                showNotification('Netzwerkfehler beim Rückgängigmachen', 'error');
+            }
+        });
     }
 
 })(jQuery);

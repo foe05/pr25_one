@@ -1,0 +1,280 @@
+
+========================================
+Date: 2026-01-12
+Subtask: 5.1 - Create Operation Log Table
+Status: COMPLETED
+========================================
+
+Changes Made:
+1. Modified wp-content/plugins/abschussplan-hgmh/includes/class-database-handler.php:
+   - Added create_operation_log_tables() method to create two tables for undo functionality
+   - Created ahgmh_operation_logs table with columns:
+     * id (bigint AUTO_INCREMENT PRIMARY KEY)
+     * operation_type (varchar 50) - Type of operation (bulk_delete, bulk_update, import, etc.)
+     * user_id (bigint) - WordPress user who performed the operation
+     * affected_count (int) - Number of records affected by the operation
+     * description (text) - Human-readable description of the operation
+     * created_at (datetime) - Timestamp of when operation was performed
+   - Created ahgmh_operation_log_details table with columns:
+     * id (bigint AUTO_INCREMENT PRIMARY KEY)
+     * log_id (bigint) - Foreign key to ahgmh_operation_logs
+     * record_id (bigint) - ID of the affected record in submissions table
+     * field_name (varchar 100) - Name of the field that was changed
+     * old_value (text) - Previous value before the operation
+     * new_value (text) - New value after the operation
+   - Added indexes for efficient querying:
+     * user_id, operation_type, created_at on operation_logs table
+     * log_id, record_id on operation_log_details table
+   - Integrated create_operation_log_tables() into main create_table() method
+   - Updated cleanup_database() to drop both new tables on plugin uninstall
+
+Implementation Details:
+- Follows WordPress dbDelta standards for table creation
+- Uses proper charset_collate from $wpdb->get_charset_collate()
+- Tables designed to support undo functionality for:
+  * Bulk delete operations
+  * Bulk update operations
+  * Mass assignment operations
+  * Import operations
+- created_at index enables efficient cleanup of old logs (30-day retention policy)
+- log_id index enables fast retrieval of all changes for a specific operation
+- record_id index enables fast lookup of all changes to a specific record
+
+All acceptance criteria met:
+✓ create_operation_log_table method added (named create_operation_log_tables)
+✓ Table stores: operation_id (as 'id'), operation_type, user_id, created_at
+✓ Related table stores: log_id, record_id, field_name, old_value, new_value
+✓ Index on created_at for efficient cleanup
+
+Commit: 0e87976
+
+========================================
+Date: 2026-01-12
+Subtask: 5.2 - Create Undo Service
+Status: COMPLETED
+========================================
+
+Changes Made:
+1. Created wp-content/plugins/abschussplan-hgmh/admin/services/class-undo-service.php:
+   - Implemented AHGMH_Undo_Service class for operation logging and undo functionality
+   - Core methods implemented:
+     * log_operation() - Logs operation metadata to ahgmh_operation_logs table
+     * log_record_change() - Logs individual field changes to ahgmh_operation_log_details table
+     * log_bulk_changes() - Efficiently logs multiple changes at once
+     * get_records_snapshot() - Captures record state before operations for comparison
+     * undo_operation() - Restores previous values from logged changes
+     * restore_deleted_record() - Re-inserts deleted records with original IDs
+     * get_recent_operations() - Returns paginated list of undo-able operations
+     * get_operation() - Gets detailed information about specific operation
+     * cleanup_old_logs() - Removes logs beyond retention period
+     * can_undo() - Validates if operation is within retention and has changes
+   - Configurable retention period (default 30 days, range 1-365 days)
+   - Handles all operation types: import, bulk_update, bulk_delete, mass_assign
+   - Special handling for delete operations (re-insertion with original ID)
+
+Implementation Details:
+- Follows WordPress coding standards and existing service patterns
+- Uses German language strings for i18n (__() function)
+- Proper sanitization with sanitize_text_field() and intval()
+- Comprehensive error handling with detailed return arrays
+- Efficient database queries using prepared statements
+- Groups changes by record ID for batch restoration
+- Indexes snapshot records by ID for fast lookups
+- Returns detailed operation results with success/failure counts
+
+All acceptance criteria met:
+✓ log_operation stores operation details (type, user_id, affected_count, description, timestamp)
+✓ log_record_change stores before/after values (field_name, old_value, new_value)
+✓ undo_operation restores previous values (handles updates and deletes)
+✓ cleanup_old_logs removes logs older than 30 days (configurable retention)
+✓ get_recent_operations returns undo-able operations (with pagination)
+
+Additional features:
+- log_bulk_changes for efficient batch logging
+- get_records_snapshot for state capture before operations
+- restore_deleted_record for undo of delete operations
+- can_undo for validation before undo attempts
+- Configurable retention period (1-365 days)
+
+Commit: 763d1eb
+========================================
+Date: 2026-01-12
+Subtask: 5.3 - Create Undo Controller and UI
+Status: COMPLETED
+========================================
+
+Changes Made:
+1. Created wp-content/plugins/abschussplan-hgmh/admin/controllers/class-undo-controller.php:
+   - Implemented AHGMH_Undo_Controller class with AJAX handlers
+   - ajax_undo_operation(): Reverts changes from logged operations
+     * Validates log_id parameter
+     * Checks if operation can be undone via can_undo()
+     * Calls undo_service->undo_operation() to restore state
+     * Returns detailed results with restored count and failures
+   - ajax_get_recent_operations(): Returns paginated list of undoable operations
+     * Supports limit and offset parameters for pagination
+     * Validates pagination parameters (limit: 1-100, offset: >= 0)
+     * Formats operations with can_undo status for UI display
+   - Follows existing controller patterns with nonce/capability verification
+
+2. Modified wp-content/plugins/abschussplan-hgmh/admin/controllers/class-bulk-operations-controller.php:
+   - Added undo_service property to controller
+   - Integrated undo logging into bulk_update():
+     * Captures records snapshot before update
+     * Logs operation with description
+     * Compares old/new values and logs changes
+     * Returns log_id in success response
+   - Integrated undo logging into bulk_delete():
+     * Captures records snapshot before deletion
+     * Logs operation with description
+     * Logs all fields of deleted records for restoration
+     * Returns log_id in success response
+   - Integrated undo logging into mass_assign():
+     * Captures records snapshot before assignment
+     * Logs operation with jagdbezirk in description
+     * Logs jagdbezirk field changes with old/new values
+     * Returns log_id in success response
+
+3. Modified wp-content/plugins/abschussplan-hgmh/admin/assets/admin-modern.js:
+   - Added showUndoNotification() function:
+     * Displays success message with undo button
+     * Removes any existing undo notifications first
+     * Undo button has data-log-id attribute for tracking
+     * Notification stays visible for 10 seconds (vs 3 for normal)
+     * Handles undo button click to trigger handleUndo()
+   - Added handleUndo() function:
+     * Shows confirmation dialog before execution
+     * Displays loading notification during AJAX call
+     * Calls ahgmh_undo_operation AJAX action with log_id
+     * Shows success message and reloads page on success
+     * Shows error message on failure
+   - Updated handleBulkDelete() to use showUndoNotification()
+     * Checks for log_id in response data
+     * Falls back to regular notification if log_id missing
+   - Updated handleBulkAssign() to use showUndoNotification()
+     * Checks for log_id in response data
+     * Falls back to regular notification if log_id missing
+
+4. Modified wp-content/plugins/abschussplan-hgmh/abschussplan-hgmh.php:
+   - Added require_once for class-undo-service.php in services section
+   - Added require_once for class-undo-controller.php in controllers section
+   - Instantiated AHGMH_Undo_Controller in admin context initialization
+
+Implementation Details:
+- Undo controller follows WordPress AJAX patterns with proper error handling
+- All bulk operations now log changes before execution for undo capability
+- Undo notifications are visually distinct with prominent undo button
+- Undo confirmation prevents accidental restoration
+- Page reload after undo ensures UI shows current state
+- German language strings used throughout for i18n consistency
+
+All acceptance criteria met:
+✓ ajax_undo_operation reverts last operation
+✓ Undo notification shown after bulk operations
+✓ Undo button available for recent operations
+✓ Confirmation before undo execution
+✓ Success/failure feedback after undo
+
+Commit: 9a2eb14
+
+========================================
+Date: 2026-01-12
+Subtask: 6.2 - Enqueue Import Assets
+Status: COMPLETED
+========================================
+
+Changes Made:
+1. Modified wp-content/plugins/abschussplan-hgmh/admin/class-admin-page-modern.php:
+   - Added conditional enqueuing of import.css and import.js only on import page
+   - Check if $hook contains 'abschussplan-hgmh-import' to conditionally load assets
+   - Import CSS enqueued with dependency on ahgmh-admin-modern
+   - Import JS enqueued with dependencies on jquery and ahgmh-admin-modern
+   - Both assets use proper versioning (AHGMH_PLUGIN_VERSION) for cache busting
+   
+2. Added wp_localize_script for ahgmh_import object with comprehensive data:
+   - ajax_url: Admin AJAX endpoint URL
+   - nonce: Security nonce (using ahgmh_admin_nonce)
+   - max_file_size: 10 MB limit in bytes (10 * 1024 * 1024)
+   - supported_types: Array of supported file types (csv, xlsx)
+   - field_labels: Translatable German labels for all fields:
+     * datum - Datum
+     * wildart - Wildart
+     * kategorie - Kategorie
+     * meldegruppe - Meldegruppe
+     * jagdbezirk - Jagdbezirk
+     * wus_nummer - WUS-Nummer
+     * bemerkung - Bemerkung
+   - required_fields: Array of required field names (datum, wildart, kategorie)
+   - strings: Localized German UI messages:
+     * uploading - Hochladen...
+     * processing - Verarbeite Daten...
+     * importing - Importiere...
+     * validating - Validiere Daten...
+     * error_upload - Fehler beim Hochladen der Datei.
+     * error_invalid_type - Ungültiger Dateityp message
+     * error_file_too_large - Datei zu groß. Maximum: 10 MB.
+     * error_network - Netzwerkfehler message
+     * success_import - Import erfolgreich abgeschlossen!
+     * confirm_import - Möchten Sie die Import-Vorgang wirklich starten?
+
+Implementation Details:
+- Assets only loaded on import page, preventing unnecessary loading on other admin pages
+- Import script can access both ahgmh_admin and ahgmh_import objects in JavaScript
+- All field labels properly translated using WordPress i18n functions
+- Comprehensive error messages and UI strings for better user experience
+- Script dependencies ensure proper loading order (jQuery → admin-modern → import)
+- CSS dependencies ensure proper styling hierarchy (admin-modern → import)
+
+All acceptance criteria met:
+✓ Import JS/CSS only loaded on import page (conditional check on hook)
+✓ AJAX URL and nonce localized to JS (in ahgmh_import object)
+✓ Field mapping options passed to JS (field_labels with all 7 fields)
+✓ No conflicts with other admin pages (conditional loading prevents conflicts)
+
+Commit: cdf0978
+
+========================================
+Date: 2026-01-12
+Subtask: 6.3 - Register All New Controllers
+Status: COMPLETED
+========================================
+
+Verification Results:
+All new controllers (Import, Bulk Operations, Undo) are already properly registered in the main plugin file (abschussplan-hgmh.php). This was completed as part of previous subtasks.
+
+Current Registration Status:
+
+1. Service Files Included (lines 46-51):
+   ✓ class-import-service.php
+   ✓ class-column-mapper.php
+   ✓ class-ljv-template-detector.php
+   ✓ class-import-validator.php
+   ✓ class-bulk-operations-service.php
+   ✓ class-undo-service.php
+
+2. Controller Files Included (lines 64-66):
+   ✓ class-import-controller.php
+   ✓ class-bulk-operations-controller.php
+   ✓ class-undo-controller.php
+
+3. View Files Included (line 55):
+   ✓ class-import-view.php
+
+4. Controllers Instantiated in Admin Context (lines 163-169):
+   ✓ new AHGMH_Import_Controller()
+   ✓ new AHGMH_Bulk_Operations_Controller()
+   ✓ new AHGMH_Undo_Controller()
+
+All acceptance criteria met:
+✓ All new service files are included (6 services)
+✓ All new controller files are included (3 controllers)
+✓ Controllers instantiated in admin context
+✓ No PHP errors or warnings
+
+Previous Commits:
+- Subtask 1.3 (Import controller integration): Completed
+- Subtask 4.2 (Bulk operations controller integration): Completed
+- Subtask 5.3 (Undo controller integration): 9a2eb14
+
+No new code changes needed - marking as completed.
+

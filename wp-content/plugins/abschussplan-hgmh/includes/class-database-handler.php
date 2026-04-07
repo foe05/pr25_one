@@ -94,6 +94,9 @@ class AHGMH_Database_Handler {
 
         // Create activity log table
         $this->create_activity_log_table();
+
+        // Create operation log tables for undo functionality
+        $this->create_operation_log_tables();
     }
     
     /**
@@ -239,6 +242,54 @@ class AHGMH_Database_Handler {
             KEY moderator_id (moderator_id),
             KEY action (action),
             KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+     * Create operation log tables for undo functionality
+     *
+     * Creates two tables:
+     * 1. ahgmh_operation_logs - Main table for tracking bulk operations
+     * 2. ahgmh_operation_log_details - Details of changed records for each operation
+     */
+    public function create_operation_log_tables() {
+        global $wpdb;
+
+        $charset_collate = $wpdb->get_charset_collate();
+
+        // Main operation logs table
+        $operations_table = $wpdb->prefix . 'ahgmh_operation_logs';
+        $sql = "CREATE TABLE $operations_table (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            operation_type varchar(50) NOT NULL,
+            user_id bigint(20) NOT NULL DEFAULT 0,
+            affected_count int(11) NOT NULL DEFAULT 0,
+            description text,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            PRIMARY KEY  (id),
+            KEY user_id (user_id),
+            KEY operation_type (operation_type),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+
+        // Operation log details table - stores individual record changes
+        $details_table = $wpdb->prefix . 'ahgmh_operation_log_details';
+        $sql = "CREATE TABLE $details_table (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            log_id bigint(20) NOT NULL,
+            record_id bigint(20) NOT NULL,
+            field_name varchar(100) NOT NULL,
+            old_value text,
+            new_value text,
+            PRIMARY KEY  (id),
+            KEY log_id (log_id),
+            KEY record_id (record_id)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -1277,11 +1328,16 @@ class AHGMH_Database_Handler {
      */
     public static function cleanup_database() {
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'ahgmh_submissions';
         $jagdbezirk_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        $operation_logs_table = $wpdb->prefix . 'ahgmh_operation_logs';
+        $operation_log_details_table = $wpdb->prefix . 'ahgmh_operation_log_details';
+
         $wpdb->query("DROP TABLE IF EXISTS $table_name");
         $wpdb->query("DROP TABLE IF EXISTS $jagdbezirk_table");
+        $wpdb->query("DROP TABLE IF EXISTS $operation_log_details_table");
+        $wpdb->query("DROP TABLE IF EXISTS $operation_logs_table");
     }
     
     /**
