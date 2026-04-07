@@ -22,7 +22,21 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
     
     <?php if (empty($submissions)) : ?>
         <div class="abschuss-empty">
-            <p><?php echo esc_html__('Keine Abschussmeldungen vorhanden.', 'abschussplan-hgmh'); ?></p>
+            <div class="abschuss-empty-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h3 class="abschuss-empty-heading">
+                <?php echo esc_html__('Keine Abschussmeldungen vorhanden', 'abschussplan-hgmh'); ?>
+            </h3>
+            <p class="abschuss-empty-description">
+                <?php echo esc_html__('Es wurden noch keine Meldungen für diese Wildart erfasst. Melden Sie Ihren ersten Abschuss, um die Übersicht zu starten.', 'abschussplan-hgmh'); ?>
+            </p>
+            <?php if (is_user_logged_in()) : ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh')); ?>" class="abschuss-empty-cta">
+                    <i class="bi bi-plus-circle"></i>
+                    <?php echo esc_html__('Erste Meldung erfassen', 'abschussplan-hgmh'); ?>
+                </a>
+            <?php endif; ?>
         </div>
     <?php else : ?>
         <div class="table-responsive">

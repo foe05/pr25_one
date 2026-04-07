@@ -1436,6 +1436,79 @@
     padding: 30px 20px;
 }
 
+/* === Enhanced Empty State === */
+.abschuss-empty {
+    text-align: center;
+    padding: 60px 40px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.abschuss-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #f0f0f1, #e0e0e0);
+    border-radius: 50%;
+    margin-bottom: 24px;
+    font-size: 40px;
+    color: #646970;
+}
+
+.abschuss-empty-icon i {
+    font-size: 40px;
+}
+
+.abschuss-empty-heading {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1d2327;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+.abschuss-empty-description {
+    font-size: 14px;
+    color: #646970;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+.abschuss-empty-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #2271b1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.abschuss-empty-cta:hover {
+    background: #135e96;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 113, 177, 0.3);
+}
+
+.abschuss-empty-cta:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+.abschuss-empty-cta .dashicons,
+.abschuss-empty-cta i {
+    font-size: 18px;
+}
+
 /* === Animations === */
 .config-item {
     animation: slideInUp 0.3s ease-out;
