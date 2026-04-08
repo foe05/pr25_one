@@ -460,6 +460,13 @@
             }
         });
 
+        // Close modal on Escape key
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && $('#schedule-form-modal').is(':visible')) {
+                closeScheduleForm();
+            }
+        });
+
         // Frequency change - show/hide day fields
         $('#schedule-frequency').on('change', function() {
             const frequency = $(this).val();
@@ -486,7 +493,13 @@
     /**
      * Open schedule form modal
      */
+    // Store the element that opened the modal to return focus on close
+    var _modalTrigger = null;
+
     function openScheduleForm() {
+        // Store the trigger element
+        _modalTrigger = document.activeElement;
+
         // Reset form
         $('#schedule-form')[0].reset();
         $('#schedule-id').val('');
@@ -496,15 +509,23 @@
         $('#field-day-of-week').hide();
         $('#field-day-of-month').hide();
 
-        // Show modal
-        $('#schedule-form-modal').fadeIn(200);
+        // Show modal and move focus to first input
+        $('#schedule-form-modal').fadeIn(200, function() {
+            $('#schedule-name').focus();
+        });
     }
 
     /**
      * Close schedule form modal
      */
     function closeScheduleForm() {
-        $('#schedule-form-modal').fadeOut(200);
+        $('#schedule-form-modal').fadeOut(200, function() {
+            // Return focus to the element that triggered the modal
+            if (_modalTrigger) {
+                _modalTrigger.focus();
+                _modalTrigger = null;
+            }
+        });
     }
 
     /**
