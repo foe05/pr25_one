@@ -1,5 +1,53 @@
 # Changelog - Abschussplan HGMH
 
+## [26.1.0] - 2026-04-08
+
+### Sicherheit (Security)
+- **Kritisch**: SQL Injection in `RENAME TABLE`, `SHOW TABLES LIKE` und raw Table-Name-Interpolation behoben (admin-page-modern, database-handler, dashboard-service, import-validator)
+- **Kritisch**: `export_csv()` war ohne Authentifizierung öffentlich erreichbar (nopriv AJAX)
+- Nonce-Verifizierung zu Page-Views AJAX-Handlern hinzugefügt
+- `$_SERVER`-Werte in Permissions-Service und Verification-Service sanitized
+- IP-Adress-Auflösung in Activity-Logger abgesichert
+- LIKE-Queries ohne `prepare()` in uninstall.php behoben
+- Schwache Nonce-Prüfung in `ajax_refresh_table()` behoben (war umgehbar)
+
+### Admin UX
+- Admin-Menüstruktur von 5 auf 7 Einträge umgebaut (Dashboard, Meldungen, Wildarten, Obleute, Berichte, Import/Export, Einstellungen)
+- Emoji-Präfixe aus Menü-Labels entfernt
+- Alle Admin-Views auf WordPress-native UI-Komponenten umgestellt (postbox, nav-tab-wrapper, form-table, wp-list-table)
+- Bootstrap-Klassen aus Admin-Views entfernt
+- ~775 Zeilen Inline-CSS/JS aus Schedule-Settings-View entfernt
+- ~200 Zeilen Inline-CSS aus Reports-View entfernt
+- Konsistente Farbpalette (WordPress-Standard: #2271b1, #00a32a, #dba617, #d63638)
+- Verbesserte Labels, Beschreibungstexte und Hilfetexte (deutsch)
+- Wildarten-Konfiguration als eigene Admin-Seite herausgelöst
+
+### Code-Qualität
+- 9 Test-/Debug-Dateien aus Plugin-Root entfernt
+- Emergency AJAX-Handler entfernt (~530 Zeilen duplizierter Code)
+- `AHGMH_Wildart_Controller` und `AHGMH_Limits_Controller` direkt aktiviert
+- Verwaiste `ahgmh_activate_plugin()` in Klassenmethode konsolidiert
+- 20+ fehlende i18n-Wrappings in Controller-AJAX-Responses nachgerüstet
+- Feature-Flag-Labels und -Beschreibungen internationalisiert
+- WPCS-Formatierung auf 10+ Dateien angewandt
+- Duplizierte WHERE-Clause-Logik in Page-View-Logger extrahiert
+- Error-Logging für Activity-Logger und Page-View-Logger verbessert
+- `composer.json` Autoloading um `frontend/shortcodes/` ergänzt
+
+### Frontend & Barrierefreiheit (WCAG 2.1 AA)
+- `<fieldset>`/`<legend>` für alle Formulargruppen hinzugefügt
+- `aria-required`, `aria-describedby`, `aria-busy`, `aria-invalid` Attribute ergänzt
+- Fokus-Management für Modals (Fokus setzen bei Öffnung, zurückgeben bei Schließung)
+- Tastatur-Navigation für Admin-Tabs (Pfeiltasten, Home, End)
+- Pagination: HTML-Entity-Doppel-Escaping behoben, ARIA-Attribute ergänzt
+- Alle `alert()`-Aufrufe durch Inline-Fehlermeldungen bzw. Notification-System ersetzt (20+)
+- Touch-Targets auf mindestens 44x44px für mobile Nutzung
+- Responsive Card-Layout für Datentabellen auf Mobilgeräten
+- Screen-Reader-Announcer für Moderationsaktionen
+- Englische Validierungsmeldungen durch deutsche ersetzt
+- Hidden Radio-Inputs von `display:none` auf accessible clip-Pattern umgestellt
+- `@media (prefers-reduced-motion)` für Animationen
+
 ## [3.0.1] - 2026-01-13
 
 ### 🐛 Bugfixes

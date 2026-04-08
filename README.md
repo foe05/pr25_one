@@ -1,7 +1,7 @@
 # Abschussplan HGMH - WordPress Plugin
 
-**Version:** 3.0.0
-**Status:** Production Ready - Complete v2 Refactoring with Advanced Features
+**Version:** 26.1.0
+**Status:** Production Ready - Quality & Security Sprint Complete
 **Type:** WordPress Plugin for German Hegegemeinschaften Management
 
 ## 🎯 Overview
@@ -25,6 +25,14 @@ The **Abschussplan HGMH** plugin is a comprehensive WordPress solution for digit
 - ✅ **Real-time Table Updates** - AJAX-powered data refreshing
 - ✅ **Complete Internationalization** - German translation with POT file for additional languages
 - ✅ **WordPress.org Compliance** - Security hardened, coding standards compliant, production ready
+
+### 🛡️ NEW in v26.1.0 - Quality & Security Sprint
+
+- ✅ **Security Hardening** - 15+ vulnerabilities fixed (SQL injection, missing nonce checks, unsanitized input, unauthenticated export)
+- ✅ **Admin UX Overhaul** - Restructured menu (7 pages), WordPress-native UI components, no Bootstrap in admin
+- ✅ **WCAG 2.1 AA Accessibility** - ARIA labels, focus management, keyboard navigation, screen reader support, 44px touch targets
+- ✅ **Code Quality** - Dead code removed (11 files), WPCS formatting, i18n consistency, error handling improvements
+- ✅ **Frontend Improvements** - Responsive card layouts, eliminated alert() dialogs, fixed HTML entity escaping
 
 ### 🚀 NEW in v3.0 - Enterprise Features
 
@@ -377,5 +385,6 @@ https://www.gnu.org/licenses/gpl-3.0.html
 
 ---
 
+**Version 26.1.0** - Quality & Security Sprint: Critical security fixes, admin UX overhaul, WCAG 2.1 AA accessibility, code quality improvements (April 2026)
 **Version 3.0.0** - Major release with complete architectural refactoring (January 2026)
 **Version 2.5.2** - Enhanced Meldegruppen Management System (September 2025)
