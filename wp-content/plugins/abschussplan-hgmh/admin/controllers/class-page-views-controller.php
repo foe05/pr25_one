@@ -96,7 +96,8 @@ class AHGMH_Page_Views_Controller {
      * AJAX handler for getting statistics
      */
     public function ajax_get_stats() {
-        // Check permissions
+        // Verify nonce and permissions
+        check_ajax_referer('ahgmh_admin_nonce', 'nonce');
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('Keine Berechtigung', 'abschussplan-hgmh')));
         }
@@ -122,7 +123,10 @@ class AHGMH_Page_Views_Controller {
      * AJAX handler for exporting CSV
      */
     public function ajax_export_csv() {
-        // Check permissions
+        // Verify nonce and permissions
+        if (!isset($_GET['nonce']) || !wp_verify_nonce(sanitize_text_field($_GET['nonce']), 'ahgmh_admin_nonce')) {
+            wp_die(__('Sicherheitscheck fehlgeschlagen', 'abschussplan-hgmh'));
+        }
         if (!current_user_can('manage_options')) {
             wp_die(__('Keine Berechtigung', 'abschussplan-hgmh'));
         }

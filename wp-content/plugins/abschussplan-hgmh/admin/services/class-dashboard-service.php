@@ -40,7 +40,7 @@ class AHGMH_Dashboard_Service {
         
         try {
             // Total submissions
-            $total_submissions = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+            $total_submissions = $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($table_name) . "`");
             
             // This month submissions
             $submissions_this_month = $wpdb->get_var($wpdb->prepare(
@@ -58,7 +58,7 @@ class AHGMH_Dashboard_Service {
             
             // Species breakdown
             $species_stats = $wpdb->get_results(
-                "SELECT art as species, COUNT(*) as count FROM $table_name GROUP BY art ORDER BY count DESC"
+                "SELECT art as species, COUNT(*) as count FROM `" . esc_sql($table_name) . "` GROUP BY art ORDER BY count DESC"
             );
             
             // Recent submissions
@@ -69,7 +69,7 @@ class AHGMH_Dashboard_Service {
             
             // Top meldegruppen
             $top_meldegruppen = $wpdb->get_results(
-                "SELECT meldegruppe, COUNT(*) as count FROM $table_name GROUP BY meldegruppe ORDER BY count DESC LIMIT 5"
+                "SELECT meldegruppe, COUNT(*) as count FROM `" . esc_sql($table_name) . "` GROUP BY meldegruppe ORDER BY count DESC LIMIT 5"
             );
             
             // Monthly trend (last 12 months)
