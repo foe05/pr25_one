@@ -6,30 +6,32 @@
 
     // Wait for the DOM to be ready
     $(document).ready(function() {
-        
+
         // Remove any existing handlers to prevent duplicates, then add new one
         $('.abschussplan-hgmh-form').off('submit').on('submit', function(e) {
             e.preventDefault();
-            
+
             // Prevent multiple submissions - check if already submitting
             if ($(this).data('submitting') === true) {
                 return false;
             }
-            
+
             // Reset previous error messages
             $('.form-error').text('').hide();
             $('.is-invalid').removeClass('is-invalid');
-            
-            const $form = $(this);
-            const $submitBtn = $form.find('button[type="submit"]');
-            const $responseContainer = $('#abschuss-form-response'); // Updated to match template
-            
+
+            var $form = $(this);
+            var $submitBtn = $form.find('button[type="submit"]');
+            var $responseContainer = $('#abschuss-form-response');
+
             // Mark as submitting and disable the submit button to prevent multiple submissions
             $form.data('submitting', true);
-            $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird gespeichert...');
-            
+            $submitBtn.prop('disabled', true)
+                .attr('aria-busy', 'true')
+                .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird gespeichert...');
+
             // Get form data manually (more reliable than FormData with older browsers)
-            const formData = new FormData();
+            var formData = new FormData();
             formData.append('action', 'submit_abschuss_form');
             formData.append('ahgmh_nonce', $('#ahgmh_nonce').val());
             formData.append('game_species', $('#game_species').val());
@@ -42,35 +44,32 @@
             formData.append('field7', $('#field7').val()); // Jagdbezirk
 
             // Additional date validation
-            const dateValue = new Date($('#field1').val());
-            const today = new Date();
+            var dateValue = new Date($('#field1').val());
+            var today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time portion for proper comparison
-            const tomorrow = new Date(today);
+            var tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1); // Get tomorrow's date
-            
+
             if (dateValue >= tomorrow) {
                 $('#field1').addClass('is-invalid');
                 $('#field1').siblings('.form-error').text('Das Datum darf nicht in der Zukunft liegen.').show();
-                $form.data('submitting', false);
-                $submitBtn.prop('disabled', false).text('Speichern');
+                resetSubmitState($form, $submitBtn);
                 return;
             }
-            
+
             // Validate Meldegruppe selection
             if (!$('#field5').val()) {
                 $('#field5').addClass('is-invalid');
-                $('#field5').siblings('.form-error').text('Bitte waehlen Sie eine Meldegruppe aus.').show();
-                $form.data('submitting', false);
-                $submitBtn.prop('disabled', false).text('Speichern');
+                $('#field5').siblings('.form-error').text('Bitte wählen Sie eine Meldegruppe aus.').show();
+                resetSubmitState($form, $submitBtn);
                 return;
             }
 
             // Validate Jagdbezirk selection (only if container is visible)
             if ($('#jagdbezirk-container').is(':visible') && !$('#field7').val()) {
                 $('#field7').addClass('is-invalid');
-                $('#field7').siblings('.form-error').text('Bitte waehlen Sie einen Jagdbezirk aus.').show();
-                $form.data('submitting', false);
-                $submitBtn.prop('disabled', false).text('Speichern');
+                $('#field7').siblings('.form-error').text('Bitte wählen Sie einen Jagdbezirk aus.').show();
+                resetSubmitState($form, $submitBtn);
                 return;
             }
 
@@ -84,18 +83,22 @@
                 success: function(response) {
                     if (response.success) {
                         // Show success message
-                        $responseContainer.removeClass('alert-danger').addClass('alert-success').text(response.data.message).show();
+                        $responseContainer
+                            .removeClass('alert-danger')
+                            .addClass('alert-success')
+                            .text(response.data.message)
+                            .show();
 
                         // Reset the form but keep the date and game species
-                        const currentDate = $('#field1').val();
-                        const currentSpecies = $('#game_species').val();
+                        var currentDate = $('#field1').val();
+                        var currentSpecies = $('#game_species').val();
                         $form[0].reset();
                         $('#field1').val(currentDate);
                         $('#game_species').val(currentSpecies);
 
                         // Hide Jagdbezirk container after form reset (will be shown again when Meldegruppe is selected)
                         $('#jagdbezirk-container').hide();
-                        $('#field7').html('<option value="" selected disabled>Bitte zuerst Meldegruppe waehlen...</option>');
+                        $('#field7').html('<option value="" selected disabled>Bitte zuerst Meldegruppe wählen...</option>');
 
                         // Remove the is-invalid class from all fields
                         $('.form-control, .form-select').removeClass('is-invalid');
@@ -106,22 +109,26 @@
                             refreshSubmissionsTable();
                         } else {
                             // Fallback: Reload page after short delay if no table containers found
-                            console.log('No table containers found, reloading page...');
                             setTimeout(function() {
                                 window.location.reload();
                             }, 1000);
                         }
                     } else {
                         // Show error message
-                        $responseContainer.removeClass('alert-success').addClass('alert-danger').text(response.data.message).show();
-                        
+                        $responseContainer
+                            .removeClass('alert-success')
+                            .addClass('alert-danger')
+                            .text(response.data.message)
+                            .show();
+
                         // Display field specific errors
                         if (response.data.errors) {
                             $.each(response.data.errors, function(field, error) {
-                                const $field = $form.find(`[name="${field}"]`);
+                                var $field = $form.find('[name="' + field + '"]');
 
                                 // Standard inline error display for all fields
                                 $field.addClass('is-invalid');
+                                $field.attr('aria-invalid', 'true');
                                 $field.siblings('.form-error').text(error).show();
 
                                 // Focus on first error field (especially for server-side validation like duplicate WUS)
@@ -132,61 +139,82 @@
                         }
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
                     // Show general error message
-                    $responseContainer.removeClass('alert-success').addClass('alert-danger')
-                        .text('Es gab einen Fehler beim Speichern. Bitte versuchen Sie es erneut.').show();
+                    var message = 'Es gab einen Fehler beim Speichern. Bitte versuchen Sie es erneut.';
+                    if (status === 'timeout') {
+                        message = 'Die Anfrage hat zu lange gedauert. Bitte versuchen Sie es erneut.';
+                    }
+                    $responseContainer
+                        .removeClass('alert-success')
+                        .addClass('alert-danger')
+                        .text(message)
+                        .show();
                 },
                 complete: function() {
-                    // Reset submitting flag and re-enable the submit button
-                    $form.data('submitting', false);
-                    $submitBtn.prop('disabled', false).text('Speichern');
-                    
+                    resetSubmitState($form, $submitBtn);
+
                     // Scroll to the response message
-                    $('html, body').animate({
-                        scrollTop: $responseContainer.offset().top - 100
-                    }, 500);
+                    if ($responseContainer.is(':visible')) {
+                        $('html, body').animate({
+                            scrollTop: $responseContainer.offset().top - 100
+                        }, 500);
+                    }
                 }
             });
         });
-        
+
+        /**
+         * Reset submit button and form state
+         */
+        function resetSubmitState($form, $submitBtn) {
+            $form.data('submitting', false);
+            $submitBtn
+                .prop('disabled', false)
+                .attr('aria-busy', 'false')
+                .text('Speichern');
+        }
+
         // Real-time validation for inputs and selects
         $('.abschussplan-hgmh-form input, .abschussplan-hgmh-form select').on('blur change', function() {
-            const $field = $(this);
-            const fieldName = $field.attr('name');
-            const fieldValue = $field.val();
-            
+            var $field = $(this);
+            var fieldValue = $field.val();
+
             // Validate required fields
             if ($field.prop('required') && !fieldValue) {
                 $field.addClass('is-invalid');
-                $field.siblings('.form-error').text('This field is required').show();
+                $field.attr('aria-invalid', 'true');
+                $field.siblings('.form-error').text('Dieses Feld ist erforderlich.').show();
             } else {
                 $field.removeClass('is-invalid');
+                $field.removeAttr('aria-invalid');
                 $field.siblings('.form-error').text('').hide();
             }
         });
-        
+
         // WUS field specific validation
         $('#field3').on('input', function() {
-            const $field = $(this);
-            const fieldValue = $field.val();
+            var $field = $(this);
+            var fieldValue = $field.val();
 
             // Show feedback message if WUS exceeds 7 digits
             if (fieldValue && fieldValue.length > 7) {
                 $field.addClass('is-invalid');
+                $field.attr('aria-invalid', 'true');
                 $field.siblings('.form-error').text('WUS-Nummer darf maximal 7 Stellen haben.').show();
             } else {
                 // Clear the error if the length is valid
                 $field.removeClass('is-invalid');
+                $field.removeAttr('aria-invalid');
                 $field.siblings('.form-error').text('').hide();
             }
         });
-        
+
         // WUS field validation on blur (when user finishes entering)
         $('#field3').on('blur', function() {
-            const $field = $(this);
-            const fieldValue = $field.val();
-            const numValue = parseInt(fieldValue);
+            var $field = $(this);
+            var fieldValue = $field.val();
+            var numValue = parseInt(fieldValue);
 
             // Only validate range if user has entered a number
             if (fieldValue) {
@@ -194,41 +222,46 @@
                     // Check if WUS is in valid range (1000000-9999999)
                     if (isNaN(numValue) || numValue < 1000000 || numValue > 9999999) {
                         $field.addClass('is-invalid');
+                        $field.attr('aria-invalid', 'true');
                         $field.siblings('.form-error').text('WUS-Nummer muss zwischen 1000000 und 9999999 liegen.').show();
                     } else {
                         // Clear error if valid
                         $field.removeClass('is-invalid');
+                        $field.removeAttr('aria-invalid');
                         $field.siblings('.form-error').text('').hide();
                     }
                 } else if (fieldValue.length > 0 && fieldValue.length < 7) {
                     // If user entered something but not 7 digits, show helpful message
                     $field.addClass('is-invalid');
+                    $field.attr('aria-invalid', 'true');
                     $field.siblings('.form-error').text('WUS-Nummer muss genau 7 Stellen haben (1000000-9999999).').show();
                 }
             } else {
                 // Clear error if field is empty
                 $field.removeClass('is-invalid');
+                $field.removeAttr('aria-invalid');
                 $field.siblings('.form-error').text('').hide();
             }
         });
 
         // Meldegruppe change handler - load Jagdbezirke dynamically
         $('#field5').on('change', function() {
-            const meldegruppe = $(this).val();
-            const $jagdbezirkContainer = $('#jagdbezirk-container');
-            const $jagdbezirkSelect = $('#field7');
-            const $loadingIndicator = $('#jagdbezirk-loading');
+            var meldegruppe = $(this).val();
+            var $jagdbezirkContainer = $('#jagdbezirk-container');
+            var $jagdbezirkSelect = $('#field7');
+            var $loadingIndicator = $('#jagdbezirk-loading');
 
             if (!meldegruppe) {
                 // No Meldegruppe selected - hide Jagdbezirk container
                 $jagdbezirkContainer.hide();
-                $jagdbezirkSelect.html('<option value="" selected disabled>Bitte zuerst Meldegruppe waehlen...</option>');
+                $jagdbezirkSelect.html('<option value="" selected disabled>Bitte zuerst Meldegruppe wählen...</option>');
                 return;
             }
 
             // Show loading indicator
             $loadingIndicator.show();
             $jagdbezirkSelect.prop('disabled', true);
+            $jagdbezirkSelect.attr('aria-busy', 'true');
 
             // Make AJAX request to get Jagdbezirke for this Meldegruppe
             $.ajax({
@@ -243,7 +276,7 @@
                     if (response.success && response.data.jagdbezirke) {
                         // Clear existing options and add new ones
                         $jagdbezirkSelect.empty();
-                        $jagdbezirkSelect.append('<option value="" selected disabled>Bitte waehlen...</option>');
+                        $jagdbezirkSelect.append('<option value="" selected disabled>Bitte wählen...</option>');
 
                         if (response.data.jagdbezirke.length > 0) {
                             // Add options for each Jagdbezirk
@@ -260,7 +293,7 @@
                         } else {
                             // No Jagdbezirke found for this Meldegruppe
                             $jagdbezirkSelect.append(
-                                '<option value="" disabled>Keine Jagdbezirke fuer diese Meldegruppe</option>'
+                                '<option value="" disabled>Keine Jagdbezirke für diese Meldegruppe</option>'
                             );
                             $jagdbezirkContainer.show();
                         }
@@ -283,6 +316,7 @@
                     // Hide loading indicator and re-enable select
                     $loadingIndicator.hide();
                     $jagdbezirkSelect.prop('disabled', false);
+                    $jagdbezirkSelect.attr('aria-busy', 'false');
                 }
             });
         });
@@ -290,11 +324,11 @@
 
     /**
      * Generate skeleton loading rows for table
-     * @returns {string} HTML string with 5 skeleton rows × 8 cells
+     * @returns {string} HTML string with 5 skeleton rows x 8 cells
      */
     function generateSkeletonRows() {
-        const skeletonRows = [];
-        const labels = [
+        var skeletonRows = [];
+        var labels = [
             'Abschussdatum',
             'Jagdbezirk',
             'Abschuss',
@@ -306,12 +340,12 @@
         ];
 
         // Generate 5 skeleton rows
-        for (let i = 0; i < 5; i++) {
-            let row = '<tr class="skeleton-row">';
+        for (var i = 0; i < 5; i++) {
+            var row = '<tr class="skeleton-row">';
 
             // Generate 8 cells per row
-            for (let j = 0; j < 8; j++) {
-                row += '<td data-label="' + labels[j] + '"><div class="skeleton-loader"></div></td>';
+            for (var j = 0; j < 8; j++) {
+                row += '<td data-label="' + labels[j] + '"><div class="skeleton-loader" aria-hidden="true"></div></td>';
             }
 
             row += '</tr>';
@@ -326,10 +360,9 @@
      */
     function refreshSubmissionsTable() {
         // Check if we're on a page with abschuss_table shortcode
-        const $tableContainer = $('.abschussplan-hgmh-table, .submissions-table-container, .table-responsive');
+        var $tableContainer = $('.abschussplan-hgmh-table, .submissions-table-container, .table-responsive');
 
         if ($tableContainer.length === 0) {
-            console.log('No table container found for refresh');
             // Fallback: reload page
             setTimeout(function() {
                 window.location.reload();
@@ -337,17 +370,16 @@
             return;
         }
 
-        console.log('Refreshing table via AJAX...');
-
         // Replace table body with skeleton loading rows
-        const $tbody = $tableContainer.find('tbody');
+        var $tbody = $tableContainer.find('tbody');
         if ($tbody.length > 0) {
+            $tbody.attr('aria-busy', 'true');
             $tbody.html(generateSkeletonRows());
         }
 
         // Get current page data to maintain filters/pagination
-        const currentPage = new URLSearchParams(window.location.search).get('ahgmh_page') || 1;
-        const species = $('#species-filter').val() || '';
+        var currentPage = new URLSearchParams(window.location.search).get('ahgmh_page') || 1;
+        var species = $('#species-filter').val() || '';
 
         // Make AJAX request to refresh table content
         $.ajax({
@@ -360,28 +392,26 @@
                 species: species
             },
             success: function(response) {
-                console.log('AJAX refresh response:', response);
                 if (response.success && response.data.html) {
                     // Replace table content
                     $tableContainer.html(response.data.html);
-                    console.log('Table refreshed successfully');
                 } else {
-                    console.log('AJAX refresh failed, reloading page');
                     // Fallback: reload page if AJAX fails
                     setTimeout(function() {
                         window.location.reload();
                     }, 1000);
                 }
             },
-            error: function(xhr, status, error) {
-                console.log('AJAX refresh error:', error);
+            error: function() {
                 // Fallback: reload page if AJAX fails
                 setTimeout(function() {
                     window.location.reload();
                 }, 1000);
             },
             complete: function() {
-                // Skeleton rows are automatically removed when table content is replaced
+                if ($tbody.length > 0) {
+                    $tbody.attr('aria-busy', 'false');
+                }
             }
         });
     }

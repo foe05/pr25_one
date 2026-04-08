@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
             <?php echo esc_html($warning_message); ?>
         </div>
     <?php endif; ?>
-    
+
     <div class="card">
         <div class="card-header">
             <h3 class="mb-0"><?php echo esc_html__('Aktuelle Abschusszahlen', 'abschussplan-hgmh'); ?></h3>
@@ -25,26 +25,26 @@ if (!defined('ABSPATH')) {
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('Abschuss (Ist)', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('Abschuss (Plan)', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('Frei', 'abschussplan-hgmh'); ?></th>
-                            <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                            <th scope="col"><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
+                            <th scope="col"><?php echo esc_html__('Abschuss (Ist)', 'abschussplan-hgmh'); ?></th>
+                            <th scope="col"><?php echo esc_html__('Abschuss (Plan)', 'abschussplan-hgmh'); ?></th>
+                            <th scope="col"><?php echo esc_html__('Frei', 'abschussplan-hgmh'); ?></th>
+                            <th scope="col"><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($categories as $category) : ?>
-                            <?php 
+                            <?php
                             $current = isset($counts[$category]) ? $counts[$category] : 0;
                             $limit = isset($limits[$category]) ? $limits[$category] : 0;
                             $remaining = max(0, $limit - $current);
-                            
+
                             // Calculate percentage and status
                             $percentage = $limit > 0 ? ($current / $limit) * 100 : 0;
                             $exceeding_allowed = isset($allow_exceeding[$category]) ? $allow_exceeding[$category] : false;
                             $status_class = '';
                             $status_text = '';
-                            
+
                             if ($limit == 0) {
                                 // No limit set: "Unbegrenzt", grey background
                                 $status_class = 'bg-secondary text-white';
@@ -75,7 +75,7 @@ if (!defined('ABSPATH')) {
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <span class="badge <?php echo esc_attr($status_class); ?>" style="padding: 6px 12px;">
+                                    <span class="badge ahgmh-status-badge <?php echo esc_attr($status_class); ?>">
                                         <?php echo esc_html($status_text); ?>
                                     </span>
                                 </td>

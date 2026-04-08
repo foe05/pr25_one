@@ -7,11 +7,18 @@
 
     /**
      * Show notification
+     * @param {string} message - Notification message
+     * @param {string} type - Notification type (info, success, error, warning)
      */
     function showNotification(message, type) {
         type = type || 'info';
 
-        var notification = $('<div class="ahgmh-notification ahgmh-notification-' + type + '">' + message + '</div>');
+        var notification = $('<div>', {
+            'class': 'ahgmh-notification ahgmh-notification-' + type,
+            'role': 'alert',
+            'aria-live': 'assertive',
+            text: message
+        });
         $('body').append(notification);
 
         setTimeout(function () {
@@ -47,11 +54,15 @@
 
         $('[data-title]').hover(
             function () {
-                const title = $(this).attr('data-title');
-                const tooltip = $('<div class="ahgmh-tooltip">' + title + '</div>');
+                var title = $(this).attr('data-title');
+                var tooltip = $('<div>', {
+                    'class': 'ahgmh-tooltip',
+                    'role': 'tooltip',
+                    text: title
+                });
                 $('body').append(tooltip);
 
-                const pos = $(this).offset();
+                var pos = $(this).offset();
                 tooltip.css({
                     top: pos.top - tooltip.outerHeight() - 10,
                     left: pos.left + ($(this).outerWidth() / 2) - (tooltip.outerWidth() / 2)
@@ -64,14 +75,39 @@
     }
 
     /**
-     * Initialize tab switching
+     * Initialize tab switching with keyboard support
      */
     function initTabSwitching() {
         $('.ahgmh-tab').on('click', function (e) {
             // Let natural link navigation handle tab switching
             // This is just for visual feedback
-            $('.ahgmh-tab').removeClass('active');
-            $(this).addClass('active');
+            $('.ahgmh-tab').removeClass('active').attr('aria-selected', 'false');
+            $(this).addClass('active').attr('aria-selected', 'true');
+        });
+
+        // Keyboard navigation for tabs (Arrow keys)
+        $('.ahgmh-tab').on('keydown', function (e) {
+            var $tabs = $('.ahgmh-tab');
+            var currentIndex = $tabs.index(this);
+            var $targetTab = null;
+
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                $targetTab = $tabs.eq((currentIndex + 1) % $tabs.length);
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                $targetTab = $tabs.eq((currentIndex - 1 + $tabs.length) % $tabs.length);
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                $targetTab = $tabs.first();
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                $targetTab = $tabs.last();
+            }
+
+            if ($targetTab) {
+                $targetTab.focus();
+            }
         });
     }
 

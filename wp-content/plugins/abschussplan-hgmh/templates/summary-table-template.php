@@ -19,11 +19,11 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0"><?php echo esc_html__('Abschussmeldungen', 'abschussplan-hgmh'); ?></h2>
     </div>
-    
+
     <?php if (empty($submissions)) : ?>
-        <div class="abschuss-empty">
+        <div class="abschuss-empty" role="status">
             <div class="abschuss-empty-icon">
-                <i class="bi bi-inbox"></i>
+                <i class="bi bi-inbox" aria-hidden="true"></i>
             </div>
             <h3 class="abschuss-empty-heading">
                 <?php echo esc_html__('Keine Abschussmeldungen vorhanden', 'abschussplan-hgmh'); ?>
@@ -33,7 +33,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
             </p>
             <?php if (is_user_logged_in()) : ?>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh')); ?>" class="abschuss-empty-cta">
-                    <i class="bi bi-plus-circle"></i>
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i>
                     <?php echo esc_html__('Erste Meldung erfassen', 'abschussplan-hgmh'); ?>
                 </a>
             <?php endif; ?>
@@ -41,6 +41,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
     <?php else : ?>
         <div class="table-responsive">
             <table class="table table-striped abschuss-table">
+                <caption class="visually-hidden"><?php echo esc_html__('Zusammenfassung der Abschussmeldungen', 'abschussplan-hgmh'); ?></caption>
                 <thead>
                     <tr>
                         <th scope="col"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></th>
@@ -55,7 +56,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                     <?php foreach ($submissions as $submission) : ?>
                         <tr>
                             <td data-label="<?php echo esc_attr__('Abschussdatum', 'abschussplan-hgmh'); ?>">
-                                <?php 
+                                <?php
                                 // Format the date in German format dd.mm.yy
                                 if (!empty($submission['field1'])) {
                                     $date = DateTime::createFromFormat('Y-m-d', $submission['field1']);
@@ -81,27 +82,27 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                 </tbody>
             </table>
         </div>
-        
+
         <?php if ($total_pages > 1) : ?>
             <nav aria-label="<?php echo esc_attr__('Abschussmeldungen Navigation', 'abschussplan-hgmh'); ?>">
                 <ul class="pagination">
                     <?php if ($current_page > 1) : ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page - 1, 'abschuss_limit' => $current_limit))); ?>">
-                                <?php echo esc_html__('&laquo; Zurück', 'abschussplan-hgmh'); ?>
+                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page - 1, 'abschuss_limit' => $current_limit))); ?>" aria-label="<?php echo esc_attr__('Vorherige Seite', 'abschussplan-hgmh'); ?>">
+                                &laquo; <?php echo esc_html__('Zurück', 'abschussplan-hgmh'); ?>
                             </a>
                         </li>
                     <?php else : ?>
                         <li class="page-item disabled">
-                            <span class="page-link"><?php echo esc_html__('&laquo; Zurück', 'abschussplan-hgmh'); ?></span>
+                            <span class="page-link" aria-disabled="true">&laquo; <?php echo esc_html__('Zurück', 'abschussplan-hgmh'); ?></span>
                         </li>
                     <?php endif; ?>
-                    
-                    <?php 
+
+                    <?php
                     // Calculate start and end page numbers for pagination
                     $start = max(1, $current_page - 2);
                     $end = min($total_pages, $current_page + 2);
-                    
+
                     // Show first page if we're not close to the beginning
                     if ($start > 1) : ?>
                         <li class="page-item">
@@ -109,14 +110,14 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                         </li>
                         <?php if ($start > 2) : ?>
                             <li class="page-item disabled">
-                                <span class="page-link">&hellip;</span>
+                                <span class="page-link" aria-hidden="true">&hellip;</span>
                             </li>
                         <?php endif; ?>
                     <?php endif; ?>
-                    
+
                     <?php for ($i = $start; $i <= $end; $i++) : ?>
                         <?php if ($i == $current_page) : ?>
-                            <li class="page-item active">
+                            <li class="page-item active" aria-current="page">
                                 <span class="page-link"><?php echo esc_html($i); ?></span>
                             </li>
                         <?php else : ?>
@@ -127,14 +128,14 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                             </li>
                         <?php endif; ?>
                     <?php endfor; ?>
-                    
-                    <?php 
+
+                    <?php
                     // Show last page if we're not close to the end
-                    if ($end < $total_pages) : 
+                    if ($end < $total_pages) :
                     ?>
                         <?php if ($end < $total_pages - 1) : ?>
                             <li class="page-item disabled">
-                                <span class="page-link">&hellip;</span>
+                                <span class="page-link" aria-hidden="true">&hellip;</span>
                             </li>
                         <?php endif; ?>
                         <li class="page-item">
@@ -143,16 +144,16 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                             </a>
                         </li>
                     <?php endif; ?>
-                    
+
                     <?php if ($current_page < $total_pages) : ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page + 1, 'abschuss_limit' => $current_limit))); ?>">
-                                <?php echo esc_html__('Weiter &raquo;', 'abschussplan-hgmh'); ?>
+                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page + 1, 'abschuss_limit' => $current_limit))); ?>" aria-label="<?php echo esc_attr__('Nächste Seite', 'abschussplan-hgmh'); ?>">
+                                <?php echo esc_html__('Weiter', 'abschussplan-hgmh'); ?> &raquo;
                             </a>
                         </li>
                     <?php else : ?>
                         <li class="page-item disabled">
-                            <span class="page-link"><?php echo esc_html__('Weiter &raquo;', 'abschussplan-hgmh'); ?></span>
+                            <span class="page-link" aria-disabled="true"><?php echo esc_html__('Weiter', 'abschussplan-hgmh'); ?> &raquo;</span>
                         </li>
                     <?php endif; ?>
                 </ul>
