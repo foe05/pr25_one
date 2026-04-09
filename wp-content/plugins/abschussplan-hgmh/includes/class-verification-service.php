@@ -365,15 +365,15 @@ class AHGMH_Verification_Service {
         $ip = '';
 
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
+            $ip = sanitize_text_field(wp_unslash($_SERVER['HTTP_CLIENT_IP']));
         } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+            // Only use the first IP in the chain to prevent spoofing
+            $forwarded = sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR']));
+            $ips = explode(',', $forwarded);
+            $ip = trim($ips[0]);
         } else {
-            $ip = $_SERVER['REMOTE_ADDR'];
+            $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '0.0.0.0';
         }
-
-        // Sanitize IP address
-        $ip = sanitize_text_field($ip);
 
         // Validate IP address
         if (filter_var($ip, FILTER_VALIDATE_IP)) {

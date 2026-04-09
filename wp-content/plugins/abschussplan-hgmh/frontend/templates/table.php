@@ -23,20 +23,24 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
         <h2 class="mb-0"><?php echo esc_html__('Abschussmeldungen', 'abschussplan-hgmh'); ?></h2>
         <?php if (isset($show_export_button) && $show_export_button && current_user_can('manage_options')) : ?>
         <div class="export-controls">
-            <button class="btn btn-success export-btn" onclick="exportCSV('<?php echo esc_attr($species); ?>')">
-                <i class="bi bi-download"></i> <?php echo esc_html__('CSV Export', 'abschussplan-hgmh'); ?>
+            <button type="button" class="btn btn-success export-btn" data-species="<?php echo esc_attr($species); ?>" aria-label="<?php echo esc_attr__('Daten als CSV exportieren', 'abschussplan-hgmh'); ?>">
+                <i class="bi bi-download" aria-hidden="true"></i> <?php echo esc_html__('CSV Export', 'abschussplan-hgmh'); ?>
             </button>
         </div>
         <?php endif; ?>
     </div>
 
+    <!-- Live region for moderation action feedback -->
+    <div aria-live="polite" class="visually-hidden" id="moderation-status-announcer"></div>
+
     <?php if (empty($submissions)) : ?>
-        <div class="abschuss-empty">
+        <div class="abschuss-empty" role="status">
             <p><?php echo esc_html__('Keine Abschussmeldungen vorhanden.', 'abschussplan-hgmh'); ?></p>
         </div>
     <?php else : ?>
         <div class="table-responsive">
             <table class="table table-striped abschuss-table">
+                <caption class="visually-hidden"><?php echo esc_html__('Abschussmeldungen mit Moderationsoptionen', 'abschussplan-hgmh'); ?></caption>
                 <thead>
                     <tr>
                         <th scope="col"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></th>
@@ -137,20 +141,20 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
                                         <button type="button"
                                                 class="btn btn-success btn-approve"
                                                 data-submission-id="<?php echo esc_attr($submission_id); ?>"
-                                                title="<?php echo esc_attr__('Freigeben', 'abschussplan-hgmh'); ?>">
-                                            ✅
+                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d freigeben', 'abschussplan-hgmh'), $submission_id)); ?>">
+                                            <span aria-hidden="true">&#10003;</span> <?php echo esc_html__('Freigeben', 'abschussplan-hgmh'); ?>
                                         </button>
                                         <button type="button"
                                                 class="btn btn-primary btn-edit"
                                                 data-submission-id="<?php echo esc_attr($submission_id); ?>"
-                                                title="<?php echo esc_attr__('Bearbeiten', 'abschussplan-hgmh'); ?>">
-                                            ✏️
+                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d bearbeiten', 'abschussplan-hgmh'), $submission_id)); ?>">
+                                            <span aria-hidden="true">&#9998;</span> <?php echo esc_html__('Bearbeiten', 'abschussplan-hgmh'); ?>
                                         </button>
                                         <button type="button"
                                                 class="btn btn-danger btn-reject"
                                                 data-submission-id="<?php echo esc_attr($submission_id); ?>"
-                                                title="<?php echo esc_attr__('Ablehnen', 'abschussplan-hgmh'); ?>">
-                                            🗑️
+                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d ablehnen', 'abschussplan-hgmh'), $submission_id)); ?>">
+                                            <span aria-hidden="true">&#10005;</span> <?php echo esc_html__('Ablehnen', 'abschussplan-hgmh'); ?>
                                         </button>
                                     </div>
                                 <?php else : ?>
@@ -169,36 +173,34 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
                 <ul class="pagination">
                     <?php if ($current_page > 1) : ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page - 1, 'abschuss_limit' => $current_limit))); ?>">
-                                <?php echo esc_html__('&laquo; Zurück', 'abschussplan-hgmh'); ?>
+                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page - 1, 'abschuss_limit' => $current_limit))); ?>" aria-label="<?php echo esc_attr__('Vorherige Seite', 'abschussplan-hgmh'); ?>">
+                                &laquo; <?php echo esc_html__('Zurück', 'abschussplan-hgmh'); ?>
                             </a>
                         </li>
                     <?php else : ?>
                         <li class="page-item disabled">
-                            <span class="page-link"><?php echo esc_html__('&laquo; Zurück', 'abschussplan-hgmh'); ?></span>
+                            <span class="page-link" aria-disabled="true">&laquo; <?php echo esc_html__('Zurück', 'abschussplan-hgmh'); ?></span>
                         </li>
                     <?php endif; ?>
 
                     <?php
-                    // Calculate start and end page numbers for pagination
                     $start = max(1, $current_page - 2);
                     $end = min($total_pages, $current_page + 2);
 
-                    // Show first page if we're not close to the beginning
                     if ($start > 1) : ?>
                         <li class="page-item">
                             <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => 1, 'abschuss_limit' => $current_limit))); ?>">1</a>
                         </li>
                         <?php if ($start > 2) : ?>
                             <li class="page-item disabled">
-                                <span class="page-link">&hellip;</span>
+                                <span class="page-link" aria-hidden="true">&hellip;</span>
                             </li>
                         <?php endif; ?>
                     <?php endif; ?>
 
                     <?php for ($i = $start; $i <= $end; $i++) : ?>
                         <?php if ($i == $current_page) : ?>
-                            <li class="page-item active">
+                            <li class="page-item active" aria-current="page">
                                 <span class="page-link"><?php echo esc_html($i); ?></span>
                             </li>
                         <?php else : ?>
@@ -210,13 +212,10 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
                         <?php endif; ?>
                     <?php endfor; ?>
 
-                    <?php
-                    // Show last page if we're not close to the end
-                    if ($end < $total_pages) :
-                    ?>
+                    <?php if ($end < $total_pages) : ?>
                         <?php if ($end < $total_pages - 1) : ?>
                             <li class="page-item disabled">
-                                <span class="page-link">&hellip;</span>
+                                <span class="page-link" aria-hidden="true">&hellip;</span>
                             </li>
                         <?php endif; ?>
                         <li class="page-item">
@@ -228,13 +227,13 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
 
                     <?php if ($current_page < $total_pages) : ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page + 1, 'abschuss_limit' => $current_limit))); ?>">
-                                <?php echo esc_html__('Weiter &raquo;', 'abschussplan-hgmh'); ?>
+                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page + 1, 'abschuss_limit' => $current_limit))); ?>" aria-label="<?php echo esc_attr__('Nächste Seite', 'abschussplan-hgmh'); ?>">
+                                <?php echo esc_html__('Weiter', 'abschussplan-hgmh'); ?> &raquo;
                             </a>
                         </li>
                     <?php else : ?>
                         <li class="page-item disabled">
-                            <span class="page-link"><?php echo esc_html__('Weiter &raquo;', 'abschussplan-hgmh'); ?></span>
+                            <span class="page-link" aria-disabled="true"><?php echo esc_html__('Weiter', 'abschussplan-hgmh'); ?> &raquo;</span>
                         </li>
                     <?php endif; ?>
                 </ul>
@@ -252,45 +251,45 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php echo esc_attr__('Schließen', 'abschussplan-hgmh'); ?>"></button>
             </div>
             <div class="modal-body">
-                <div id="edit-form-response" class="alert" role="alert" style="display: none;"></div>
+                <div id="edit-form-response" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
 
-                <form id="edit-submission-form" data-submission-id="">
+                <form id="edit-submission-form" data-submission-id="" novalidate>
                     <?php wp_nonce_field('ahgmh_edit_submission_nonce', 'ahgmh_edit_nonce'); ?>
 
                     <div class="mb-3">
-                        <label for="edit-field1" class="form-label"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></label>
-                        <input type="date" class="form-control" id="edit-field1" name="field1" required>
-                        <div class="form-error"></div>
+                        <label for="edit-field1" class="form-label"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
+                        <input type="date" class="form-control" id="edit-field1" name="field1" required aria-required="true">
+                        <div class="form-error" role="alert"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="edit-field2" class="form-label"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></label>
-                        <input type="text" class="form-control" id="edit-field2" name="field2" required>
-                        <div class="form-error"></div>
+                        <label for="edit-field2" class="form-label"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
+                        <input type="text" class="form-control" id="edit-field2" name="field2" required aria-required="true">
+                        <div class="form-error" role="alert"></div>
                     </div>
 
                     <div class="mb-3">
                         <label for="edit-field3" class="form-label"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></label>
-                        <input type="number" class="form-control" id="edit-field3" name="field3" min="1000000" max="9999999" maxlength="7">
-                        <div class="form-error"></div>
+                        <input type="number" class="form-control" id="edit-field3" name="field3" min="1000000" max="9999999">
+                        <div class="form-error" role="alert"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="edit-field5" class="form-label"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></label>
-                        <input type="text" class="form-control" id="edit-field5" name="field5" required>
-                        <div class="form-error"></div>
+                        <label for="edit-field5" class="form-label"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
+                        <input type="text" class="form-control" id="edit-field5" name="field5" required aria-required="true">
+                        <div class="form-error" role="alert"></div>
                     </div>
 
                     <div class="mb-3">
                         <label for="edit-field4" class="form-label"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></label>
                         <textarea class="form-control" id="edit-field4" name="field4" rows="4"></textarea>
-                        <div class="form-error"></div>
+                        <div class="form-error" role="alert"></div>
                     </div>
 
                     <div class="mb-3">
                         <label for="edit-field6" class="form-label"><?php echo esc_html__('Interne Notiz', 'abschussplan-hgmh'); ?></label>
                         <textarea class="form-control" id="edit-field6" name="field6" rows="4"></textarea>
-                        <div class="form-error"></div>
+                        <div class="form-error" role="alert"></div>
                     </div>
                 </form>
             </div>
@@ -311,15 +310,15 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php echo esc_attr__('Schließen', 'abschussplan-hgmh'); ?>"></button>
             </div>
             <div class="modal-body">
-                <div id="reject-form-response" class="alert" role="alert" style="display: none;"></div>
+                <div id="reject-form-response" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
 
-                <form id="reject-submission-form" data-submission-id="">
+                <form id="reject-submission-form" data-submission-id="" novalidate>
                     <?php wp_nonce_field('ahgmh_reject_submission_nonce', 'ahgmh_reject_nonce'); ?>
 
                     <div class="mb-3">
-                        <label for="reject-comment" class="form-label"><?php echo esc_html__('Ablehnungsgrund (Pflichtfeld)', 'abschussplan-hgmh'); ?> <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="reject-comment" name="comment" rows="4" required placeholder="<?php echo esc_attr__('Bitte geben Sie einen Grund für die Ablehnung an...', 'abschussplan-hgmh'); ?>"></textarea>
-                        <div class="form-error text-danger mt-1"></div>
+                        <label for="reject-comment" class="form-label"><?php echo esc_html__('Ablehnungsgrund (Pflichtfeld)', 'abschussplan-hgmh'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
+                        <textarea class="form-control" id="reject-comment" name="comment" rows="4" required aria-required="true" placeholder="<?php echo esc_attr__('Bitte geben Sie einen Grund für die Ablehnung an...', 'abschussplan-hgmh'); ?>"></textarea>
+                        <div class="form-error" role="alert"></div>
                     </div>
                 </form>
             </div>
@@ -332,14 +331,17 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
 </div>
 
 <script>
-function exportCSV(species) {
-    // Build export URL
-    let exportUrl = '<?php echo admin_url('admin-ajax.php'); ?>?action=export_abschuss_csv';
-    if (species) {
-        exportUrl += '&species=' + encodeURIComponent(species);
-    }
-
-    // Trigger download
-    window.location.href = exportUrl;
-}
+(function() {
+    'use strict';
+    document.querySelectorAll('.export-btn[data-species]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var species = this.getAttribute('data-species');
+            var exportUrl = '<?php echo esc_url(admin_url('admin-ajax.php')); ?>?action=export_abschuss_csv';
+            if (species) {
+                exportUrl += '&species=' + encodeURIComponent(species);
+            }
+            window.location.href = exportUrl;
+        });
+    });
+})();
 </script>

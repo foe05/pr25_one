@@ -9,13 +9,24 @@
     $(document).ready(function() {
 
         /**
+         * Announce status changes to screen readers
+         * @param {string} message - Message to announce
+         */
+        function announceStatus(message) {
+            var $announcer = $('#moderation-status-announcer');
+            if ($announcer.length) {
+                $announcer.text(message);
+            }
+        }
+
+        /**
          * Handle approve button click
          */
-        $('.btn-approve').on('click', function(e) {
+        $(document).on('click', '.btn-approve', function(e) {
             e.preventDefault();
 
-            const $btn = $(this);
-            const submissionId = $btn.data('submission-id');
+            var $btn = $(this);
+            var submissionId = $btn.data('submission-id');
 
             // Confirm action
             if (!confirm(ahgmh_table_moderation.strings.confirm_approve)) {
@@ -23,7 +34,9 @@
             }
 
             // Disable button to prevent multiple clicks
-            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+            $btn.prop('disabled', true)
+                .attr('aria-busy', 'true')
+                .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
 
             // Send AJAX request
             $.ajax({
@@ -38,28 +51,35 @@
                     if (response.success) {
                         // Show success notification
                         showNotification('success', ahgmh_table_moderation.strings.success_approved);
+                        announceStatus(ahgmh_table_moderation.strings.success_approved);
 
                         // Update the row - remove action buttons and show status badge
-                        const $row = $btn.closest('tr');
-                        const $moderationCell = $row.find('td:last');
-                        $moderationCell.html('<span class="badge bg-success">' + 'Freigegeben' + '</span>');
+                        var $row = $btn.closest('tr');
+                        var $moderationCell = $row.find('td:last');
+                        $moderationCell.html('<span class="badge bg-success">Freigegeben</span>');
                     } else {
                         // Show error notification
-                        const message = response.data && response.data.message
+                        var message = response.data && response.data.message
                             ? response.data.message
                             : ahgmh_table_moderation.strings.error_generic;
                         showNotification('danger', message);
+                        announceStatus(message);
 
                         // Re-enable button
-                        $btn.prop('disabled', false).html('✅');
+                        $btn.prop('disabled', false)
+                            .attr('aria-busy', 'false')
+                            .html('<span aria-hidden="true">&#10003;</span> Freigeben');
                     }
                 },
                 error: function() {
                     // Show general error notification
                     showNotification('danger', ahgmh_table_moderation.strings.error_generic);
+                    announceStatus(ahgmh_table_moderation.strings.error_generic);
 
                     // Re-enable button
-                    $btn.prop('disabled', false).html('✅');
+                    $btn.prop('disabled', false)
+                        .attr('aria-busy', 'false')
+                        .html('<span aria-hidden="true">&#10003;</span> Freigeben');
                 }
             });
         });
@@ -67,32 +87,32 @@
         /**
          * Handle edit button click - open modal and populate form
          */
-        $('.btn-edit').on('click', function(e) {
+        $(document).on('click', '.btn-edit', function(e) {
             e.preventDefault();
 
-            const $btn = $(this);
-            const submissionId = $btn.data('submission-id');
-            const $row = $btn.closest('tr');
+            var $btn = $(this);
+            var submissionId = $btn.data('submission-id');
+            var $row = $btn.closest('tr');
 
             // Extract data from table row cells
-            const $cells = $row.find('td');
+            var $cells = $row.find('td');
 
             // Get field values from table cells
-            const dateText = $cells.eq(0).text().trim(); // dd.mm.yy format
-            const jagdbezirk = $cells.eq(1).text().trim(); // May include meldegruppe in parentheses
-            const abschuss = $cells.eq(2).text().trim();
-            const wus = $cells.eq(3).text().trim();
-            const interneNotiz = $cells.eq(4).text().trim();
-            const bemerkung = $cells.eq(5).text().trim();
+            var dateText = $cells.eq(0).text().trim(); // dd.mm.yy format
+            var jagdbezirk = $cells.eq(1).text().trim(); // May include meldegruppe in parentheses
+            var abschuss = $cells.eq(2).text().trim();
+            var wus = $cells.eq(3).text().trim();
+            var interneNotiz = $cells.eq(4).text().trim();
+            var bemerkung = $cells.eq(5).text().trim();
 
             // Convert date from dd.mm.yy to YYYY-MM-DD for input[type="date"]
-            let dateValue = '';
+            var dateValue = '';
             if (dateText) {
-                const dateParts = dateText.split('.');
+                var dateParts = dateText.split('.');
                 if (dateParts.length === 3) {
-                    const day = dateParts[0].padStart(2, '0');
-                    const month = dateParts[1].padStart(2, '0');
-                    let year = dateParts[2];
+                    var day = dateParts[0].length < 2 ? '0' + dateParts[0] : dateParts[0];
+                    var month = dateParts[1].length < 2 ? '0' + dateParts[1] : dateParts[1];
+                    var year = dateParts[2];
                     // Convert 2-digit year to 4-digit (assuming 2000s for years < 50, 1900s otherwise)
                     if (year.length === 2) {
                         year = parseInt(year) < 50 ? '20' + year : '19' + year;
@@ -102,7 +122,7 @@
             }
 
             // Extract jagdbezirk without meldegruppe (remove anything in parentheses)
-            const jagdbezirkValue = jagdbezirk.replace(/\s*\([^)]*\)\s*$/, '').trim();
+            var jagdbezirkValue = jagdbezirk.replace(/\s*\([^)]*\)\s*$/, '').trim();
 
             // Populate modal form fields
             $('#edit-submission-form').attr('data-submission-id', submissionId);
@@ -115,12 +135,17 @@
 
             // Clear any previous error messages
             $('.form-error').text('').hide();
-            $('.is-invalid').removeClass('is-invalid');
+            $('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
             $('#edit-form-response').hide();
 
             // Open the modal
-            const editModal = new bootstrap.Modal(document.getElementById('editSubmissionModal'));
+            var editModal = new bootstrap.Modal(document.getElementById('editSubmissionModal'));
             editModal.show();
+
+            // Move focus to first field when modal opens
+            $('#editSubmissionModal').one('shown.bs.modal', function() {
+                $('#edit-field1').focus();
+            });
         });
 
         /**
@@ -129,30 +154,38 @@
         $('#save-submission-btn').on('click', function(e) {
             e.preventDefault();
 
-            const $btn = $(this);
-            const $form = $('#edit-submission-form');
-            const submissionId = $form.attr('data-submission-id');
+            var $btn = $(this);
+            var $form = $('#edit-submission-form');
+            var submissionId = $form.attr('data-submission-id');
+
+            // Clear previous errors
+            $form.find('.form-error').text('').hide();
+            $form.find('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
 
             // Validate required fields
-            let hasErrors = false;
+            var hasErrors = false;
             $form.find('[required]').each(function() {
-                const $field = $(this);
+                var $field = $(this);
                 if (!$field.val()) {
-                    $field.addClass('is-invalid');
-                    $field.siblings('.form-error').text('Dieses Feld ist erforderlich').show();
+                    $field.addClass('is-invalid').attr('aria-invalid', 'true');
+                    $field.siblings('.form-error').text('Dieses Feld ist erforderlich.').show();
                     hasErrors = true;
                 }
             });
 
             if (hasErrors) {
+                // Focus first invalid field
+                $form.find('.is-invalid:first').focus();
                 return;
             }
 
             // Disable button to prevent multiple submissions
-            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird gespeichert...');
+            $btn.prop('disabled', true)
+                .attr('aria-busy', 'true')
+                .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird gespeichert...');
 
             // Prepare form data
-            const formData = {
+            var formData = {
                 action: 'ahgmh_table_update',
                 nonce: ahgmh_table_moderation.nonce,
                 submission_id: submissionId,
@@ -172,26 +205,32 @@
                 success: function(response) {
                     if (response.success) {
                         // Show success notification
-                        showNotification('success', ahgmh_table_moderation.strings.success_updated || 'Abschussmeldung wurde erfolgreich aktualisiert.');
+                        var successMsg = ahgmh_table_moderation.strings.success_updated || 'Abschussmeldung wurde erfolgreich aktualisiert.';
+                        showNotification('success', successMsg);
+                        announceStatus(successMsg);
 
                         // Close the modal
-                        const editModal = bootstrap.Modal.getInstance(document.getElementById('editSubmissionModal'));
+                        var editModal = bootstrap.Modal.getInstance(document.getElementById('editSubmissionModal'));
                         editModal.hide();
 
+                        // Return focus to the edit button that triggered the modal
+                        var $editBtn = $('.btn-edit[data-submission-id="' + submissionId + '"]');
+                        $editBtn.focus();
+
                         // Update the table row with new data
-                        const $row = $('.btn-edit[data-submission-id="' + submissionId + '"]').closest('tr');
-                        const $cells = $row.find('td');
+                        var $row = $editBtn.closest('tr');
+                        var $cells = $row.find('td');
 
                         // Format date for display (convert YYYY-MM-DD back to dd.mm.yy)
-                        const dateValue = $('#edit-field1').val();
-                        let displayDate = dateValue;
-                        if (dateValue) {
-                            const dateParts = dateValue.split('-');
-                            if (dateParts.length === 3) {
-                                const year = dateParts[0].substring(2); // Get last 2 digits of year
-                                const month = dateParts[1];
-                                const day = dateParts[2];
-                                displayDate = day + '.' + month + '.' + year;
+                        var editDateValue = $('#edit-field1').val();
+                        var displayDate = editDateValue;
+                        if (editDateValue) {
+                            var editDateParts = editDateValue.split('-');
+                            if (editDateParts.length === 3) {
+                                var displayYear = editDateParts[0].substring(2);
+                                var displayMonth = editDateParts[1];
+                                var displayDay = editDateParts[2];
+                                displayDate = displayDay + '.' + displayMonth + '.' + displayYear;
                             }
                         }
 
@@ -204,7 +243,7 @@
                         $cells.eq(5).text($('#edit-field4').val());
                     } else {
                         // Show error message in modal
-                        const message = response.data && response.data.message
+                        var message = response.data && response.data.message
                             ? response.data.message
                             : ahgmh_table_moderation.strings.error_generic;
                         $('#edit-form-response').removeClass('alert-success').addClass('alert-danger').text(message).show();
@@ -217,7 +256,9 @@
                 },
                 complete: function() {
                     // Re-enable button
-                    $btn.prop('disabled', false).text('Speichern');
+                    $btn.prop('disabled', false)
+                        .attr('aria-busy', 'false')
+                        .text('Speichern');
                 }
             });
         });
@@ -225,11 +266,11 @@
         /**
          * Handle reject button click - open modal
          */
-        $('.btn-reject').on('click', function(e) {
+        $(document).on('click', '.btn-reject', function(e) {
             e.preventDefault();
 
-            const $btn = $(this);
-            const submissionId = $btn.data('submission-id');
+            var $btn = $(this);
+            var submissionId = $btn.data('submission-id');
 
             // Set submission ID on the form
             $('#reject-submission-form').attr('data-submission-id', submissionId);
@@ -237,12 +278,17 @@
             // Clear the comment field and any previous error messages
             $('#reject-comment').val('');
             $('.form-error').text('').hide();
-            $('.is-invalid').removeClass('is-invalid');
+            $('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
             $('#reject-form-response').hide();
 
             // Open the modal
-            const rejectModal = new bootstrap.Modal(document.getElementById('rejectSubmissionModal'));
+            var rejectModal = new bootstrap.Modal(document.getElementById('rejectSubmissionModal'));
             rejectModal.show();
+
+            // Move focus to comment field when modal opens
+            $('#rejectSubmissionModal').one('shown.bs.modal', function() {
+                $('#reject-comment').focus();
+            });
         });
 
         /**
@@ -251,28 +297,31 @@
         $('#confirm-reject-btn').on('click', function(e) {
             e.preventDefault();
 
-            const $btn = $(this);
-            const $form = $('#reject-submission-form');
-            const submissionId = $form.attr('data-submission-id');
-            const $commentField = $('#reject-comment');
-            const comment = $commentField.val().trim();
+            var $btn = $(this);
+            var $form = $('#reject-submission-form');
+            var submissionId = $form.attr('data-submission-id');
+            var $commentField = $('#reject-comment');
+            var comment = $commentField.val().trim();
 
             // Clear previous error messages
             $('.form-error').text('').hide();
-            $('.is-invalid').removeClass('is-invalid');
+            $('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
 
             // Validate comment field - it is required
             if (!comment) {
-                $commentField.addClass('is-invalid');
-                $commentField.siblings('.form-error').text('Dieses Feld ist erforderlich').show();
+                $commentField.addClass('is-invalid').attr('aria-invalid', 'true');
+                $commentField.siblings('.form-error').text('Dieses Feld ist erforderlich.').show();
+                $commentField.focus();
                 return;
             }
 
             // Disable button to prevent multiple submissions
-            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird abgelehnt...');
+            $btn.prop('disabled', true)
+                .attr('aria-busy', 'true')
+                .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird abgelehnt...');
 
             // Prepare form data
-            const formData = {
+            var formData = {
                 action: 'ahgmh_table_reject',
                 nonce: ahgmh_table_moderation.nonce,
                 submission_id: submissionId,
@@ -287,20 +336,22 @@
                 success: function(response) {
                     if (response.success) {
                         // Show success notification
-                        showNotification('success', ahgmh_table_moderation.strings.success_rejected || 'Abschussmeldung wurde erfolgreich abgelehnt.');
+                        var successMsg = ahgmh_table_moderation.strings.success_rejected || 'Abschussmeldung wurde erfolgreich abgelehnt.';
+                        showNotification('success', successMsg);
+                        announceStatus(successMsg);
 
                         // Close the modal
-                        const rejectModal = bootstrap.Modal.getInstance(document.getElementById('rejectSubmissionModal'));
+                        var rejectModal = bootstrap.Modal.getInstance(document.getElementById('rejectSubmissionModal'));
                         rejectModal.hide();
 
                         // Remove the table row since submission is rejected
-                        const $row = $('.btn-reject[data-submission-id="' + submissionId + '"]').closest('tr');
+                        var $row = $('.btn-reject[data-submission-id="' + submissionId + '"]').closest('tr');
                         $row.fadeOut(400, function() {
                             $(this).remove();
                         });
                     } else {
                         // Show error message in modal
-                        const message = response.data && response.data.message
+                        var message = response.data && response.data.message
                             ? response.data.message
                             : ahgmh_table_moderation.strings.error_generic;
                         $('#reject-form-response').removeClass('alert-success').addClass('alert-danger').text(message).show();
@@ -313,9 +364,19 @@
                 },
                 complete: function() {
                     // Re-enable button
-                    $btn.prop('disabled', false).text('Ablehnen');
+                    $btn.prop('disabled', false)
+                        .attr('aria-busy', 'false')
+                        .text('Ablehnen bestätigen');
                 }
             });
+        });
+
+        // Handle keyboard events on moderation buttons (Enter/Space)
+        $(document).on('keydown', '.btn-approve, .btn-edit, .btn-reject', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                $(this).trigger('click');
+            }
         });
 
     });
@@ -330,10 +391,10 @@
         $('.moderation-notification').remove();
 
         // Create notification element
-        const $notification = $('<div>', {
-            class: 'alert alert-' + type + ' alert-dismissible fade show moderation-notification',
-            role: 'alert',
-            html: message + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>'
+        var $notification = $('<div>', {
+            'class': 'alert alert-' + type + ' alert-dismissible fade show moderation-notification',
+            'role': 'alert',
+            html: message + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Schließen"></button>'
         });
 
         // Insert at top of table container

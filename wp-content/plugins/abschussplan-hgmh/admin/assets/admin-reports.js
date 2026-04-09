@@ -2,6 +2,20 @@
     'use strict';
 
     /**
+     * Show notification using AHGMH notification system with alert() fallback
+     * @param {string} message - Message to show
+     * @param {string} type - 'success', 'error', 'warning', 'info'
+     */
+    function notify(message, type) {
+        type = type || 'info';
+        if (window.AHGMH && window.AHGMH.showNotification) {
+            window.AHGMH.showNotification(message, type);
+        } else {
+            alert(message);
+        }
+    }
+
+    /**
      * Initialize reports module
      */
     function initReportsModule() {
@@ -46,11 +60,11 @@
                     if (response.success) {
                         location.reload();
                     } else {
-                        alert(response.data || ahgmh_reports.strings.error);
+                        notify(response.data || ahgmh_reports.strings.error, 'error');
                     }
                 },
                 error: function() {
-                    alert(ahgmh_reports.strings.error);
+                    notify(ahgmh_reports.strings.error, 'error');
                 },
                 complete: function() {
                     $('#apply-compliance-filters').prop('disabled', false).text(ahgmh_reports.strings.apply_filter);
@@ -74,11 +88,11 @@
                     if (response.success) {
                         location.reload();
                     } else {
-                        alert(response.data || ahgmh_reports.strings.error);
+                        notify(response.data || ahgmh_reports.strings.error, 'error');
                     }
                 },
                 error: function() {
-                    alert(ahgmh_reports.strings.error);
+                    notify(ahgmh_reports.strings.error, 'error');
                 },
                 complete: function() {
                     $('#refresh-compliance').prop('disabled', false);
@@ -157,7 +171,7 @@
                 // Validate form
                 var validation = this.validateForm(reportType, outputFormat);
                 if (!validation.valid) {
-                    alert(validation.message);
+                    notify(validation.message, 'warning');
                     return;
                 }
 
@@ -446,6 +460,13 @@
             }
         });
 
+        // Close modal on Escape key
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && $('#schedule-form-modal').is(':visible')) {
+                closeScheduleForm();
+            }
+        });
+
         // Frequency change - show/hide day fields
         $('#schedule-frequency').on('change', function() {
             const frequency = $(this).val();
@@ -472,7 +493,13 @@
     /**
      * Open schedule form modal
      */
+    // Store the element that opened the modal to return focus on close
+    var _modalTrigger = null;
+
     function openScheduleForm() {
+        // Store the trigger element
+        _modalTrigger = document.activeElement;
+
         // Reset form
         $('#schedule-form')[0].reset();
         $('#schedule-id').val('');
@@ -482,15 +509,23 @@
         $('#field-day-of-week').hide();
         $('#field-day-of-month').hide();
 
-        // Show modal
-        $('#schedule-form-modal').fadeIn(200);
+        // Show modal and move focus to first input
+        $('#schedule-form-modal').fadeIn(200, function() {
+            $('#schedule-name').focus();
+        });
     }
 
     /**
      * Close schedule form modal
      */
     function closeScheduleForm() {
-        $('#schedule-form-modal').fadeOut(200);
+        $('#schedule-form-modal').fadeOut(200, function() {
+            // Return focus to the element that triggered the modal
+            if (_modalTrigger) {
+                _modalTrigger.focus();
+                _modalTrigger = null;
+            }
+        });
     }
 
     /**
@@ -511,11 +546,11 @@
                     $('#schedule-form-title').text(ahgmh_reports.strings.edit_schedule);
                     $('#schedule-form-modal').fadeIn(200);
                 } else {
-                    alert(response.data || ahgmh_reports.strings.error);
+                    notify(response.data || ahgmh_reports.strings.error, 'error');
                 }
             },
             error: function() {
-                alert(ahgmh_reports.strings.error);
+                notify(ahgmh_reports.strings.error, 'error');
             }
         });
     }
@@ -563,7 +598,7 @@
 
         // Validate
         if (!formData.name || !formData.recipients) {
-            alert(ahgmh_reports.strings.required_fields);
+            notify(ahgmh_reports.strings.required_fields, 'warning');
             return;
         }
 
@@ -579,11 +614,11 @@
                     closeScheduleForm();
                     location.reload();
                 } else {
-                    alert(response.data || ahgmh_reports.strings.error);
+                    notify(response.data || ahgmh_reports.strings.error, 'error');
                 }
             },
             error: function() {
-                alert(ahgmh_reports.strings.error);
+                notify(ahgmh_reports.strings.error, 'error');
             },
             complete: function() {
                 $btn.prop('disabled', false).text(originalText);
@@ -607,11 +642,11 @@
                 if (response.success) {
                     location.reload();
                 } else {
-                    alert(response.data || ahgmh_reports.strings.error);
+                    notify(response.data || ahgmh_reports.strings.error, 'error');
                 }
             },
             error: function() {
-                alert(ahgmh_reports.strings.error);
+                notify(ahgmh_reports.strings.error, 'error');
             }
         });
     }
@@ -643,13 +678,13 @@
                             .text(ahgmh_reports.strings.inactive);
                     }
                 } else {
-                    alert(response.data || ahgmh_reports.strings.error);
+                    notify(response.data || ahgmh_reports.strings.error, 'error');
                     // Revert toggle
                     $('.schedule-enabled-toggle[data-schedule-id="' + scheduleId + '"]').prop('checked', !enabled);
                 }
             },
             error: function() {
-                alert(ahgmh_reports.strings.error);
+                notify(ahgmh_reports.strings.error, 'error');
                 // Revert toggle
                 $('.schedule-enabled-toggle[data-schedule-id="' + scheduleId + '"]').prop('checked', !enabled);
             }
@@ -713,13 +748,13 @@
             },
             success: function(response) {
                 if (response.success) {
-                    alert(ahgmh_reports.strings.test_success);
+                    notify(ahgmh_reports.strings.test_success, 'success');
                 } else {
-                    alert(response.data || ahgmh_reports.strings.test_failed);
+                    notify(response.data || ahgmh_reports.strings.test_failed, 'error');
                 }
             },
             error: function() {
-                alert(ahgmh_reports.strings.error);
+                notify(ahgmh_reports.strings.error, 'error');
             },
             complete: function() {
                 $btn.prop('disabled', false).text(originalText);
@@ -736,7 +771,7 @@
         const recipients = $('#schedule-recipients').val();
 
         if (!recipients) {
-            alert(ahgmh_reports.strings.enter_recipients);
+            notify(ahgmh_reports.strings.enter_recipients, 'warning');
             return;
         }
 
@@ -753,13 +788,13 @@
             },
             success: function(response) {
                 if (response.success) {
-                    alert(ahgmh_reports.strings.email_sent);
+                    notify(ahgmh_reports.strings.email_sent, 'success');
                 } else {
-                    alert(response.data || ahgmh_reports.strings.email_failed);
+                    notify(response.data || ahgmh_reports.strings.email_failed, 'error');
                 }
             },
             error: function() {
-                alert(ahgmh_reports.strings.error);
+                notify(ahgmh_reports.strings.error, 'error');
             },
             complete: function() {
                 $btn.prop('disabled', false).text(originalText);

@@ -45,11 +45,17 @@ function ahgmh_uninstall_cleanup() {
     
     // Remove species-specific options (dynamic options with patterns)
     $species_options = $wpdb->get_results(
-        "SELECT option_name FROM {$wpdb->options} 
-         WHERE option_name LIKE 'abschuss_category_limits_%' 
-            OR option_name LIKE 'abschuss_category_allow_exceeding_%'
-            OR option_name LIKE 'ahgmh_%'
-            OR option_name LIKE 'abschussplan_hgmh_%'"
+        $wpdb->prepare(
+            "SELECT option_name FROM {$wpdb->options}
+             WHERE option_name LIKE %s
+                OR option_name LIKE %s
+                OR option_name LIKE %s
+                OR option_name LIKE %s",
+            'abschuss_category_limits_%',
+            'abschuss_category_allow_exceeding_%',
+            'ahgmh_%',
+            'abschussplan_hgmh_%'
+        )
     );
     
     $deleted_options_count = 0;
@@ -61,8 +67,11 @@ function ahgmh_uninstall_cleanup() {
     
     // Remove all Obmann assignments (user meta keys)
     $obmann_meta_keys = $wpdb->get_results(
-        "SELECT DISTINCT meta_key FROM {$wpdb->usermeta} 
-         WHERE meta_key LIKE 'ahgmh_assigned_meldegruppe_%'"
+        $wpdb->prepare(
+            "SELECT DISTINCT meta_key FROM {$wpdb->usermeta}
+             WHERE meta_key LIKE %s",
+            'ahgmh_assigned_meldegruppe_%'
+        )
     );
     
     $deleted_meta_count = 0;

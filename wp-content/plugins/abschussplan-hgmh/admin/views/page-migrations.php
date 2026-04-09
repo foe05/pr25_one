@@ -2,6 +2,8 @@
 /**
  * Admin View: Database Migrations
  *
+ * Uses WordPress-native postbox and form-table patterns with proper i18n escaping.
+ *
  * @var AHGMH_Migration_Manager $migration_manager Migration manager instance
  * @var int $current_version Current database schema version
  * @var array $migrations List of available migrations
@@ -13,74 +15,73 @@ if (!defined('ABSPATH')) {
 }
 ?>
 
-<div class="wrap">
-    <h1><?php _e('Datenbank Migrationen', 'abschussplan-hgmh'); ?></h1>
-
-    <!-- Current Version Card -->
-    <div class="ahgmh-version-card" style="margin: 20px 0;">
-        <div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <h3 style="margin: 0 0 10px 0; color: #666; font-size: 14px; font-weight: normal;"><?php _e('Aktuelle Schema Version', 'abschussplan-hgmh'); ?></h3>
-            <p style="margin: 0; font-size: 32px; font-weight: bold; color: #2271b1;"><?php echo esc_html($current_version); ?></p>
-        </div>
+<!-- Current Version -->
+<div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; margin-bottom: 20px;">
+    <div class="postbox" style="margin: 0; padding: 20px;">
+        <div style="font-size: 13px; color: #646970; margin-bottom: 4px;"><?php echo esc_html__('Aktuelle Schema-Version', 'abschussplan-hgmh'); ?></div>
+        <div style="font-size: 32px; font-weight: 600; color: #2271b1;"><?php echo esc_html($current_version); ?></div>
     </div>
 
     <!-- Important Warning -->
-    <div class="notice notice-warning" style="margin: 20px 0;">
+    <div class="notice notice-warning inline" style="margin: 0; display: flex; align-items: center;">
         <p>
-            <strong><?php _e('⚠️ Wichtiger Hinweis:', 'abschussplan-hgmh'); ?></strong><br>
-            <?php _e('Erstellen Sie vor jeder Migration ein Backup Ihrer Datenbank. Migrationen können Datenbank-Strukturen ändern und sind nicht immer reversibel.', 'abschussplan-hgmh'); ?>
+            <strong><?php echo esc_html__('Wichtiger Hinweis:', 'abschussplan-hgmh'); ?></strong><br>
+            <?php echo esc_html__('Erstellen Sie vor jeder Migration ein Backup Ihrer Datenbank. Migrationen koennen Datenbank-Strukturen aendern und sind nicht immer reversibel.', 'abschussplan-hgmh'); ?>
         </p>
     </div>
+</div>
 
-    <!-- Available Migrations -->
-    <div class="ahgmh-migrations-list" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h2><?php _e('Verfügbare Migrationen', 'abschussplan-hgmh'); ?></h2>
-
+<!-- Available Migrations -->
+<div class="postbox" style="margin-bottom: 20px;">
+    <div class="postbox-header">
+        <h2 class="hndle"><?php echo esc_html__('Verfuegbare Migrationen', 'abschussplan-hgmh'); ?></h2>
+    </div>
+    <div class="inside">
         <?php if (empty($migrations)): ?>
-            <p style="color: #666;"><?php _e('Keine Migrationen verfügbar.', 'abschussplan-hgmh'); ?></p>
+            <p style="color: #646970;"><?php echo esc_html__('Keine Migrationen verfuegbar.', 'abschussplan-hgmh'); ?></p>
         <?php else: ?>
-            <table class="widefat" style="margin-top: 15px;">
+            <table class="wp-list-table widefat striped">
                 <thead>
                     <tr>
-                        <th style="width: 80px;"><?php _e('Version', 'abschussplan-hgmh'); ?></th>
-                        <th><?php _e('Name', 'abschussplan-hgmh'); ?></th>
-                        <th style="width: 120px;"><?php _e('Status', 'abschussplan-hgmh'); ?></th>
-                        <th style="width: 150px;"><?php _e('Aktionen', 'abschussplan-hgmh'); ?></th>
+                        <th style="width: 80px;"><?php echo esc_html__('Version', 'abschussplan-hgmh'); ?></th>
+                        <th><?php echo esc_html__('Name', 'abschussplan-hgmh'); ?></th>
+                        <th style="width: 130px;"><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                        <th style="width: 150px;"><?php echo esc_html__('Aktionen', 'abschussplan-hgmh'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($migrations as $migration): ?>
                         <tr>
-                            <td><?php echo esc_html($migration['version']); ?></td>
+                            <td><strong><?php echo esc_html($migration['version']); ?></strong></td>
                             <td><?php echo esc_html($migration['name']); ?></td>
                             <td>
                                 <?php if ($migration['applied']): ?>
-                                    <span style="display: inline-block; background: #46b450; color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
-                                        <?php _e('Angewendet', 'abschussplan-hgmh'); ?>
+                                    <span style="display: inline-block; background: #00a32a; color: #fff; padding: 3px 10px; border-radius: 3px; font-size: 12px; font-weight: 600;">
+                                        <?php echo esc_html__('Angewendet', 'abschussplan-hgmh'); ?>
                                     </span>
                                 <?php else: ?>
-                                    <span style="display: inline-block; background: #f0f0f0; color: #666; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
-                                        <?php _e('Ausstehend', 'abschussplan-hgmh'); ?>
+                                    <span style="display: inline-block; background: #f0f0f1; color: #646970; padding: 3px 10px; border-radius: 3px; font-size: 12px; font-weight: 600;">
+                                        <?php echo esc_html__('Ausstehend', 'abschussplan-hgmh'); ?>
                                     </span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <?php if (!$migration['applied']): ?>
                                     <button type="button"
-                                            class="button button-primary ahgmh-migrate-to"
+                                            class="button button-primary button-small ahgmh-migrate-to"
                                             data-version="<?php echo esc_attr($migration['version']); ?>"
                                             data-name="<?php echo esc_attr($migration['name']); ?>">
-                                        <?php _e('Ausführen', 'abschussplan-hgmh'); ?>
+                                        <?php echo esc_html__('Ausfuehren', 'abschussplan-hgmh'); ?>
                                     </button>
                                 <?php elseif ($migration['version'] > 0): ?>
                                     <button type="button"
-                                            class="button ahgmh-rollback-to"
+                                            class="button button-small ahgmh-rollback-to"
                                             data-version="<?php echo esc_attr($migration['version'] - 1); ?>"
                                             data-name="<?php echo esc_attr($migration['name']); ?>">
-                                        <?php _e('Zurückrollen', 'abschussplan-hgmh'); ?>
+                                        <?php echo esc_html__('Zurueckrollen', 'abschussplan-hgmh'); ?>
                                     </button>
                                 <?php else: ?>
-                                    <span style="color: #999;"><?php _e('Keine Aktion', 'abschussplan-hgmh'); ?></span>
+                                    <span style="color: #c3c4c7;"><?php echo esc_html__('Keine Aktion', 'abschussplan-hgmh'); ?></span>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -89,56 +90,64 @@ if (!defined('ABSPATH')) {
             </table>
         <?php endif; ?>
     </div>
+</div>
 
-    <!-- Quick Actions -->
-    <div class="ahgmh-quick-actions" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h3><?php _e('Schnellaktionen', 'abschussplan-hgmh'); ?></h3>
-
+<!-- Quick Actions -->
+<div class="postbox" style="margin-bottom: 20px;">
+    <div class="postbox-header">
+        <h2 class="hndle"><?php echo esc_html__('Schnellaktionen', 'abschussplan-hgmh'); ?></h2>
+    </div>
+    <div class="inside">
         <p>
-            <button type="button" class="button button-primary button-large" id="ahgmh-migrate-latest">
-                <span class="dashicons dashicons-update" style="margin-top: 3px;"></span>
-                <?php _e('Zur neuesten Version migrieren', 'abschussplan-hgmh'); ?>
+            <button type="button" class="button button-primary" id="ahgmh-migrate-latest">
+                <span class="dashicons dashicons-update" style="margin-top: 4px;"></span>
+                <?php echo esc_html__('Zur neuesten Version migrieren', 'abschussplan-hgmh'); ?>
             </button>
 
-            <button type="button" class="button button-large" id="ahgmh-rollback-all" style="margin-left: 10px; color: #b32d2e;">
-                <span class="dashicons dashicons-undo" style="margin-top: 3px;"></span>
-                <?php _e('Alle Migrationen zurückrollen', 'abschussplan-hgmh'); ?>
+            <button type="button" class="button" id="ahgmh-rollback-all" style="margin-left: 10px; color: #b32d2e;">
+                <span class="dashicons dashicons-undo" style="margin-top: 4px;"></span>
+                <?php echo esc_html__('Alle Migrationen zurueckrollen', 'abschussplan-hgmh'); ?>
             </button>
         </p>
-
         <p class="description">
-            <?php _e('Schnellaktionen führen mehrere Migrationen auf einmal aus. Stellen Sie sicher, dass Sie ein aktuelles Backup haben.', 'abschussplan-hgmh'); ?>
+            <?php echo esc_html__('Schnellaktionen fuehren mehrere Migrationen auf einmal aus. Stellen Sie sicher, dass Sie ein aktuelles Backup haben.', 'abschussplan-hgmh'); ?>
         </p>
     </div>
+</div>
 
-    <!-- Migration Log -->
-    <div class="ahgmh-migration-log" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h3><?php _e('Migrations-Protokoll', 'abschussplan-hgmh'); ?></h3>
-
-        <div id="ahgmh-log-output" style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 15px; min-height: 100px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; line-height: 1.5;">
-            <p style="color: #666; margin: 0;"><?php _e('Bereit. Führen Sie eine Migration aus, um das Protokoll zu sehen.', 'abschussplan-hgmh'); ?></p>
+<!-- Migration Log -->
+<div class="postbox" style="margin-bottom: 20px;">
+    <div class="postbox-header">
+        <h2 class="hndle"><?php echo esc_html__('Migrations-Protokoll', 'abschussplan-hgmh'); ?></h2>
+    </div>
+    <div class="inside">
+        <div id="ahgmh-log-output" style="background: #f6f7f7; border: 1px solid #ddd; border-radius: 3px; padding: 15px; min-height: 80px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; line-height: 1.6;">
+            <p style="color: #646970; margin: 0;"><?php echo esc_html__('Bereit. Fuehren Sie eine Migration aus, um das Protokoll zu sehen.', 'abschussplan-hgmh'); ?></p>
         </div>
     </div>
+</div>
 
-    <!-- Database Information -->
-    <div class="ahgmh-db-info" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h3><?php _e('Datenbank-Informationen', 'abschussplan-hgmh'); ?></h3>
-
-        <table class="form-table">
+<!-- Database Information -->
+<div class="postbox" style="margin-bottom: 20px;">
+    <div class="postbox-header">
+        <h2 class="hndle"><?php echo esc_html__('Datenbank-Informationen', 'abschussplan-hgmh'); ?></h2>
+    </div>
+    <div class="inside">
+        <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><?php _e('Datenbank Name', 'abschussplan-hgmh'); ?></th>
+                <th scope="row"><?php echo esc_html__('Datenbank-Name', 'abschussplan-hgmh'); ?></th>
                 <td><code><?php echo esc_html(DB_NAME); ?></code></td>
             </tr>
             <tr>
-                <th scope="row"><?php _e('Tabellen Präfix', 'abschussplan-hgmh'); ?></th>
+                <th scope="row"><?php echo esc_html__('Tabellen-Praefix', 'abschussplan-hgmh'); ?></th>
                 <td><code><?php global $wpdb; echo esc_html($wpdb->prefix); ?></code></td>
             </tr>
             <tr>
-                <th scope="row"><?php _e('Schema Version Option', 'abschussplan-hgmh'); ?></th>
+                <th scope="row"><?php echo esc_html__('Schema-Version Option', 'abschussplan-hgmh'); ?></th>
                 <td><code>hgmh_db_schema_version</code></td>
             </tr>
             <tr>
-                <th scope="row"><?php _e('Migrations Verzeichnis', 'abschussplan-hgmh'); ?></th>
+                <th scope="row"><?php echo esc_html__('Migrations-Verzeichnis', 'abschussplan-hgmh'); ?></th>
                 <td><code><?php echo esc_html(plugin_dir_path(__FILE__) . '../../migrations/'); ?></code></td>
             </tr>
         </table>
@@ -148,25 +157,23 @@ if (!defined('ABSPATH')) {
 <script type="text/javascript">
 jQuery(document).ready(function($) {
 
-    // Log helper function
     function addLog(message, type) {
         var $output = $('#ahgmh-log-output');
         var timestamp = new Date().toLocaleTimeString();
-        var color = type === 'error' ? '#d63638' : (type === 'success' ? '#00a32a' : '#666');
-        var icon = type === 'error' ? '❌' : (type === 'success' ? '✅' : '➜');
+        var color = type === 'error' ? '#d63638' : (type === 'success' ? '#00a32a' : '#646970');
+        var prefix = type === 'error' ? '[FEHLER]' : (type === 'success' ? '[OK]' : '[INFO]');
 
-        var logEntry = '<div style="color: ' + color + '; margin-bottom: 5px;">' +
-                      '<span style="color: #999;">[' + timestamp + ']</span> ' +
-                      icon + ' ' + message +
+        var logEntry = '<div style="color: ' + color + '; margin-bottom: 4px;">' +
+                      '<span style="color: #c3c4c7;">[' + timestamp + ']</span> ' +
+                      prefix + ' ' + message +
                       '</div>';
 
         $output.append(logEntry);
         $output.scrollTop($output[0].scrollHeight);
     }
 
-    // Clear log
     function clearLog() {
-        $('#ahgmh-log-output').html('<p style="color: #666; margin: 0;"><?php _e('Migrations-Protokoll wird ausgeführt...', 'abschussplan-hgmh'); ?></p>');
+        $('#ahgmh-log-output').html('<p style="color: #646970; margin: 0;"><?php echo esc_js(__('Migrations-Protokoll wird ausgefuehrt...', 'abschussplan-hgmh')); ?></p>');
     }
 
     // Migrate to specific version
@@ -175,15 +182,15 @@ jQuery(document).ready(function($) {
         var version = $btn.data('version');
         var name = $btn.data('name');
 
-        if (!confirm('<?php _e('Migration ausführen?', 'abschussplan-hgmh'); ?>\n\n' +
-                     '<?php _e('Version:', 'abschussplan-hgmh'); ?> ' + version + '\n' +
-                     '<?php _e('Name:', 'abschussplan-hgmh'); ?> ' + name + '\n\n' +
-                     '<?php _e('Stellen Sie sicher, dass Sie ein Backup haben!', 'abschussplan-hgmh'); ?>')) {
+        if (!confirm('<?php echo esc_js(__('Migration ausfuehren?', 'abschussplan-hgmh')); ?>\n\n' +
+                     '<?php echo esc_js(__('Version:', 'abschussplan-hgmh')); ?> ' + version + '\n' +
+                     '<?php echo esc_js(__('Name:', 'abschussplan-hgmh')); ?> ' + name + '\n\n' +
+                     '<?php echo esc_js(__('Stellen Sie sicher, dass Sie ein Backup haben!', 'abschussplan-hgmh')); ?>')) {
             return;
         }
 
         clearLog();
-        addLog('<?php _e('Starte Migration zu Version', 'abschussplan-hgmh'); ?> ' + version + '...', 'info');
+        addLog('<?php echo esc_js(__('Starte Migration zu Version', 'abschussplan-hgmh')); ?> ' + version + '...', 'info');
 
         $btn.prop('disabled', true);
 
@@ -193,31 +200,30 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'ahgmh_run_migration',
                 target_version: version,
-                nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
+                nonce: '<?php echo esc_js(wp_create_nonce('ahgmh_admin_nonce')); ?>'
             },
             success: function(response) {
                 if (response.success) {
-                    addLog('<?php _e('Migration erfolgreich abgeschlossen!', 'abschussplan-hgmh'); ?>', 'success');
+                    addLog('<?php echo esc_js(__('Migration erfolgreich abgeschlossen!', 'abschussplan-hgmh')); ?>', 'success');
 
                     if (response.data.log && response.data.log.length > 0) {
                         response.data.log.forEach(function(logEntry) {
-                            var type = logEntry.includes('✅') ? 'success' : (logEntry.includes('❌') ? 'error' : 'info');
-                            addLog(logEntry, type);
+                            addLog(logEntry, 'info');
                         });
                     }
 
-                    addLog('<?php _e('Finale Version:', 'abschussplan-hgmh'); ?> ' + response.data.final_version, 'success');
+                    addLog('<?php echo esc_js(__('Finale Version:', 'abschussplan-hgmh')); ?> ' + response.data.final_version, 'success');
 
                     setTimeout(function() {
                         window.location.reload();
                     }, 2000);
                 } else {
-                    addLog('<?php _e('Migration fehlgeschlagen:', 'abschussplan-hgmh'); ?> ' + (response.data || '<?php _e('Unbekannter Fehler', 'abschussplan-hgmh'); ?>'), 'error');
+                    addLog('<?php echo esc_js(__('Migration fehlgeschlagen:', 'abschussplan-hgmh')); ?> ' + (response.data || '<?php echo esc_js(__('Unbekannter Fehler', 'abschussplan-hgmh')); ?>'), 'error');
                     $btn.prop('disabled', false);
                 }
             },
             error: function(xhr, status, error) {
-                addLog('<?php _e('AJAX Fehler:', 'abschussplan-hgmh'); ?> ' + error, 'error');
+                addLog('<?php echo esc_js(__('AJAX Fehler:', 'abschussplan-hgmh')); ?> ' + error, 'error');
                 $btn.prop('disabled', false);
             }
         });
@@ -229,15 +235,15 @@ jQuery(document).ready(function($) {
         var version = $btn.data('version');
         var name = $btn.data('name');
 
-        if (!confirm('<?php _e('Migration zurückrollen?', 'abschussplan-hgmh'); ?>\n\n' +
-                     '<?php _e('Zurück zu Version:', 'abschussplan-hgmh'); ?> ' + version + '\n' +
-                     '<?php _e('Betroffene Migration:', 'abschussplan-hgmh'); ?> ' + name + '\n\n' +
-                     '<?php _e('Dies wird Datenbank-Änderungen rückgängig machen!', 'abschussplan-hgmh'); ?>')) {
+        if (!confirm('<?php echo esc_js(__('Migration zurueckrollen?', 'abschussplan-hgmh')); ?>\n\n' +
+                     '<?php echo esc_js(__('Zurueck zu Version:', 'abschussplan-hgmh')); ?> ' + version + '\n' +
+                     '<?php echo esc_js(__('Betroffene Migration:', 'abschussplan-hgmh')); ?> ' + name + '\n\n' +
+                     '<?php echo esc_js(__('Dies wird Datenbank-Aenderungen rueckgaengig machen!', 'abschussplan-hgmh')); ?>')) {
             return;
         }
 
         clearLog();
-        addLog('<?php _e('Starte Rollback zu Version', 'abschussplan-hgmh'); ?> ' + version + '...', 'info');
+        addLog('<?php echo esc_js(__('Starte Rollback zu Version', 'abschussplan-hgmh')); ?> ' + version + '...', 'info');
 
         $btn.prop('disabled', true);
 
@@ -247,31 +253,30 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'ahgmh_rollback_migration',
                 target_version: version,
-                nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
+                nonce: '<?php echo esc_js(wp_create_nonce('ahgmh_admin_nonce')); ?>'
             },
             success: function(response) {
                 if (response.success) {
-                    addLog('<?php _e('Rollback erfolgreich abgeschlossen!', 'abschussplan-hgmh'); ?>', 'success');
+                    addLog('<?php echo esc_js(__('Rollback erfolgreich abgeschlossen!', 'abschussplan-hgmh')); ?>', 'success');
 
                     if (response.data.log && response.data.log.length > 0) {
                         response.data.log.forEach(function(logEntry) {
-                            var type = logEntry.includes('✅') ? 'success' : (logEntry.includes('❌') ? 'error' : 'info');
-                            addLog(logEntry, type);
+                            addLog(logEntry, 'info');
                         });
                     }
 
-                    addLog('<?php _e('Finale Version:', 'abschussplan-hgmh'); ?> ' + response.data.final_version, 'success');
+                    addLog('<?php echo esc_js(__('Finale Version:', 'abschussplan-hgmh')); ?> ' + response.data.final_version, 'success');
 
                     setTimeout(function() {
                         window.location.reload();
                     }, 2000);
                 } else {
-                    addLog('<?php _e('Rollback fehlgeschlagen:', 'abschussplan-hgmh'); ?> ' + (response.data || '<?php _e('Unbekannter Fehler', 'abschussplan-hgmh'); ?>'), 'error');
+                    addLog('<?php echo esc_js(__('Rollback fehlgeschlagen:', 'abschussplan-hgmh')); ?> ' + (response.data || '<?php echo esc_js(__('Unbekannter Fehler', 'abschussplan-hgmh')); ?>'), 'error');
                     $btn.prop('disabled', false);
                 }
             },
             error: function(xhr, status, error) {
-                addLog('<?php _e('AJAX Fehler:', 'abschussplan-hgmh'); ?> ' + error, 'error');
+                addLog('<?php echo esc_js(__('AJAX Fehler:', 'abschussplan-hgmh')); ?> ' + error, 'error');
                 $btn.prop('disabled', false);
             }
         });
@@ -279,14 +284,14 @@ jQuery(document).ready(function($) {
 
     // Migrate to latest version
     $('#ahgmh-migrate-latest').on('click', function() {
-        if (!confirm('<?php _e('Zur neuesten Version migrieren?', 'abschussplan-hgmh'); ?>\n\n' +
-                     '<?php _e('Dies führt alle ausstehenden Migrationen aus.', 'abschussplan-hgmh'); ?>\n' +
-                     '<?php _e('Stellen Sie sicher, dass Sie ein Backup haben!', 'abschussplan-hgmh'); ?>')) {
+        if (!confirm('<?php echo esc_js(__('Zur neuesten Version migrieren?', 'abschussplan-hgmh')); ?>\n\n' +
+                     '<?php echo esc_js(__('Dies fuehrt alle ausstehenden Migrationen aus.', 'abschussplan-hgmh')); ?>\n' +
+                     '<?php echo esc_js(__('Stellen Sie sicher, dass Sie ein Backup haben!', 'abschussplan-hgmh')); ?>')) {
             return;
         }
 
         clearLog();
-        addLog('<?php _e('Starte Migration zur neuesten Version...', 'abschussplan-hgmh'); ?>', 'info');
+        addLog('<?php echo esc_js(__('Starte Migration zur neuesten Version...', 'abschussplan-hgmh')); ?>', 'info');
 
         var $btn = $(this);
         $btn.prop('disabled', true);
@@ -297,31 +302,30 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'ahgmh_run_migration',
                 target_version: null,
-                nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
+                nonce: '<?php echo esc_js(wp_create_nonce('ahgmh_admin_nonce')); ?>'
             },
             success: function(response) {
                 if (response.success) {
-                    addLog('<?php _e('Migration erfolgreich abgeschlossen!', 'abschussplan-hgmh'); ?>', 'success');
+                    addLog('<?php echo esc_js(__('Migration erfolgreich abgeschlossen!', 'abschussplan-hgmh')); ?>', 'success');
 
                     if (response.data.log && response.data.log.length > 0) {
                         response.data.log.forEach(function(logEntry) {
-                            var type = logEntry.includes('✅') ? 'success' : (logEntry.includes('❌') ? 'error' : 'info');
-                            addLog(logEntry, type);
+                            addLog(logEntry, 'info');
                         });
                     }
 
-                    addLog('<?php _e('Finale Version:', 'abschussplan-hgmh'); ?> ' + response.data.final_version, 'success');
+                    addLog('<?php echo esc_js(__('Finale Version:', 'abschussplan-hgmh')); ?> ' + response.data.final_version, 'success');
 
                     setTimeout(function() {
                         window.location.reload();
                     }, 2000);
                 } else {
-                    addLog('<?php _e('Migration fehlgeschlagen:', 'abschussplan-hgmh'); ?> ' + (response.data || '<?php _e('Unbekannter Fehler', 'abschussplan-hgmh'); ?>'), 'error');
+                    addLog('<?php echo esc_js(__('Migration fehlgeschlagen:', 'abschussplan-hgmh')); ?> ' + (response.data || '<?php echo esc_js(__('Unbekannter Fehler', 'abschussplan-hgmh')); ?>'), 'error');
                     $btn.prop('disabled', false);
                 }
             },
             error: function(xhr, status, error) {
-                addLog('<?php _e('AJAX Fehler:', 'abschussplan-hgmh'); ?> ' + error, 'error');
+                addLog('<?php echo esc_js(__('AJAX Fehler:', 'abschussplan-hgmh')); ?> ' + error, 'error');
                 $btn.prop('disabled', false);
             }
         });
@@ -329,14 +333,14 @@ jQuery(document).ready(function($) {
 
     // Rollback all migrations
     $('#ahgmh-rollback-all').on('click', function() {
-        if (!confirm('<?php _e('WARNUNG: Alle Migrationen zurückrollen?', 'abschussplan-hgmh'); ?>\n\n' +
-                     '<?php _e('Dies macht ALLE Datenbank-Änderungen rückgängig!', 'abschussplan-hgmh'); ?>\n' +
-                     '<?php _e('Stellen Sie sicher, dass Sie ein Backup haben!', 'abschussplan-hgmh'); ?>')) {
+        if (!confirm('<?php echo esc_js(__('WARNUNG: Alle Migrationen zurueckrollen?', 'abschussplan-hgmh')); ?>\n\n' +
+                     '<?php echo esc_js(__('Dies macht ALLE Datenbank-Aenderungen rueckgaengig!', 'abschussplan-hgmh')); ?>\n' +
+                     '<?php echo esc_js(__('Stellen Sie sicher, dass Sie ein Backup haben!', 'abschussplan-hgmh')); ?>')) {
             return;
         }
 
         clearLog();
-        addLog('<?php _e('Starte Rollback zu Version 0...', 'abschussplan-hgmh'); ?>', 'info');
+        addLog('<?php echo esc_js(__('Starte Rollback zu Version 0...', 'abschussplan-hgmh')); ?>', 'info');
 
         var $btn = $(this);
         $btn.prop('disabled', true);
@@ -347,31 +351,30 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'ahgmh_rollback_migration',
                 target_version: 0,
-                nonce: '<?php echo wp_create_nonce('ahgmh_admin_nonce'); ?>'
+                nonce: '<?php echo esc_js(wp_create_nonce('ahgmh_admin_nonce')); ?>'
             },
             success: function(response) {
                 if (response.success) {
-                    addLog('<?php _e('Rollback erfolgreich abgeschlossen!', 'abschussplan-hgmh'); ?>', 'success');
+                    addLog('<?php echo esc_js(__('Rollback erfolgreich abgeschlossen!', 'abschussplan-hgmh')); ?>', 'success');
 
                     if (response.data.log && response.data.log.length > 0) {
                         response.data.log.forEach(function(logEntry) {
-                            var type = logEntry.includes('✅') ? 'success' : (logEntry.includes('❌') ? 'error' : 'info');
-                            addLog(logEntry, type);
+                            addLog(logEntry, 'info');
                         });
                     }
 
-                    addLog('<?php _e('Finale Version:', 'abschussplan-hgmh'); ?> ' + response.data.final_version, 'success');
+                    addLog('<?php echo esc_js(__('Finale Version:', 'abschussplan-hgmh')); ?> ' + response.data.final_version, 'success');
 
                     setTimeout(function() {
                         window.location.reload();
                     }, 2000);
                 } else {
-                    addLog('<?php _e('Rollback fehlgeschlagen:', 'abschussplan-hgmh'); ?> ' + (response.data || '<?php _e('Unbekannter Fehler', 'abschussplan-hgmh'); ?>'), 'error');
+                    addLog('<?php echo esc_js(__('Rollback fehlgeschlagen:', 'abschussplan-hgmh')); ?> ' + (response.data || '<?php echo esc_js(__('Unbekannter Fehler', 'abschussplan-hgmh')); ?>'), 'error');
                     $btn.prop('disabled', false);
                 }
             },
             error: function(xhr, status, error) {
-                addLog('<?php _e('AJAX Fehler:', 'abschussplan-hgmh'); ?> ' + error, 'error');
+                addLog('<?php echo esc_js(__('AJAX Fehler:', 'abschussplan-hgmh')); ?> ' + error, 'error');
                 $btn.prop('disabled', false);
             }
         });

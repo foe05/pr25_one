@@ -1280,6 +1280,20 @@ class AHGMH_Form_Handler {
      * Export submissions as CSV
      */
     public function export_csv() {
+        // Verify user has permission to export
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array(
+                'message' => __('Sie müssen angemeldet sein, um Daten zu exportieren.', 'abschussplan-hgmh')
+            ));
+        }
+
+        // Verify nonce for security
+        if (!isset($_GET['nonce']) || !wp_verify_nonce(sanitize_text_field($_GET['nonce']), 'ahgmh_form_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
+            ));
+        }
+
         try {
             // Sanitize input parameters
             $species = isset($_GET['species']) ? sanitize_text_field($_GET['species']) : '';
@@ -1438,8 +1452,8 @@ class AHGMH_Form_Handler {
      * AJAX handler for refreshing the submissions table
      */
     public function ajax_refresh_table() {
-        // Check nonce if provided
-        if (isset($_POST['nonce']) && !wp_verify_nonce($_POST['nonce'], 'ahgmh_form_nonce')) {
+        // Verify nonce for security (always required)
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field($_POST['nonce']), 'ahgmh_form_nonce')) {
             wp_send_json_error(array(
                 'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
             ));

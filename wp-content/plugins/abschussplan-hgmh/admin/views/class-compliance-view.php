@@ -1,6 +1,6 @@
 <?php
 /**
- * Compliance View - Renders compliance dashboard UI with Bootstrap styling
+ * Compliance View - Renders compliance dashboard UI using WordPress admin patterns
  */
 
 // Exit if accessed directly
@@ -19,11 +19,7 @@ class AHGMH_Compliance_View {
      */
     public function render_dashboard($compliance_data, $species_list, $meldegruppen) {
         ?>
-        <div class="wrap ahgmh-compliance-dashboard">
-            <h1 class="ahgmh-page-title">
-                <span class="dashicons dashicons-yes-alt"></span>
-                <?php echo esc_html__('Compliance Dashboard', 'abschussplan-hgmh'); ?>
-            </h1>
+        <div class="ahgmh-compliance-dashboard">
 
             <!-- Filter Bar -->
             <?php $this->render_filter_bar($species_list, $meldegruppen, $compliance_data['filters']); ?>
@@ -44,7 +40,7 @@ class AHGMH_Compliance_View {
             </div>
 
             <!-- Last Update Timestamp -->
-            <div class="ahgmh-compliance-footer">
+            <div class="ahgmh-compliance-footer" style="margin-top: 20px; color: #646970; font-size: 13px;">
                 <p class="last-update">
                     <?php
                     echo esc_html__('Zuletzt aktualisiert:', 'abschussplan-hgmh') . ' ';
@@ -66,51 +62,60 @@ class AHGMH_Compliance_View {
     private function render_filter_bar($species_list, $meldegruppen, $current_filters) {
         $hunting_seasons = $this->get_hunting_seasons();
         ?>
-        <div class="ahgmh-compliance-filters">
-            <div class="filter-group">
-                <label for="compliance-season-filter"><?php echo esc_html__('Jagdjahr:', 'abschussplan-hgmh'); ?></label>
-                <select id="compliance-season-filter" name="season" class="regular-text">
-                    <option value=""><?php echo esc_html__('Aktuelles Jagdjahr', 'abschussplan-hgmh'); ?></option>
-                    <?php foreach ($hunting_seasons as $season_key => $season_label): ?>
-                        <option value="<?php echo esc_attr($season_key); ?>" <?php selected($current_filters['season'], $season_key); ?>>
-                            <?php echo esc_html($season_label); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+        <div class="postbox" style="margin-bottom: 20px;">
+            <div class="inside" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+                <div>
+                    <label for="compliance-season-filter" style="display: block; margin-bottom: 4px; font-weight: 600;">
+                        <?php echo esc_html__('Jagdjahr:', 'abschussplan-hgmh'); ?>
+                    </label>
+                    <select id="compliance-season-filter" name="season" class="regular-text">
+                        <option value=""><?php echo esc_html__('Aktuelles Jagdjahr', 'abschussplan-hgmh'); ?></option>
+                        <?php foreach ($hunting_seasons as $season_key => $season_label): ?>
+                            <option value="<?php echo esc_attr($season_key); ?>" <?php selected($current_filters['season'], $season_key); ?>>
+                                <?php echo esc_html($season_label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="compliance-species-filter" style="display: block; margin-bottom: 4px; font-weight: 600;">
+                        <?php echo esc_html__('Wildart:', 'abschussplan-hgmh'); ?>
+                    </label>
+                    <select id="compliance-species-filter" name="species" class="regular-text">
+                        <option value=""><?php echo esc_html__('Alle Wildarten', 'abschussplan-hgmh'); ?></option>
+                        <?php foreach ($species_list as $species): ?>
+                            <option value="<?php echo esc_attr($species); ?>" <?php selected($current_filters['species'], $species); ?>>
+                                <?php echo esc_html($species); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="compliance-meldegruppe-filter" style="display: block; margin-bottom: 4px; font-weight: 600;">
+                        <?php echo esc_html__('Meldegruppe:', 'abschussplan-hgmh'); ?>
+                    </label>
+                    <select id="compliance-meldegruppe-filter" name="meldegruppe" class="regular-text">
+                        <option value=""><?php echo esc_html__('Alle Meldegruppen', 'abschussplan-hgmh'); ?></option>
+                        <?php foreach ($meldegruppen as $mg): ?>
+                            <option value="<?php echo esc_attr($mg); ?>" <?php selected($current_filters['meldegruppe'], $mg); ?>>
+                                <?php echo esc_html($mg); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div>
+                    <button type="button" class="button button-primary" id="apply-compliance-filters">
+                        <?php echo esc_html__('Filter anwenden', 'abschussplan-hgmh'); ?>
+                    </button>
+                    <button type="button" class="button" id="refresh-compliance">
+                        <span class="dashicons dashicons-update" style="margin-top: 4px;"></span>
+                        <?php echo esc_html__('Aktualisieren', 'abschussplan-hgmh'); ?>
+                    </button>
+                </div>
             </div>
-
-            <div class="filter-group">
-                <label for="compliance-species-filter"><?php echo esc_html__('Wildart:', 'abschussplan-hgmh'); ?></label>
-                <select id="compliance-species-filter" name="species" class="regular-text">
-                    <option value=""><?php echo esc_html__('Alle Wildarten', 'abschussplan-hgmh'); ?></option>
-                    <?php foreach ($species_list as $species): ?>
-                        <option value="<?php echo esc_attr($species); ?>" <?php selected($current_filters['species'], $species); ?>>
-                            <?php echo esc_html($species); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label for="compliance-meldegruppe-filter"><?php echo esc_html__('Meldegruppe:', 'abschussplan-hgmh'); ?></label>
-                <select id="compliance-meldegruppe-filter" name="meldegruppe" class="regular-text">
-                    <option value=""><?php echo esc_html__('Alle Meldegruppen', 'abschussplan-hgmh'); ?></option>
-                    <?php foreach ($meldegruppen as $mg): ?>
-                        <option value="<?php echo esc_attr($mg); ?>" <?php selected($current_filters['meldegruppe'], $mg); ?>>
-                            <?php echo esc_html($mg); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <button type="button" class="button button-primary" id="apply-compliance-filters">
-                <?php echo esc_html__('Filter anwenden', 'abschussplan-hgmh'); ?>
-            </button>
-
-            <button type="button" class="button" id="refresh-compliance">
-                <span class="dashicons dashicons-update"></span>
-                <?php echo esc_html__('Aktualisieren', 'abschussplan-hgmh'); ?>
-            </button>
         </div>
         <?php
     }
@@ -127,41 +132,29 @@ class AHGMH_Compliance_View {
         }
 
         $overall = $summary['overall'];
-        $status_class = $this->get_status_class($overall['status']);
+        $status_class = $this->get_wp_status_class($overall['status']);
         ?>
-        <div class="ahgmh-compliance-summary">
-            <h2><?php echo esc_html__('Gesamtübersicht', 'abschussplan-hgmh'); ?></h2>
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="compliance-summary-card <?php echo esc_attr($status_class); ?>">
-                        <div class="summary-stat">
-                            <span class="stat-label"><?php echo esc_html__('Aktuell:', 'abschussplan-hgmh'); ?></span>
-                            <span class="stat-value"><?php echo esc_html(number_format($overall['total_current'], 0, ',', '.')); ?></span>
-                        </div>
+        <div class="postbox" style="margin-bottom: 20px;">
+            <div class="postbox-header">
+                <h2 class="hndle"><?php echo esc_html__('Gesamtuebersicht', 'abschussplan-hgmh'); ?></h2>
+            </div>
+            <div class="inside">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                    <div class="ahgmh-stat-card <?php echo esc_attr($status_class); ?>">
+                        <div style="font-size: 13px; color: #646970; margin-bottom: 4px;"><?php echo esc_html__('Aktuell', 'abschussplan-hgmh'); ?></div>
+                        <div style="font-size: 24px; font-weight: 600;"><?php echo esc_html(number_format($overall['total_current'], 0, ',', '.')); ?></div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="compliance-summary-card <?php echo esc_attr($status_class); ?>">
-                        <div class="summary-stat">
-                            <span class="stat-label"><?php echo esc_html__('Limit:', 'abschussplan-hgmh'); ?></span>
-                            <span class="stat-value"><?php echo esc_html(number_format($overall['total_limit'], 0, ',', '.')); ?></span>
-                        </div>
+                    <div class="ahgmh-stat-card <?php echo esc_attr($status_class); ?>">
+                        <div style="font-size: 13px; color: #646970; margin-bottom: 4px;"><?php echo esc_html__('Limit', 'abschussplan-hgmh'); ?></div>
+                        <div style="font-size: 24px; font-weight: 600;"><?php echo esc_html(number_format($overall['total_limit'], 0, ',', '.')); ?></div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="compliance-summary-card <?php echo esc_attr($status_class); ?>">
-                        <div class="summary-stat">
-                            <span class="stat-label"><?php echo esc_html__('Verbleibend:', 'abschussplan-hgmh'); ?></span>
-                            <span class="stat-value"><?php echo esc_html(number_format($overall['total_remaining'], 0, ',', '.')); ?></span>
-                        </div>
+                    <div class="ahgmh-stat-card <?php echo esc_attr($status_class); ?>">
+                        <div style="font-size: 13px; color: #646970; margin-bottom: 4px;"><?php echo esc_html__('Verbleibend', 'abschussplan-hgmh'); ?></div>
+                        <div style="font-size: 24px; font-weight: 600;"><?php echo esc_html(number_format($overall['total_remaining'], 0, ',', '.')); ?></div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="compliance-summary-card <?php echo esc_attr($status_class); ?>">
-                        <div class="summary-stat">
-                            <span class="stat-label"><?php echo esc_html__('Erfüllung:', 'abschussplan-hgmh'); ?></span>
-                            <span class="stat-value"><?php echo esc_html($overall['percentage']); ?>%</span>
-                        </div>
+                    <div class="ahgmh-stat-card <?php echo esc_attr($status_class); ?>">
+                        <div style="font-size: 13px; color: #646970; margin-bottom: 4px;"><?php echo esc_html__('Erfuellung', 'abschussplan-hgmh'); ?></div>
+                        <div style="font-size: 24px; font-weight: 600;"><?php echo esc_html($overall['percentage']); ?>%</div>
                     </div>
                 </div>
             </div>
@@ -176,50 +169,60 @@ class AHGMH_Compliance_View {
      */
     public function render_details($compliance) {
         if (isset($compliance['error']) || empty($compliance['compliance'])) {
-            echo '<div class="notice notice-info"><p>' . esc_html__('Keine Compliance-Daten verfügbar.', 'abschussplan-hgmh') . '</p></div>';
+            echo '<div class="notice notice-info"><p>' . esc_html__('Keine Compliance-Daten verfuegbar. Konfigurieren Sie zuerst Wildarten und Limits.', 'abschussplan-hgmh') . '</p></div>';
             return;
         }
 
         foreach ($compliance['compliance'] as $species_data) {
             $species = $species_data['species'];
             $total = $species_data['total'];
-            $status_class = $this->get_status_class($total['status']);
+            $status_class = $this->get_wp_status_class($total['status']);
+            $bar_color = $this->get_bar_color($total['status']);
             ?>
-            <div class="ahgmh-compliance-species">
-                <h3><?php echo esc_html($species); ?></h3>
-                <div class="species-total <?php echo esc_attr($status_class); ?>">
-                    <span><?php echo esc_html__('Gesamt:', 'abschussplan-hgmh'); ?></span>
-                    <span><?php echo esc_html($total['current'] . ' / ' . $total['limit']); ?></span>
-                    <span class="status-badge"><?php echo esc_html($total['percentage']); ?>%</span>
+            <div class="postbox" style="margin-bottom: 15px;">
+                <div class="postbox-header">
+                    <h2 class="hndle"><?php echo esc_html($species); ?></h2>
                 </div>
-
-                <div class="category-breakdown">
-                    <?php foreach ($species_data['categories'] as $category => $data):
-                        $cat_status_class = $this->get_status_class($data['status']);
-                    ?>
-                        <div class="category-item">
-                            <div class="row align-items-center">
-                                <div class="col-md-3">
-                                    <strong class="category-name"><?php echo esc_html($category); ?></strong>
-                                </div>
-                                <div class="col-md-9">
-                                    <div class="category-progress">
-                                        <div class="progress" style="height: 25px;">
-                                            <div class="progress-bar <?php echo esc_attr($this->get_bootstrap_color($data['status'])); ?>"
-                                                 role="progressbar"
-                                                 style="width: <?php echo esc_attr(min($data['percentage'], 100)); ?>%;"
-                                                 aria-valuenow="<?php echo esc_attr($data['percentage']); ?>"
-                                                 aria-valuemin="0"
-                                                 aria-valuemax="100">
-                                                <?php echo esc_html($data['current'] . ' / ' . $data['limit']); ?>
-                                                (<?php echo esc_html($data['percentage']); ?>%)
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="inside">
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
+                        <span style="font-weight: 600;"><?php echo esc_html__('Gesamt:', 'abschussplan-hgmh'); ?></span>
+                        <span><?php echo esc_html($total['current'] . ' / ' . $total['limit']); ?></span>
+                        <div style="flex: 1; background: #f0f0f1; height: 20px; border-radius: 3px; overflow: hidden;">
+                            <div style="background: <?php echo esc_attr($bar_color); ?>; height: 100%; width: <?php echo esc_attr(min($total['percentage'], 100)); ?>%; transition: width 0.3s;"></div>
                         </div>
-                    <?php endforeach; ?>
+                        <span style="font-weight: 600;"><?php echo esc_html($total['percentage']); ?>%</span>
+                    </div>
+
+                    <?php if (!empty($species_data['categories'])): ?>
+                    <table class="widefat striped" style="margin-top: 10px;">
+                        <thead>
+                            <tr>
+                                <th><?php echo esc_html__('Kategorie', 'abschussplan-hgmh'); ?></th>
+                                <th style="text-align: right;"><?php echo esc_html__('Aktuell', 'abschussplan-hgmh'); ?></th>
+                                <th style="text-align: right;"><?php echo esc_html__('Limit', 'abschussplan-hgmh'); ?></th>
+                                <th style="width: 40%;"><?php echo esc_html__('Fortschritt', 'abschussplan-hgmh'); ?></th>
+                                <th style="text-align: right;"><?php echo esc_html__('Prozent', 'abschussplan-hgmh'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($species_data['categories'] as $category => $data):
+                                $cat_bar_color = $this->get_bar_color($data['status']);
+                            ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($category); ?></strong></td>
+                                <td style="text-align: right;"><?php echo esc_html($data['current']); ?></td>
+                                <td style="text-align: right;"><?php echo esc_html($data['limit']); ?></td>
+                                <td>
+                                    <div style="background: #f0f0f1; height: 16px; border-radius: 3px; overflow: hidden;">
+                                        <div style="background: <?php echo esc_attr($cat_bar_color); ?>; height: 100%; width: <?php echo esc_attr(min($data['percentage'], 100)); ?>%;"></div>
+                                    </div>
+                                </td>
+                                <td style="text-align: right;"><?php echo esc_html($data['percentage']); ?>%</td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php
@@ -236,33 +239,34 @@ class AHGMH_Compliance_View {
             return;
         }
         ?>
-        <div class="ahgmh-compliance-meldegruppen">
-            <h2><?php echo esc_html__('Meldegruppen-Übersicht', 'abschussplan-hgmh'); ?></h2>
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-light">
+        <div class="postbox" style="margin-bottom: 20px;">
+            <div class="postbox-header">
+                <h2 class="hndle"><?php echo esc_html__('Meldegruppen-Uebersicht', 'abschussplan-hgmh'); ?></h2>
+            </div>
+            <div class="inside">
+                <table class="widefat striped">
+                    <thead>
                         <tr>
                             <th><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></th>
                             <th><?php echo esc_html__('Wildart', 'abschussplan-hgmh'); ?></th>
-                            <th class="text-end"><?php echo esc_html__('Aktuell', 'abschussplan-hgmh'); ?></th>
-                            <th class="text-end"><?php echo esc_html__('Limit', 'abschussplan-hgmh'); ?></th>
-                            <th class="text-end"><?php echo esc_html__('Verbleibend', 'abschussplan-hgmh'); ?></th>
-                            <th class="text-center"><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                            <th style="text-align: right;"><?php echo esc_html__('Aktuell', 'abschussplan-hgmh'); ?></th>
+                            <th style="text-align: right;"><?php echo esc_html__('Limit', 'abschussplan-hgmh'); ?></th>
+                            <th style="text-align: right;"><?php echo esc_html__('Verbleibend', 'abschussplan-hgmh'); ?></th>
+                            <th style="text-align: center;"><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($by_meldegruppe['meldegruppen'] as $mg_data):
                             $total = $mg_data['total'];
-                            $status_class = $this->get_status_class($total['status']);
                         ?>
-                            <tr class="<?php echo esc_attr($status_class); ?>">
+                            <tr>
                                 <td><strong><?php echo esc_html($mg_data['meldegruppe']); ?></strong></td>
                                 <td><?php echo esc_html($mg_data['species']); ?></td>
-                                <td class="text-end"><?php echo esc_html(number_format($total['current'], 0, ',', '.')); ?></td>
-                                <td class="text-end"><?php echo esc_html(number_format($total['limit'], 0, ',', '.')); ?></td>
-                                <td class="text-end"><?php echo esc_html(number_format($total['remaining'], 0, ',', '.')); ?></td>
-                                <td class="text-center">
-                                    <span class="badge <?php echo esc_attr($this->get_bootstrap_badge($total['status'])); ?>">
+                                <td style="text-align: right;"><?php echo esc_html(number_format($total['current'], 0, ',', '.')); ?></td>
+                                <td style="text-align: right;"><?php echo esc_html(number_format($total['limit'], 0, ',', '.')); ?></td>
+                                <td style="text-align: right;"><?php echo esc_html(number_format($total['remaining'], 0, ',', '.')); ?></td>
+                                <td style="text-align: center;">
+                                    <span style="display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 600; background: <?php echo esc_attr($this->get_badge_bg($total['status'])); ?>; color: <?php echo esc_attr($this->get_badge_color($total['status'])); ?>;">
                                         <?php echo esc_html($this->get_status_label($total['status'])); ?>
                                         (<?php echo esc_html($total['percentage']); ?>%)
                                     </span>
@@ -277,93 +281,84 @@ class AHGMH_Compliance_View {
     }
 
     /**
-     * Get CSS class for status indicator
-     *
-     * @param string $status Status indicator (good/warning/critical/exceeded)
-     * @return string CSS class
+     * Get WordPress-compatible status class
      */
-    private function get_status_class($status) {
+    private function get_wp_status_class($status) {
         $classes = [
             'good' => 'status-good',
             'warning' => 'status-warning',
             'critical' => 'status-critical',
             'exceeded' => 'status-exceeded'
         ];
-
         return isset($classes[$status]) ? $classes[$status] : 'status-good';
     }
 
     /**
-     * Get Bootstrap color class for progress bars
-     *
-     * @param string $status Status indicator
-     * @return string Bootstrap color class
+     * Get progress bar color for status
      */
-    private function get_bootstrap_color($status) {
+    private function get_bar_color($status) {
         $colors = [
-            'good' => 'bg-success',
-            'warning' => 'bg-warning',
-            'critical' => 'bg-danger',
-            'exceeded' => 'bg-dark'
+            'good' => '#00a32a',
+            'warning' => '#dba617',
+            'critical' => '#d63638',
+            'exceeded' => '#1d2327'
         ];
-
-        return isset($colors[$status]) ? $colors[$status] : 'bg-success';
+        return isset($colors[$status]) ? $colors[$status] : '#00a32a';
     }
 
     /**
-     * Get Bootstrap badge class for status badges
-     *
-     * @param string $status Status indicator
-     * @return string Bootstrap badge class
+     * Get badge background color
      */
-    private function get_bootstrap_badge($status) {
-        $badges = [
-            'good' => 'bg-success',
-            'warning' => 'bg-warning text-dark',
-            'critical' => 'bg-danger',
-            'exceeded' => 'bg-dark'
+    private function get_badge_bg($status) {
+        $colors = [
+            'good' => '#edfaef',
+            'warning' => '#fcf9e8',
+            'critical' => '#fcf0f1',
+            'exceeded' => '#f0f0f1'
         ];
+        return isset($colors[$status]) ? $colors[$status] : '#edfaef';
+    }
 
-        return isset($badges[$status]) ? $badges[$status] : 'bg-success';
+    /**
+     * Get badge text color
+     */
+    private function get_badge_color($status) {
+        $colors = [
+            'good' => '#00a32a',
+            'warning' => '#996800',
+            'critical' => '#d63638',
+            'exceeded' => '#1d2327'
+        ];
+        return isset($colors[$status]) ? $colors[$status] : '#00a32a';
     }
 
     /**
      * Get status label for display
-     *
-     * @param string $status Status indicator
-     * @return string Localized status label
      */
     private function get_status_label($status) {
         $labels = [
             'good' => __('Gut', 'abschussplan-hgmh'),
             'warning' => __('Achtung', 'abschussplan-hgmh'),
             'critical' => __('Kritisch', 'abschussplan-hgmh'),
-            'exceeded' => __('Überschritten', 'abschussplan-hgmh')
+            'exceeded' => __('Ueberschritten', 'abschussplan-hgmh')
         ];
-
         return isset($labels[$status]) ? $labels[$status] : $labels['good'];
     }
 
     /**
      * Get available hunting seasons for filter dropdown
-     * German hunting season runs from April 1 to March 31 of the following year
-     *
-     * @return array Hunting seasons with keys (YYYY-YYYY) and labels
      */
     private function get_hunting_seasons() {
         $seasons = [];
         $current_year = intval(date('Y'));
         $current_month = intval(date('m'));
 
-        // Determine the current hunting season
-        // If before April, we're still in the previous season
         if ($current_month < 4) {
             $current_season_start = $current_year - 1;
         } else {
             $current_season_start = $current_year;
         }
 
-        // Generate last 5 hunting seasons
         for ($i = 0; $i < 5; $i++) {
             $season_start_year = $current_season_start - $i;
             $season_end_year = $season_start_year + 1;
@@ -373,7 +368,6 @@ class AHGMH_Compliance_View {
                 $season_start_year,
                 $season_end_year
             );
-
             $seasons[$season_key] = $season_label;
         }
 

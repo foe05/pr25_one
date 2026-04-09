@@ -3,52 +3,39 @@
  */
 
 /* ======================================================================
+   ACCESSIBILITY - SKIP LINK & VISUALLY HIDDEN
+   ====================================================================== */
+
+.ahgmh-skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    z-index: 10000;
+    padding: 0.75rem 1.5rem;
+    background: #2271b1;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.ahgmh-skip-link:focus {
+    top: 0;
+}
+
+/* ======================================================================
    ACCESSIBILITY - FOCUS INDICATORS
    ====================================================================== */
 
 /**
  * Focus Style System - WCAG 2.1 Level AA 2.4.7 Compliance
  *
- * This section implements visible focus indicators for all interactive
- * elements to ensure keyboard users can navigate the interface effectively.
- *
- * KEY PRINCIPLES:
- *
- * 1. WCAG 2.1 Level AA 2.4.7 - Focus Visible
- *    "Any keyboard operable user interface has a mode of operation where
- *    the keyboard focus indicator is visible."
- *    Reference: https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html
- *
- * 2. Contrast Requirements
- *    - Minimum 3:1 contrast ratio against adjacent colors
- *    - Blue focus color: rgba(34, 113, 177, 0.25) for box-shadow
- *    - Border color: #2271b1 (WordPress admin blue)
- *
- * 3. :focus-visible vs :focus
- *    - We use :focus-visible where supported (modern browsers)
- *    - This prevents focus rings on mouse clicks while keeping them for keyboard
- *    - Fallback to :focus for older browsers where needed
- *
- * 4. Custom Focus Rings
- *    - Default browser outline is disabled (outline: none)
- *    - Replaced with custom box-shadow for consistent cross-browser appearance
- *    - Box-shadow provides better visual consistency and design control
- *
- * 5. Implementation Pattern
- *    - Form inputs: 2px box-shadow with 10% opacity for subtle indicator
- *    - Buttons/links: 3px box-shadow with 25% opacity for stronger visibility
- *    - All use the same primary blue color (#2271b1) for consistency
- *
- * MAINTENANCE NOTES:
- * - When adding new interactive elements, ensure they have focus styles
- * - Test keyboard navigation (Tab key) to verify all elements are reachable
- * - Verify contrast ratios meet WCAG AA standards (minimum 3:1)
- * - Consider both light and dark theme compatibility
+ * Uses :focus-visible where supported for buttons/links (avoids mouse-click rings)
+ * and :focus for form controls (broader compatibility).
+ * Custom box-shadow replaces browser outline for cross-browser consistency.
+ * All use WordPress admin blue (#2271b1) with varying opacity.
  */
 
-/* Form input focus styles
-   Applies to all text inputs, selects, and textareas
-   Uses subtle 2px ring with 10% opacity for non-intrusive but clear indicator */
+/* Form input focus styles */
 .abschussplan-hgmh-form input[type="text"]:focus,
 .abschussplan-hgmh-form input[type="email"]:focus,
 .abschussplan-hgmh-form input[type="tel"]:focus,
@@ -61,25 +48,31 @@
     box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
 }
 
-/* Button focus styles
-   Uses :focus-visible to prevent showing ring on mouse clicks
-   Stronger 3px ring with 25% opacity for better visibility on buttons */
+/* Button focus styles */
 .abschussplan-hgmh-form .submit-btn:focus-visible,
-.abschussplan-hgmh-form button:focus-visible {
+.abschussplan-hgmh-form button:focus-visible,
+.abschuss-table-container .btn:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
 }
 
-/* Pagination link focus styles
-   Keyboard navigation for pagination links with slight border-radius
-   Ensures users can navigate through pages without mouse */
+/* Pagination link focus styles */
 .pagination a:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
     border-radius: 2px;
 }
 
-/* Form styles */
+/* Export button focus styles */
+.export-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.25);
+}
+
+/* ======================================================================
+   FORM STYLES
+   ====================================================================== */
+
 .abschussplan-hgmh-form-container {
     margin: 2rem 0;
     padding: 1.5rem;
@@ -101,6 +94,14 @@
 
 .abschussplan-hgmh-form .submit-btn {
     margin-top: 1rem;
+    min-height: 44px;
+    min-width: 120px;
+}
+
+.abschussplan-hgmh-form fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
 }
 
 #form-response {
@@ -108,40 +109,107 @@
     display: none;
 }
 
-/* Table styles */
-.submissions-table-container {
+/* ======================================================================
+   TABLE STYLES
+   ====================================================================== */
+
+.submissions-table-container,
+.abschuss-table-container {
     margin: 2rem 0;
     overflow-x: auto;
 }
 
-.submissions-table {
+.submissions-table,
+.abschuss-table {
     width: 100%;
     margin-bottom: 1rem;
 }
 
-.submissions-table th {
+.submissions-table th,
+.abschuss-table thead th {
     background-color: var(--bs-dark-bg-subtle);
     position: sticky;
     top: 0;
+    z-index: 1;
 }
 
-.submissions-table th, 
-.submissions-table td {
+.submissions-table th,
+.submissions-table td,
+.abschuss-table th,
+.abschuss-table td {
     padding: 0.75rem;
     vertical-align: middle;
 }
 
-.submissions-empty {
+.submissions-empty,
+.abschuss-empty {
     text-align: center;
     padding: 3rem 1rem;
     background-color: var(--bs-dark-bg-subtle);
     border-radius: 0.375rem;
 }
 
-/* Pagination styles */
+.abschuss-empty-icon {
+    font-size: 3rem;
+    color: var(--bs-secondary);
+    margin-bottom: 1rem;
+}
+
+.abschuss-empty-heading {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.abschuss-empty-description {
+    color: var(--bs-secondary);
+    max-width: 40rem;
+    margin: 0 auto 1.5rem;
+}
+
+.abschuss-empty-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    min-height: 44px;
+    background-color: var(--bs-primary);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s ease;
+}
+
+.abschuss-empty-cta:hover,
+.abschuss-empty-cta:focus-visible {
+    background-color: var(--bs-primary);
+    opacity: 0.9;
+    color: #fff;
+}
+
+/* ======================================================================
+   STATUS BADGE (moves inline style to class)
+   ====================================================================== */
+
+.ahgmh-status-badge {
+    padding: 6px 12px;
+}
+
+/* ======================================================================
+   PAGINATION STYLES
+   ====================================================================== */
+
 .pagination {
     margin-top: 1.5rem;
     margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.pagination .page-link {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .page-count {
@@ -151,7 +219,10 @@
     color: var(--bs-secondary);
 }
 
-/* Skeleton loading styles */
+/* ======================================================================
+   SKELETON LOADING STYLES
+   ====================================================================== */
+
 @keyframes shimmer {
     0% {
         background-position: -468px 0;
@@ -239,37 +310,57 @@
     background-size: 468px 100%;
 }
 
-/* Responsive adjustments */
+/* ======================================================================
+   MODERATION NOTIFICATION
+   ====================================================================== */
+
+.moderation-notification {
+    margin-bottom: 1rem;
+}
+
+/* ======================================================================
+   RESPONSIVE ADJUSTMENTS
+   ====================================================================== */
+
 @media (max-width: 767.98px) {
     .abschussplan-hgmh-form-container,
-    .submissions-table-container {
+    .submissions-table-container,
+    .abschuss-table-container {
         padding: 1rem;
     }
-    
-    .submissions-table thead {
+
+    /* Card-based layout for all tables on mobile */
+    .submissions-table thead,
+    .abschuss-table thead {
         display: none;
     }
-    
-    .submissions-table tbody tr {
+
+    .submissions-table tbody tr,
+    .abschuss-table tbody tr {
         display: block;
         margin-bottom: 1rem;
         border: 1px solid var(--bs-border-color);
         border-radius: 0.375rem;
+        overflow: hidden;
     }
-    
-    .submissions-table tbody td {
+
+    .submissions-table tbody td,
+    .abschuss-table tbody td {
         display: block;
         position: relative;
-        padding-left: 50%;
+        padding: 0.75rem 0.75rem 0.75rem 50%;
         text-align: right;
         border-bottom: 1px solid var(--bs-border-color);
+        min-height: 44px;
     }
-    
-    .submissions-table tbody td:last-child {
+
+    .submissions-table tbody td:last-child,
+    .abschuss-table tbody td:last-child {
         border-bottom: none;
     }
-    
-    .submissions-table tbody td::before {
+
+    .submissions-table tbody td::before,
+    .abschuss-table tbody td::before {
         content: attr(data-label);
         position: absolute;
         left: 0.75rem;
@@ -277,15 +368,55 @@
         text-align: left;
         font-weight: 600;
     }
+
+    /* Moderation buttons stack on mobile */
+    .btn-group.btn-group-sm {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .btn-group.btn-group-sm .btn {
+        min-height: 44px;
+        border-radius: 0.25rem;
+    }
+
+    /* Ensure pagination wraps */
+    .pagination {
+        justify-content: center;
+    }
+
+    /* Form container padding */
+    .abschussplan-hgmh-form .submit-btn {
+        width: 100%;
+    }
 }
 
-/* Dark theme compatibility */
+/* ======================================================================
+   DARK THEME COMPATIBILITY
+   ====================================================================== */
+
 [data-bs-theme=dark] .abschussplan-hgmh-form-container,
 [data-bs-theme=dark] .submissions-table th,
-[data-bs-theme=dark] .submissions-empty {
+[data-bs-theme=dark] .abschuss-table thead th,
+[data-bs-theme=dark] .submissions-empty,
+[data-bs-theme=dark] .abschuss-empty {
     background-color: var(--bs-dark);
 }
 
-[data-bs-theme=dark] .submissions-table tbody tr {
+[data-bs-theme=dark] .submissions-table tbody tr,
+[data-bs-theme=dark] .abschuss-table tbody tr {
     background-color: var(--bs-dark-bg-subtle);
+}
+
+/* ======================================================================
+   REDUCED MOTION
+   ====================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton,
+    .skeleton-text,
+    .skeleton-loader {
+        animation: none;
+    }
 }

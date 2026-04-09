@@ -1349,27 +1349,27 @@ class AHGMH_Database_Handler {
         $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
         
         // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
         if (!$table_exists) {
             // Create table if it doesn't exist
             $this->create_jagdbezirk_table();
         }
-        
+
         $query = "SELECT * FROM $table_name ORDER BY jagdbezirk ASC";
-        
+
         return $wpdb->get_results($query, ARRAY_A);
     }
-    
+
     /**
      * Get active Jagdbezirke (not marked as invalid)
      */
     public function get_active_jagdbezirke() {
         global $wpdb;
-        
+
         $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
+
         // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
         if (!$table_exists) {
             // Create table if it doesn't exist
             $this->create_jagdbezirk_table();
@@ -1578,9 +1578,9 @@ class AHGMH_Database_Handler {
         $junction_table = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
 
         // Check if new schema tables exist
-        $junction_exists = $wpdb->get_var("SHOW TABLES LIKE '$junction_table'");
-        $eigenjagdbezirke_exists = $wpdb->get_var("SHOW TABLES LIKE '$eigenjagdbezirke_table'");
-        $meldegruppen_exists = $wpdb->get_var("SHOW TABLES LIKE '$meldegruppen_table'");
+        $junction_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $junction_table));
+        $eigenjagdbezirke_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $eigenjagdbezirke_table));
+        $meldegruppen_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $meldegruppen_table));
 
         if ($junction_exists && $eigenjagdbezirke_exists && $meldegruppen_exists) {
             // Use new schema with junction table
@@ -1603,7 +1603,7 @@ class AHGMH_Database_Handler {
 
         // Fallback to legacy table structure
         $legacy_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        $legacy_exists = $wpdb->get_var("SHOW TABLES LIKE '$legacy_table'");
+        $legacy_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $legacy_table));
 
         if ($legacy_exists) {
             $query = $wpdb->prepare(

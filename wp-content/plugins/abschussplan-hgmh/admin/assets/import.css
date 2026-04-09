@@ -737,14 +737,15 @@
     .ahgmh-mapping-table td,
     .ahgmh-mapping-table th {
         display: block;
-        padding: 8px 15px !important;
-        border: none !important;
+        padding: 8px 15px;
+        border: none;
     }
 
-    .ahgmh-mapping-table th {
-        background: transparent !important;
+    .ahgmh-mapping-table thead th {
+        background: transparent;
         font-weight: 700;
-        color: #2271b1 !important;
+        color: #2271b1;
+        border-bottom: none;
     }
 }
 

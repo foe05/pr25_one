@@ -312,7 +312,7 @@ class AHGMH_Permissions_Service {
      */
     public static function get_login_form($shortcode_name = '', $redirect_to = '') {
         if (empty($redirect_to)) {
-            $redirect_to = (is_ssl() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+            $redirect_to = (is_ssl() ? 'https://' : 'http://') . sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) . esc_url_raw(wp_unslash($_SERVER['REQUEST_URI']));
         }
         
         $login_url = wp_login_url($redirect_to);

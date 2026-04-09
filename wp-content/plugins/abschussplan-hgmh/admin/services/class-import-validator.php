@@ -385,7 +385,7 @@ class AHGMH_Import_Validator {
         // Load all existing WUS numbers on first call (cache for performance)
         if ($this->existing_wus_numbers === null) {
             $table_name = $wpdb->prefix . 'ahgmh_submissions';
-            $results = $wpdb->get_col("SELECT wus_nummer FROM $table_name WHERE wus_nummer != '' AND wus_nummer IS NOT NULL");
+            $results = $wpdb->get_col("SELECT wus_nummer FROM `" . esc_sql($table_name) . "` WHERE wus_nummer != '' AND wus_nummer IS NOT NULL");
             $this->existing_wus_numbers = array_map('trim', $results);
         }
 

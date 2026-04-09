@@ -1,15 +1,23 @@
 <?php
 /**
- * Feature Flags Admin Page
+ * Feature Flags Admin Page (View)
+ *
+ * Rendered by AHGMH_Feature_Flags_Controller::render_page().
+ * Displays a toggle switch for each registered feature flag.
+ *
+ * Test: Navigate to wp-admin > Abschussplan > Feature Flags.
+ *       Toggle a flag and verify the AJAX save succeeds.
+ *
+ * @package AbschussplanHGMH
  */
 
-if (!defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Permission check
-if (!current_user_can('manage_options')) {
-    wp_die(__('You do not have sufficient permissions to access this page.'));
+// Permission check.
+if ( ! current_user_can( 'manage_options' ) ) {
+    wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'abschussplan-hgmh' ) );
 }
 
 $all_flags = HGMH_Feature_Flags::get_all_flags();
@@ -18,39 +26,43 @@ $all_flags = HGMH_Feature_Flags::get_all_flags();
 <div class="wrap ahgmh-admin-modern">
     <h1 class="ahgmh-page-title">
         <span class="dashicons dashicons-flag"></span>
-        <?php echo esc_html__('Feature Flags', 'abschussplan-hgmh'); ?>
+        <?php echo esc_html__( 'Feature Flags', 'abschussplan-hgmh' ); ?>
     </h1>
 
     <div class="notice notice-warning">
-        <p><strong>⚠️ <?php echo esc_html__('Achtung:', 'abschussplan-hgmh'); ?></strong> <?php echo esc_html__('Änderungen an Feature Flags können die Plugin-Funktionalität beeinflussen!', 'abschussplan-hgmh'); ?></p>
+        <p>
+            <strong><?php echo esc_html__( 'Achtung:', 'abschussplan-hgmh' ); ?></strong>
+            <?php echo esc_html__( 'Änderungen an Feature Flags können die Plugin-Funktionalität beeinflussen!', 'abschussplan-hgmh' ); ?>
+        </p>
     </div>
 
     <form id="feature-flags-form">
-        <?php wp_nonce_field('hgmh_feature_flags_nonce', 'nonce'); ?>
+        <?php wp_nonce_field( 'hgmh_feature_flags_nonce', 'nonce' ); ?>
 
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th><?php echo esc_html__('Feature', 'abschussplan-hgmh'); ?></th>
-                    <th><?php echo esc_html__('Beschreibung', 'abschussplan-hgmh'); ?></th>
-                    <th><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
+                    <th><?php echo esc_html__( 'Feature', 'abschussplan-hgmh' ); ?></th>
+                    <th><?php echo esc_html__( 'Beschreibung', 'abschussplan-hgmh' ); ?></th>
+                    <th><?php echo esc_html__( 'Status', 'abschussplan-hgmh' ); ?></th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($all_flags as $flag_name => $flag_meta): ?>
+                <?php foreach ( $all_flags as $flag_name => $flag_meta ) : ?>
                 <tr>
                     <td>
-                        <strong><?php echo esc_html($flag_meta['label']); ?></strong>
-                        <?php if ($flag_meta['critical']): ?>
-                            <span class="dashicons dashicons-warning" style="color: red;" title="<?php echo esc_attr__('Kritisches Flag', 'abschussplan-hgmh'); ?>"></span>
+                        <strong><?php echo esc_html( $flag_meta['label'] ); ?></strong>
+                        <?php if ( $flag_meta['critical'] ) : ?>
+                            <span class="dashicons dashicons-warning" style="color: red;"
+                                  title="<?php echo esc_attr__( 'Kritisches Flag', 'abschussplan-hgmh' ); ?>"></span>
                         <?php endif; ?>
                     </td>
-                    <td><?php echo esc_html($flag_meta['description']); ?></td>
+                    <td><?php echo esc_html( $flag_meta['description'] ); ?></td>
                     <td>
                         <label class="hgmh-switch">
                             <input type="checkbox"
-                                   name="flags[<?php echo esc_attr($flag_name); ?>]"
-                                   <?php checked(HGMH_Feature_Flags::is_enabled($flag_name)); ?>>
+                                   name="flags[<?php echo esc_attr( $flag_name ); ?>]"
+                                   <?php checked( HGMH_Feature_Flags::is_enabled( $flag_name ) ); ?>>
                             <span class="hgmh-slider"></span>
                         </label>
                     </td>
@@ -60,7 +72,9 @@ $all_flags = HGMH_Feature_Flags::get_all_flags();
         </table>
 
         <p class="submit">
-            <button type="submit" class="button button-primary"><?php echo esc_html__('Änderungen speichern', 'abschussplan-hgmh'); ?></button>
+            <button type="submit" class="button button-primary">
+                <?php echo esc_html__( 'Änderungen speichern', 'abschussplan-hgmh' ); ?>
+            </button>
         </p>
     </form>
 </div>
@@ -69,7 +83,6 @@ $all_flags = HGMH_Feature_Flags::get_all_flags();
 jQuery(document).ready(function($) {
     $('#feature-flags-form').on('submit', function(e) {
         e.preventDefault();
-
         $.ajax({
             url: ajaxurl,
             type: 'POST',
@@ -78,11 +91,11 @@ jQuery(document).ready(function($) {
                 if (response.success) {
                     alert(response.data.message);
                 } else {
-                    alert('Fehler: ' + response.data.message);
+                    alert('<?php echo esc_js( __( 'Fehler:', 'abschussplan-hgmh' ) ); ?> ' + response.data.message);
                 }
             },
             error: function() {
-                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+                alert('<?php echo esc_js( __( 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh' ) ); ?>');
             }
         });
     });

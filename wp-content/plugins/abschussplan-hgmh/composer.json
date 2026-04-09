@@ -12,7 +12,8 @@
             "includes/",
             "admin/services/",
             "admin/controllers/",
-            "admin/views/"
+            "admin/views/",
+            "frontend/shortcodes/"
         ]
     },
     "config": {
