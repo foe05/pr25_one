@@ -109,41 +109,21 @@ class AHGMH_Admin_Page_Modern {
             array($this, 'render_data_management')
         );
 
-        // 3. Wildarten (promoted from settings sub-tab)
+        // 3. Einrichtung (Wildarten + Obleute + Jagdbezirke unified setup)
         add_submenu_page(
             'abschussplan-hgmh',
-            __('Wildarten konfigurieren', 'abschussplan-hgmh'),
-            __('Wildarten', 'abschussplan-hgmh'),
+            __('Einrichtung', 'abschussplan-hgmh'),
+            __('Einrichtung', 'abschussplan-hgmh'),
             'manage_options',
             'abschussplan-hgmh-wildarten',
             array($this, 'render_wildarten_page')
         );
 
-        // 4. Obleute
+        // 6. Export
         add_submenu_page(
             'abschussplan-hgmh',
-            __('Obleute verwalten', 'abschussplan-hgmh'),
-            __('Obleute', 'abschussplan-hgmh'),
-            'manage_options',
-            'abschussplan-hgmh-obleute',
-            array($this, 'render_obmann_management')
-        );
-
-        // 5. Berichte (reports & compliance)
-        add_submenu_page(
-            'abschussplan-hgmh',
-            __('Berichte & Compliance', 'abschussplan-hgmh'),
-            __('Berichte', 'abschussplan-hgmh'),
-            'manage_options',
-            'abschussplan-hgmh-reports',
-            array($this, 'render_reports_page')
-        );
-
-        // 6. Import / Export
-        add_submenu_page(
-            'abschussplan-hgmh',
-            __('Import / Export', 'abschussplan-hgmh'),
-            __('Import / Export', 'abschussplan-hgmh'),
+            __('Export', 'abschussplan-hgmh'),
+            __('Export', 'abschussplan-hgmh'),
             'manage_options',
             'abschussplan-hgmh-import',
             array($this, 'render_import')
@@ -192,6 +172,15 @@ class AHGMH_Admin_Page_Modern {
             true
         );
 
+        wp_localize_script(
+            'ahgmh-core',
+            'ahgmh_admin',
+            array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce'    => wp_create_nonce('ahgmh_admin_nonce'),
+            )
+        );
+
         // Dashboard module - only load on Dashboard page
         if ($hook === 'toplevel_page_abschussplan-hgmh') {
             wp_enqueue_script(
@@ -236,57 +225,6 @@ class AHGMH_Admin_Page_Modern {
             );
         }
 
-        // Enqueue import assets only on import page
-        if (strpos($hook, 'abschussplan-hgmh-import') !== false) {
-            wp_enqueue_style(
-                'ahgmh-import',
-                AHGMH_PLUGIN_URL . 'admin/assets/import.css',
-                array('ahgmh-admin-modern'),
-                AHGMH_PLUGIN_VERSION
-            );
-
-            wp_enqueue_script(
-                'ahgmh-import',
-                AHGMH_PLUGIN_URL . 'admin/assets/import.js',
-                array('jquery', 'ahgmh-admin-modern'),
-                AHGMH_PLUGIN_VERSION,
-                true
-            );
-
-            // Localize import script with field mapping data
-            wp_localize_script(
-                'ahgmh-import',
-                'ahgmh_import',
-                array(
-                    'ajax_url' => admin_url('admin-ajax.php'),
-                    'nonce' => wp_create_nonce('ahgmh_admin_nonce'),
-                    'max_file_size' => 10 * 1024 * 1024, // 10 MB in bytes
-                    'supported_types' => array('csv', 'xlsx'),
-                    'field_labels' => array(
-                        'datum' => __('Datum', 'abschussplan-hgmh'),
-                        'wildart' => __('Wildart', 'abschussplan-hgmh'),
-                        'kategorie' => __('Kategorie', 'abschussplan-hgmh'),
-                        'meldegruppe' => __('Meldegruppe', 'abschussplan-hgmh'),
-                        'jagdbezirk' => __('Jagdbezirk', 'abschussplan-hgmh'),
-                        'wus_nummer' => __('WUS-Nummer', 'abschussplan-hgmh'),
-                        'bemerkung' => __('Bemerkung', 'abschussplan-hgmh'),
-                    ),
-                    'required_fields' => array('datum', 'wildart', 'kategorie'),
-                    'strings' => array(
-                        'uploading' => __('Hochladen...', 'abschussplan-hgmh'),
-                        'processing' => __('Verarbeite Daten...', 'abschussplan-hgmh'),
-                        'importing' => __('Importiere...', 'abschussplan-hgmh'),
-                        'validating' => __('Validiere Daten...', 'abschussplan-hgmh'),
-                        'error_upload' => __('Fehler beim Hochladen der Datei.', 'abschussplan-hgmh'),
-                        'error_invalid_type' => __('Ungültiger Dateityp. Bitte laden Sie eine CSV- oder Excel-Datei (.xlsx) hoch.', 'abschussplan-hgmh'),
-                        'error_file_too_large' => __('Datei zu groß. Maximum: 10 MB.', 'abschussplan-hgmh'),
-                        'error_network' => __('Netzwerkfehler. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh'),
-                        'success_import' => __('Import erfolgreich abgeschlossen!', 'abschussplan-hgmh'),
-                        'confirm_import' => __('Möchten Sie die Import-Vorgang wirklich starten?', 'abschussplan-hgmh'),
-                    )
-                )
-            );
-        }
     }
 
     /**
@@ -661,223 +599,6 @@ class AHGMH_Admin_Page_Modern {
             </div>
         </div>
         <?php
-    }
-
-    /**
-     * Render combined Reports & Compliance page
-     */
-    public function render_reports_page() {
-        $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'compliance';
-        ?>
-        <div class="wrap ahgmh-admin-modern">
-            <h1 class="ahgmh-page-title">
-                <span class="dashicons dashicons-chart-bar"></span>
-                <?php echo esc_html__('Berichte & Compliance', 'abschussplan-hgmh'); ?>
-            </h1>
-
-            <nav class="nav-tab-wrapper">
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-reports&tab=compliance')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'compliance' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Abschussplan-Erfuellung', 'abschussplan-hgmh'); ?>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-reports&tab=reports')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'reports' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Berichte erstellen', 'abschussplan-hgmh'); ?>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-reports&tab=schedules')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'schedules' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Geplante Berichte', 'abschussplan-hgmh'); ?>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-reports&tab=statistics')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'statistics' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Seitenaufrufe', 'abschussplan-hgmh'); ?>
-                </a>
-            </nav>
-
-            <div class="ahgmh-tab-content">
-                <?php
-                switch ($active_tab) {
-                    case 'reports':
-                        $this->render_reports_tab();
-                        break;
-                    case 'schedules':
-                        $this->render_schedules_tab();
-                        break;
-                    case 'statistics':
-                        $this->render_statistics_tab();
-                        break;
-                    case 'compliance':
-                    default:
-                        $this->render_compliance_tab();
-                        break;
-                }
-                ?>
-            </div>
-        </div>
-        <?php
-    }
-
-    /**
-     * Render compliance tab content
-     */
-    private function render_compliance_tab() {
-        $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
-        $database = abschussplan_hgmh()->database;
-        $all_meldegruppen = $database->get_all_meldegruppen();
-
-        $filters = array(
-            'season' => isset($_GET['season']) ? sanitize_text_field($_GET['season']) : '',
-            'species' => isset($_GET['species']) ? sanitize_text_field($_GET['species']) : '',
-            'meldegruppe' => isset($_GET['meldegruppe']) ? sanitize_text_field($_GET['meldegruppe']) : '',
-        );
-
-        $progress = $this->get_species_progress();
-        $total_current = 0;
-        $total_limit = 0;
-        foreach ($progress as $p) {
-            $total_current += $p['current'];
-            $total_limit += $p['limit'];
-        }
-        $overall_pct = $total_limit > 0 ? round(($total_current / $total_limit) * 100, 1) : 0;
-        $overall_status = $overall_pct >= 100 ? 'exceeded' : ($overall_pct >= 80 ? 'warning' : 'good');
-
-        $compliance_data = array(
-            'filters' => $filters,
-            'summary' => array(
-                'overall' => array(
-                    'total_current' => $total_current,
-                    'total_limit' => $total_limit,
-                    'total_remaining' => max(0, $total_limit - $total_current),
-                    'percentage' => $overall_pct,
-                    'status' => $overall_status,
-                ),
-            ),
-            'compliance' => array('compliance' => array()),
-            'by_meldegruppe' => array('meldegruppen' => array()),
-        );
-
-        foreach ($progress as $p) {
-            $pct = $p['limit'] > 0 ? round(($p['current'] / $p['limit']) * 100, 1) : 0;
-            $status = $pct >= 100 ? 'exceeded' : ($pct >= 80 ? 'warning' : 'good');
-            $compliance_data['compliance']['compliance'][] = array(
-                'species' => $p['species'],
-                'total' => array(
-                    'current' => $p['current'],
-                    'limit' => $p['limit'],
-                    'percentage' => $pct,
-                    'status' => $status,
-                ),
-                'categories' => array(),
-            );
-        }
-
-        $compliance_view = new AHGMH_Compliance_View();
-        $compliance_view->render_dashboard($compliance_data, $species_list, $all_meldegruppen);
-    }
-
-    /**
-     * Render reports tab
-     */
-    private function render_reports_tab() {
-        $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
-        $database = abschussplan_hgmh()->database;
-        $all_meldegruppen = $database->get_all_meldegruppen();
-
-        $current_year = intval(date('Y'));
-        $current_month = intval(date('m'));
-        $season_start = $current_month < 4 ? $current_year - 1 : $current_year;
-        $hunting_seasons = array();
-        for ($i = 0; $i < 5; $i++) {
-            $s = $season_start - $i;
-            $hunting_seasons[] = array(
-                'value' => $s . '-' . ($s + 1),
-                'label' => $s . '/' . ($s + 1),
-            );
-        }
-        $current_season = array('value' => $season_start . '-' . ($season_start + 1));
-
-        $reports_view = new AHGMH_Reports_View();
-        $reports_view->render_reports_page(array(
-            'species_list' => $species_list,
-            'meldegruppen' => $all_meldegruppen,
-            'current_season' => $current_season,
-            'hunting_seasons' => $hunting_seasons,
-        ));
-    }
-
-    /**
-     * Render scheduled reports tab
-     */
-    private function render_schedules_tab() {
-        $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
-        $database = abschussplan_hgmh()->database;
-        $all_meldegruppen = $database->get_all_meldegruppen();
-
-        $schedule_view = new AHGMH_Schedule_Settings_View();
-        $schedule_view->render_settings_page(array(
-            'schedules' => array(),
-            'species_list' => $species_list,
-            'meldegruppen' => $all_meldegruppen,
-            'stats' => array(
-                'total_schedules' => 0,
-                'enabled_schedules' => 0,
-                'total_executions' => 0,
-                'successful_executions' => 0,
-            ),
-        ));
-    }
-
-    /**
-     * Render page views statistics tab
-     */
-    private function render_statistics_tab() {
-        $summary = array(
-            'total_views' => 0,
-            'unique_users' => 0,
-            'authenticated_views' => 0,
-            'anonymous_views' => 0,
-            'views_by_shortcode' => array(),
-            'top_users' => array(),
-            'views_by_day' => array(),
-        );
-        $page_views = array();
-        $total_count = 0;
-        $total_pages = 0;
-        $page = 1;
-        $filters = array(
-            'shortcode_name' => '',
-            'date_from' => '',
-            'date_to' => '',
-        );
-        $log_ip_addresses = false;
-        $anonymize_ip = true;
-        $auto_cleanup_enabled = false;
-        $auto_cleanup_days = 90;
-
-        if (class_exists('AHGMH_Page_View_Tracker')) {
-            $tracker = new AHGMH_Page_View_Tracker();
-            if (method_exists($tracker, 'get_summary')) {
-                $summary = $tracker->get_summary();
-            }
-            if (method_exists($tracker, 'get_page_views')) {
-                $filters = array(
-                    'shortcode_name' => isset($_GET['shortcode_name']) ? sanitize_text_field($_GET['shortcode_name']) : '',
-                    'date_from' => isset($_GET['date_from']) ? sanitize_text_field($_GET['date_from']) : '',
-                    'date_to' => isset($_GET['date_to']) ? sanitize_text_field($_GET['date_to']) : '',
-                );
-                $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-                $per_page = 50;
-                $page_views = $tracker->get_page_views($filters, $per_page, ($page - 1) * $per_page);
-                $total_count = $tracker->count_page_views($filters);
-                $total_pages = ceil($total_count / $per_page);
-            }
-            $log_ip_addresses = get_option('ahgmh_log_ip_addresses', false);
-            $anonymize_ip = get_option('ahgmh_anonymize_ip', true);
-            $auto_cleanup_enabled = get_option('ahgmh_auto_cleanup_enabled', false);
-            $auto_cleanup_days = get_option('ahgmh_auto_cleanup_days', 90);
-        }
-
-        include plugin_dir_path(__FILE__) . 'views/page-views-statistics.php';
     }
 
     /**
@@ -4714,7 +4435,7 @@ class AHGMH_Admin_Page_Modern {
                                             class="limit-input" />
                                 </td>
                             <?php endforeach; ?>
-                            <td class="gesamt-cell" id="gesamt_<?php echo sanitize_title($category); ?>">
+                            <td class="gesamt-cell" id="gesamt_<?php echo esc_attr(preg_replace('/[^a-z0-9]/', '_', strtolower($category))); ?>">
                                 <?php 
                                 $gesamt = 0;
                                 foreach ($meldegruppen as $gruppe) {
@@ -4830,11 +4551,19 @@ class AHGMH_Admin_Page_Modern {
                     if (method_exists($database, 'count_submissions_by_species_category_meldegruppe')) {
                         $ist_values[$meldegruppe][$category] = $database->count_submissions_by_species_category_meldegruppe($wildart, $category, $meldegruppe);
                     } else {
-                        // Fallback: use simple database query
+                        // Fallback: use normalized schema with JOINs
                         global $wpdb;
-                        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+                        $s = $wpdb->prefix . 'hgmh_submissions_v2';
+                        $w = $wpdb->prefix . 'hgmh_wildarten';
+                        $e = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+                        $m = $wpdb->prefix . 'hgmh_meldegruppen';
                         $count = $wpdb->get_var($wpdb->prepare(
-                            "SELECT SUM(anzahl) FROM $table_name WHERE art = %s AND kategorie = %s AND meldegruppe = %s",
+                            "SELECT COUNT(*) FROM $s s
+                             INNER JOIN $w w ON s.wildart_id = w.id
+                             LEFT JOIN $e e ON s.eigenjagdbezirk_id = e.id
+                             LEFT JOIN $m m ON e.meldegruppe_id = m.id
+                             WHERE w.name = %s AND s.category = %s AND m.name = %s
+                             AND s.status = 'approved'",
                             $wildart, $category, $meldegruppe
                         ));
                         $ist_values[$meldegruppe][$category] = intval($count);
@@ -5587,41 +5316,17 @@ class AHGMH_Admin_Page_Modern {
     }
 
     /**
-     * Render Import / Export page with tabs
+     * Render Export page
      */
     public function render_import() {
-        $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'import';
         ?>
         <div class="wrap ahgmh-admin-modern">
             <h1 class="ahgmh-page-title">
-                <span class="dashicons dashicons-upload"></span>
-                <?php echo esc_html__('Import / Export', 'abschussplan-hgmh'); ?>
+                <span class="dashicons dashicons-download"></span>
+                <?php echo esc_html__('Export', 'abschussplan-hgmh'); ?>
             </h1>
-
-            <nav class="nav-tab-wrapper">
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-import&tab=import')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'import' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Daten importieren', 'abschussplan-hgmh'); ?>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-import&tab=export')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'export' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('CSV Export', 'abschussplan-hgmh'); ?>
-                </a>
-            </nav>
-
             <div class="ahgmh-tab-content">
-                <?php
-                switch ($active_tab) {
-                    case 'export':
-                        $this->render_admin_csv_export();
-                        break;
-                    case 'import':
-                    default:
-                        $import_view = new AHGMH_Import_View();
-                        $import_view->render_import_page();
-                        break;
-                }
-                ?>
+                <?php $this->render_admin_csv_export(); ?>
             </div>
         </div>
         <?php

@@ -40,10 +40,11 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
-require_once AHGMH_PLUGIN_DIR . 'includes/class-feature-flags.php';
+
+// Core repositories (used by services below).
+require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-submission-repository.php';
 
 // Moderation services.
-require_once AHGMH_PLUGIN_DIR . 'includes/services/class-submission-repository.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/services/class-email-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/services/class-moderation-service.php';
 
@@ -76,17 +77,12 @@ if ( is_admin() ) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-moderation-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-column-mapper.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-ljv-template-detector.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-import-validator.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-bulk-operations-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-undo-service.php';
 
     // Admin views.
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-wildart-view.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/views/class-import-view.php';
 
     // Admin controllers.
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-dashboard-controller.php';
@@ -97,8 +93,6 @@ if ( is_admin() ) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-feature-flags-controller.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-import-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-bulk-operations-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-undo-controller.php';
 
@@ -246,10 +240,8 @@ class Abschussplan_HGMH {
 
         // Modular controllers -- each registers its own AJAX handlers.
         new AHGMH_Page_Views_Controller();
-        new AHGMH_Feature_Flags_Controller();
         new AHGMH_Jagdbezirk_Controller();
         new AHGMH_Export_Controller();
-        new AHGMH_Import_Controller();
         new AHGMH_Bulk_Operations_Controller();
         new AHGMH_Undo_Controller();
         new AHGMH_Wildart_Controller();
