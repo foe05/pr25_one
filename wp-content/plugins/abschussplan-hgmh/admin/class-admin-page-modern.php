@@ -352,10 +352,6 @@ class AHGMH_Admin_Page_Modern {
                             <span class="dashicons dashicons-admin-settings"></span>
                             <?php echo esc_html__('Einstellungen', 'abschussplan-hgmh'); ?>
                         </a>
-                        <a href="<?php echo admin_url('admin.php?page=abschussplan-hgmh-data&tab=analysis'); ?>" class="quick-action-btn">
-                            <span class="dashicons dashicons-chart-bar"></span>
-                            <?php echo esc_html__('Auswertungen', 'abschussplan-hgmh'); ?>
-                        </a>
                     </div>
                 </div>
 
@@ -430,37 +426,8 @@ class AHGMH_Admin_Page_Modern {
                 <?php echo esc_html__('Meldungen verwalten', 'abschussplan-hgmh'); ?>
             </h1>
 
-            <nav class="nav-tab-wrapper">
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-data&tab=submissions')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'submissions' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Alle Meldungen', 'abschussplan-hgmh'); ?>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-data&tab=overview')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'overview' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Uebersicht', 'abschussplan-hgmh'); ?>
-                </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-data&tab=analysis')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'analysis' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Auswertungen', 'abschussplan-hgmh'); ?>
-                </a>
-            </nav>
-
             <div class="ahgmh-tab-content">
-                <?php
-                switch ($active_tab) {
-                    case 'overview':
-                        $this->render_data_overview();
-                        break;
-                    case 'submissions':
-                        $this->render_submissions_table();
-                        break;
-                    case 'analysis':
-                        $this->render_data_analysis();
-                        break;
-                    default:
-                        $this->render_submissions_table();
-                }
-                ?>
+                <?php $this->render_submissions_table(); ?>
             </div>
         </div>
         <?php
@@ -984,61 +951,6 @@ class AHGMH_Admin_Page_Modern {
     }
 
     /**
-     * Render data overview tab
-     */
-    private function render_data_overview() {
-        $database = abschussplan_hgmh()->database;
-        $stats = $this->get_dashboard_stats();
-        $last_wus = $this->get_last_wus_info();
-        $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
-        ?>
-        <div class="ahgmh-panel">
-            <h2><?php echo esc_html__('Datenübersicht', 'abschussplan-hgmh'); ?></h2>
-            
-            <div class="ahgmh-stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo esc_html($stats['total_submissions']); ?></div>
-                    <div class="stat-label"><?php echo esc_html__('Gesamte Meldungen', 'abschussplan-hgmh'); ?></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo esc_html($stats['submissions_this_month']); ?></div>
-                    <div class="stat-label"><?php echo esc_html__('Meldungen diesen Monat', 'abschussplan-hgmh'); ?></div>
-                </div>
-                <?php if ($last_wus): ?>
-                <div class="stat-card highlight">
-                    <div class="stat-number"><?php echo esc_html($last_wus['wus_number']); ?></div>
-                    <div class="stat-label"><?php echo esc_html__('Letzte WUS-Nummer', 'abschussplan-hgmh'); ?></div>
-                    <div class="stat-details">
-                        <?php echo esc_html($last_wus['species']); ?> - 
-                        <?php echo esc_html(mysql2date('d.m.Y H:i', $last_wus['submitted_at'])); ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- Export Actions -->
-            <div class="ahgmh-export-section">
-                <h3><?php echo esc_html__('Daten exportieren', 'abschussplan-hgmh'); ?></h3>
-                <p><?php echo esc_html__('Exportieren Sie Ihre Daten in verschiedenen Formaten:', 'abschussplan-hgmh'); ?></p>
-                
-                <div class="export-buttons">
-                    <button class="button button-primary ahgmh-export-btn" data-format="csv" data-species="">
-                        <span class="dashicons dashicons-download"></span>
-                        <?php echo esc_html__('Alle als CSV exportieren', 'abschussplan-hgmh'); ?>
-                    </button>
-                    <?php foreach ($species_list as $species): ?>
-                        <button class="button button-secondary ahgmh-export-btn" data-format="csv" data-species="<?php echo esc_attr($species); ?>">
-                            <span class="dashicons dashicons-download"></span>
-                            <?php printf(esc_html__('Nur %s als CSV', 'abschussplan-hgmh'), esc_html($species)); ?>
-                        </button>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-        <?php
-    }
-
-    /**
      * Render submissions table tab
      */
     private function render_submissions_table() {
@@ -1190,76 +1102,6 @@ class AHGMH_Admin_Page_Modern {
                     <?php endif; ?>
                 </tbody>
             </table>
-        </div>
-        <?php
-    }
-
-    /**
-     * Render data analysis tab
-     */
-    private function render_data_analysis() {
-        $database = abschussplan_hgmh()->database;
-        $stats = $this->get_dashboard_stats();
-        ?>
-        <div class="ahgmh-panel">
-            <h2><?php echo esc_html__('Datenauswertung', 'abschussplan-hgmh'); ?></h2>
-            
-            <!-- Species Statistics -->
-            <div class="ahgmh-analysis-section">
-                <h3><?php echo esc_html__('Wildarten-Statistiken', 'abschussplan-hgmh'); ?></h3>
-                <div class="species-stats">
-                    <?php foreach ($stats['species_stats'] as $species => $count): ?>
-                        <div class="species-stat-item">
-                            <div class="species-name"><?php echo esc_html($species); ?></div>
-                            <div class="species-count"><?php echo esc_html($count); ?> <?php echo esc_html__('Meldungen', 'abschussplan-hgmh'); ?></div>
-                            <div class="species-bar">
-                                <div class="species-bar-fill" style="width: <?php echo esc_attr(($count / max(1, max($stats['species_stats']))) * 100); ?>%"></div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <!-- Category Analysis -->
-            <div class="ahgmh-analysis-section">
-                <h3><?php echo esc_html__('Kategorien-Analyse', 'abschussplan-hgmh'); ?></h3>
-                <div class="category-grid">
-                    <?php foreach ($stats['category_counts'] as $category => $count): ?>
-                        <div class="category-card">
-                            <div class="category-count"><?php echo esc_html($count); ?></div>
-                            <div class="category-name"><?php echo esc_html($category); ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <!-- Monthly Trend -->
-            <div class="ahgmh-analysis-section">
-                <h3><?php echo esc_html__('Monatlicher Trend', 'abschussplan-hgmh'); ?></h3>
-                <div class="trend-info">
-                    <p><?php printf(
-                        esc_html__('In diesem Monat wurden %s Meldungen erfasst.', 'abschussplan-hgmh'),
-                        '<strong>' . esc_html($stats['submissions_this_month']) . '</strong>'
-                    ); ?></p>
-                    <p><?php printf(
-                        esc_html__('Insgesamt sind %s Meldungen in der Datenbank gespeichert.', 'abschussplan-hgmh'),
-                        '<strong>' . esc_html($stats['total_submissions']) . '</strong>'
-                    ); ?></p>
-                </div>
-            </div>
-
-            <!-- Export for Analysis -->
-            <div class="ahgmh-analysis-section">
-                <h3><?php echo esc_html__('Daten für externe Analyse exportieren', 'abschussplan-hgmh'); ?></h3>
-                <p><?php echo esc_html__('Exportieren Sie Ihre Daten für weitere Analysen in externen Tools:', 'abschussplan-hgmh'); ?></p>
-                
-                <div class="export-buttons">
-                    <button class="button button-primary ahgmh-export-btn" data-format="csv" data-species="">
-                        <span class="dashicons dashicons-chart-bar"></span>
-                        <?php echo esc_html__('Vollständiger Datensatz (CSV)', 'abschussplan-hgmh'); ?>
-                    </button>
-                </div>
-            </div>
         </div>
         <?php
     }
