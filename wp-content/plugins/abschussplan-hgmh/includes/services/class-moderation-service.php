@@ -21,7 +21,7 @@ class HGMH_Moderation_Service {
      * Constructor
      */
     public function __construct() {
-        $this->repository = new AHGMH_Submission_Repository();
+        $this->repository = new HGMH_Submission_Repository();
         $this->email_service = new AHGMH_Email_Service();
     }
 
@@ -36,7 +36,7 @@ class HGMH_Moderation_Service {
     public function approve($submission_id, $obmann_user_id, $comment = '') {
         try {
             // 1. Validate submission exists
-            $submission = $this->repository->get_by_id($submission_id);
+            $submission = $this->repository->find($submission_id);
             if (!$submission) {
                 return new WP_Error(
                     'submission_not_found',
@@ -54,14 +54,14 @@ class HGMH_Moderation_Service {
             }
 
             // 3. Calculate time to approval
-            $time_to_approval = $this->calculate_time_to_approval($submission_id);
+            $time_to_approval = $this->calculate_time_to_approval($submission);
 
             // 4. Update status
             $previous_status = $submission->status;
             $update_fields = [
-                'approved_by' => absint($obmann_user_id),
-                'approved_at' => current_time('mysql'),
-                'time_to_approval' => $time_to_approval
+                'approved_by_user_id' => absint($obmann_user_id),
+                'approved_at'         => current_time('mysql'),
+                'time_to_approval'    => $time_to_approval,
             ];
 
             $result = $this->repository->update_status(
@@ -135,7 +135,7 @@ class HGMH_Moderation_Service {
 
         try {
             // 1. Validate submission exists
-            $submission = $this->repository->get_by_id($submission_id);
+            $submission = $this->repository->find($submission_id);
             if (!$submission) {
                 return new WP_Error(
                     'submission_not_found',
@@ -152,11 +152,12 @@ class HGMH_Moderation_Service {
                 );
             }
 
-            // 3. Update status
+            // 3. Update status — rejection stored via approved_by_user_id/approved_at/approval_comment
             $previous_status = $submission->status;
             $update_fields = [
-                'rejected_by' => absint($obmann_user_id),
-                'rejected_at' => current_time('mysql')
+                'approved_by_user_id' => absint($obmann_user_id),
+                'approved_at'         => current_time('mysql'),
+                'approval_comment'    => sanitize_textarea_field($reason),
             ];
 
             $result = $this->repository->update_status(
@@ -223,7 +224,7 @@ class HGMH_Moderation_Service {
     public function edit($submission_id, $obmann_user_id, $updated_data, $comment = '') {
         try {
             // 1. Validate submission exists
-            $submission = $this->repository->get_by_id($submission_id);
+            $submission = $this->repository->find($submission_id);
             if (!$submission) {
                 return new WP_Error(
                     'submission_not_found',
@@ -249,17 +250,17 @@ class HGMH_Moderation_Service {
                 );
             }
 
-            // 4. Store previous values for history
+            // 4. Store previous values for history (new schema field names)
             $previous_data = [
-                'art' => $submission->art ?? '',
-                'kategorie' => $submission->kategorie ?? '',
-                'anzahl' => $submission->anzahl ?? 0,
-                'datum' => $submission->datum ?? '',
-                'meldegruppe' => $submission->meldegruppe ?? ''
+                'wildart_name'         => $submission->wildart_name ?? '',
+                'category'             => $submission->category ?? '',
+                'harvest_date'         => $submission->harvest_date ?? '',
+                'eigenjagdbezirk_name' => $submission->eigenjagdbezirk_name ?? '',
+                'meldegruppe_name'     => $submission->meldegruppe_name ?? '',
             ];
 
             // 5. Update submission data
-            $result = $this->repository->update_fields($submission_id, $sanitized_data);
+            $result = $this->repository->update($submission_id, $sanitized_data);
 
             if (!$result) {
                 return new WP_Error(
@@ -306,28 +307,28 @@ class HGMH_Moderation_Service {
     private function sanitize_submission_data($data) {
         $sanitized = [];
 
-        if (isset($data['art'])) {
-            $sanitized['art'] = sanitize_text_field($data['art']);
+        if (isset($data['wildart_id'])) {
+            $sanitized['wildart_id'] = absint($data['wildart_id']);
         }
 
-        if (isset($data['kategorie'])) {
-            $sanitized['kategorie'] = sanitize_text_field($data['kategorie']);
+        if (isset($data['eigenjagdbezirk_id'])) {
+            $sanitized['eigenjagdbezirk_id'] = absint($data['eigenjagdbezirk_id']);
         }
 
-        if (isset($data['anzahl'])) {
-            $sanitized['anzahl'] = absint($data['anzahl']);
+        if (isset($data['category'])) {
+            $sanitized['category'] = sanitize_text_field($data['category']);
         }
 
-        if (isset($data['datum'])) {
-            $sanitized['datum'] = sanitize_text_field($data['datum']);
+        if (isset($data['harvest_date'])) {
+            $sanitized['harvest_date'] = sanitize_text_field($data['harvest_date']);
         }
 
-        if (isset($data['meldegruppe'])) {
-            $sanitized['meldegruppe'] = sanitize_text_field($data['meldegruppe']);
+        if (isset($data['wus_number'])) {
+            $sanitized['wus_number'] = sanitize_text_field($data['wus_number']);
         }
 
-        if (isset($data['bemerkung'])) {
-            $sanitized['bemerkung'] = sanitize_textarea_field($data['bemerkung']);
+        if (isset($data['internal_note'])) {
+            $sanitized['internal_note'] = sanitize_textarea_field($data['internal_note']);
         }
 
         return $sanitized;
@@ -339,8 +340,8 @@ class HGMH_Moderation_Service {
      * @param int $submission_id The submission ID
      * @return int Time to approval in minutes
      */
-    private function calculate_time_to_approval($submission_id) {
-        $submitted_at = $this->repository->get_submitted_at($submission_id);
+    private function calculate_time_to_approval($submission) {
+        $submitted_at = $submission->submitted_at ?? null;
 
         if (!$submitted_at) {
             return 0;
@@ -378,31 +379,23 @@ class HGMH_Moderation_Service {
      */
     private function log_to_history($submission_id, $action, $previous_status, $new_status, $moderator_id, $moderator_name, $comment = '') {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_moderation_history';
+        $table_name = $wpdb->prefix . 'hgmh_moderation_history';
+        $moderator  = get_userdata($moderator_id);
 
         try {
             $result = $wpdb->insert(
                 $table_name,
                 [
-                    'submission_id' => absint($submission_id),
-                    'action' => sanitize_text_field($action),
-                    'previous_status' => sanitize_text_field($previous_status),
-                    'new_status' => sanitize_text_field($new_status),
-                    'moderator_id' => absint($moderator_id),
-                    'moderator_name' => sanitize_text_field($moderator_name),
-                    'comment' => sanitize_textarea_field($comment),
-                    'created_at' => current_time('mysql')
+                    'submission_id'       => absint($submission_id),
+                    'action'              => sanitize_text_field($action),
+                    'performed_by_user_id' => absint($moderator_id),
+                    'performed_by_email'  => $moderator ? sanitize_email($moderator->user_email) : null,
+                    'old_status'          => sanitize_text_field($previous_status),
+                    'new_status'          => sanitize_text_field($new_status),
+                    'comment'             => sanitize_textarea_field($comment),
+                    'performed_at'        => current_time('mysql'),
                 ],
-                [
-                    '%d', // submission_id
-                    '%s', // action
-                    '%s', // previous_status
-                    '%s', // new_status
-                    '%d', // moderator_id
-                    '%s', // moderator_name
-                    '%s', // comment
-                    '%s'  // created_at
-                ]
+                ['%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s']
             );
 
             if ($result === false) {
@@ -444,12 +437,12 @@ class HGMH_Moderation_Service {
      */
     private function get_submission_data_for_email($submission) {
         return [
-            'art' => esc_html($submission->art ?? ''),
-            'kategorie' => esc_html($submission->kategorie ?? ''),
-            'anzahl' => absint($submission->anzahl ?? 0),
-            'datum' => esc_html($submission->datum ?? ''),
-            'meldegruppe' => esc_html($submission->meldegruppe ?? ''),
-            'submission_id' => absint($submission->id ?? 0)
+            'wildart'              => esc_html($submission->wildart_name ?? ''),
+            'category'             => esc_html($submission->category ?? ''),
+            'harvest_date'         => esc_html($submission->harvest_date ?? ''),
+            'eigenjagdbezirk'      => esc_html($submission->eigenjagdbezirk_name ?? ''),
+            'meldegruppe'          => esc_html($submission->meldegruppe_name ?? ''),
+            'submission_id'        => absint($submission->id ?? 0),
         ];
     }
 }

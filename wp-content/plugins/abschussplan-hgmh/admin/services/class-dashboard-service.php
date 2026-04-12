@@ -36,89 +36,111 @@ class AHGMH_Dashboard_Service {
      */
     private function calculate_dashboard_stats() {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
-        
+        $s  = $wpdb->prefix . 'hgmh_submissions_v2';
+        $w  = $wpdb->prefix . 'hgmh_wildarten';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
+
         try {
             // Total submissions
-            $total_submissions = $wpdb->get_var("SELECT COUNT(*) FROM `" . esc_sql($table_name) . "`");
-            
+            $total_submissions = (int) $wpdb->get_var("SELECT COUNT(*) FROM $s");
+
             // This month submissions
-            $submissions_this_month = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table_name WHERE MONTH(datum) = %d AND YEAR(datum) = %d",
-                date('n'),
-                date('Y')
+            $submissions_this_month = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $s WHERE MONTH(submitted_at) = %d AND YEAR(submitted_at) = %d",
+                (int) gmdate('n'),
+                (int) gmdate('Y')
             ));
-            
+
             // This week submissions
-            $week_start = date('Y-m-d', strtotime('monday this week'));
-            $submissions_this_week = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table_name WHERE datum >= %s",
+            $week_start = gmdate('Y-m-d', strtotime('monday this week'));
+            $submissions_this_week = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $s WHERE submitted_at >= %s",
                 $week_start
             ));
-            
-            // Species breakdown
+
+            // Species breakdown via JOIN
             $species_stats = $wpdb->get_results(
-                "SELECT art as species, COUNT(*) as count FROM `" . esc_sql($table_name) . "` GROUP BY art ORDER BY count DESC"
+                "SELECT w.name AS species, COUNT(*) AS count
+                 FROM $s s
+                 LEFT JOIN $w w ON s.wildart_id = w.id
+                 GROUP BY w.name
+                 ORDER BY count DESC"
             );
-            
+
             // Recent submissions
             $recent_submissions = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM $table_name ORDER BY created_at DESC LIMIT %d",
+                "SELECT s.*, w.name AS wildart_name, e.name AS eigenjagdbezirk_name, m.name AS meldegruppe_name
+                 FROM $s s
+                 LEFT JOIN $w w ON s.wildart_id = w.id
+                 LEFT JOIN $e e ON s.eigenjagdbezirk_id = e.id
+                 LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+                 LEFT JOIN $m m ON jm.meldegruppe_id = m.id
+                 ORDER BY s.submitted_at DESC
+                 LIMIT %d",
                 5
             ));
-            
-            // Top meldegruppen
+
+            // Top meldegruppen via JOIN
             $top_meldegruppen = $wpdb->get_results(
-                "SELECT meldegruppe, COUNT(*) as count FROM `" . esc_sql($table_name) . "` GROUP BY meldegruppe ORDER BY count DESC LIMIT 5"
+                "SELECT m.name AS meldegruppe, COUNT(*) AS count
+                 FROM $s s
+                 LEFT JOIN $e e ON s.eigenjagdbezirk_id = e.id
+                 LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+                 LEFT JOIN $m m ON jm.meldegruppe_id = m.id
+                 GROUP BY m.name
+                 ORDER BY count DESC
+                 LIMIT 5"
             );
-            
+
             // Monthly trend (last 12 months)
             $monthly_trend = $this->get_monthly_trend();
-            
+
             return [
-                'total_submissions' => absint($total_submissions),
-                'submissions_this_month' => absint($submissions_this_month),
-                'submissions_this_week' => absint($submissions_this_week),
-                'species_stats' => $this->sanitize_stats_array($species_stats),
-                'recent_submissions' => $this->sanitize_submissions_array($recent_submissions),
-                'top_meldegruppen' => $this->sanitize_stats_array($top_meldegruppen),
-                'monthly_trend' => $monthly_trend,
-                'last_updated' => current_time('mysql')
+                'total_submissions'      => $total_submissions,
+                'submissions_this_month' => $submissions_this_month,
+                'submissions_this_week'  => $submissions_this_week,
+                'species_stats'          => $this->sanitize_stats_array($species_stats),
+                'recent_submissions'     => $this->sanitize_submissions_array($recent_submissions),
+                'top_meldegruppen'       => $this->sanitize_stats_array($top_meldegruppen),
+                'monthly_trend'          => $monthly_trend,
+                'last_updated'           => current_time('mysql'),
             ];
-            
+
         } catch (Exception $e) {
             return $this->get_fallback_stats();
         }
     }
-    
+
     /**
      * Get monthly trend data for charts
      */
     private function get_monthly_trend() {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
-        
+        $s = $wpdb->prefix . 'hgmh_submissions_v2';
+
         try {
-            $results = $wpdb->get_results($wpdb->prepare(
-                "SELECT 
-                    DATE_FORMAT(datum, '%%Y-%%m') as month_year,
-                    COUNT(*) as count
-                FROM $table_name 
-                WHERE datum >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-                GROUP BY DATE_FORMAT(datum, '%%Y-%%m')
-                ORDER BY month_year ASC"
-            ));
-            
+            $results = $wpdb->get_results(
+                "SELECT
+                    DATE_FORMAT(submitted_at, '%%Y-%%m') AS month_year,
+                    COUNT(*) AS count
+                 FROM $s
+                 WHERE submitted_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+                 GROUP BY DATE_FORMAT(submitted_at, '%%Y-%%m')
+                 ORDER BY month_year ASC"
+            );
+
             $trend = [];
             foreach ($results as $result) {
                 $trend[] = [
                     'month' => esc_html($result->month_year),
-                    'count' => absint($result->count)
+                    'count' => absint($result->count),
                 ];
             }
-            
+
             return $trend;
-            
+
         } catch (Exception $e) {
             return [];
         }
@@ -154,13 +176,16 @@ class AHGMH_Dashboard_Service {
      */
     private function get_species_count($species) {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
-        
+        $s = $wpdb->prefix . 'hgmh_submissions_v2';
+        $w = $wpdb->prefix . 'hgmh_wildarten';
+
         $count = $wpdb->get_var($wpdb->prepare(
-            "SELECT SUM(anzahl) FROM $table_name WHERE art = %s",
+            "SELECT COUNT(*) FROM $s s
+             INNER JOIN $w w ON s.wildart_id = w.id
+             WHERE w.name = %s AND s.status = 'approved'",
             $species
         ));
-        
+
         return absint($count);
     }
     

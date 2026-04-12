@@ -99,8 +99,6 @@ if (!defined('ABSPATH')) {
             <div class="mb-3">
                 <label for="field5" class="form-label"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
                 <select class="form-select" id="field5" name="field5" required aria-required="true">
-                    <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'abschussplan-hgmh'); ?></option>
-
                     <?php
                     // Get meldegruppen from database with permission filtering
                     $database = abschussplan_hgmh()->database;
@@ -111,13 +109,31 @@ if (!defined('ABSPATH')) {
                         $user_meldegruppe = AHGMH_Permissions_Service::get_user_meldegruppe($user_id, $selected_species);
                         $meldegruppen = $user_meldegruppe ? array($user_meldegruppe) : array();
                     } else {
-                        // Vorstand: Show all meldegruppen configured for this wildart - FIX: use correct source
-                        $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
-                        $meldegruppen = isset($wildart_meldegruppen[$selected_species]) ? $wildart_meldegruppen[$selected_species] : ['Gruppe_A', 'Gruppe_B'];
+                        // Vorstand: Load meldegruppen from normalized DB table (same source as get_jagdbezirke_by_meldegruppe)
+                        global $wpdb;
+                        $wildart_table = $wpdb->prefix . 'hgmh_wildarten';
+                        $meldegruppen_table = $wpdb->prefix . 'hgmh_meldegruppen';
+                        $meldegruppen = $wpdb->get_col($wpdb->prepare(
+                            "SELECT m.name FROM $meldegruppen_table m
+                             JOIN $wildart_table w ON m.wildart_id = w.id
+                             WHERE w.name = %s AND m.is_active = 1
+                             ORDER BY m.name ASC",
+                            $selected_species
+                        ));
+                        // Fallback to WordPress option if DB returns empty
+                        if (empty($meldegruppen)) {
+                            $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
+                            $meldegruppen = isset($wildart_meldegruppen[$selected_species]) ? $wildart_meldegruppen[$selected_species] : [];
+                        }
                     }
 
+                    // Only show placeholder if more than one option exists
+                    if (count($meldegruppen) !== 1) : ?>
+                        <option value="" selected disabled><?php echo esc_html__('Bitte wählen...', 'abschussplan-hgmh'); ?></option>
+                    <?php endif;
+
                     foreach ($meldegruppen as $meldegruppe) : ?>
-                        <option value="<?php echo esc_attr($meldegruppe); ?>">
+                        <option value="<?php echo esc_attr($meldegruppe); ?>" <?php echo count($meldegruppen) === 1 ? 'selected' : ''; ?>>
                             <?php echo esc_html($meldegruppe); ?>
                         </option>
                     <?php endforeach; ?>
@@ -126,6 +142,10 @@ if (!defined('ABSPATH')) {
                 <div class="form-error" role="alert"></div>
             </div>
 
+            <?php
+            // Only render the Jagdbezirk dropdown if any active Jagdbezirke are configured globally
+            $jagdbezirke_configured = !empty($database->get_active_jagdbezirke());
+            if ($jagdbezirke_configured) : ?>
             <!-- Jagdbezirk Dropdown - dynamically populated based on Meldegruppe selection -->
             <div class="mb-3" id="jagdbezirk-container" style="display: none;">
                 <label for="field7" class="form-label"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></label>
@@ -138,6 +158,7 @@ if (!defined('ABSPATH')) {
                     <?php echo esc_html__('Lade Jagdbezirke...', 'abschussplan-hgmh'); ?>
                 </small>
             </div>
+            <?php endif; ?>
 
             <div class="mb-3">
                 <label for="field4" class="form-label"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></label>

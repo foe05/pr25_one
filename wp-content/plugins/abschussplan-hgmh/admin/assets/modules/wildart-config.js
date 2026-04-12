@@ -133,6 +133,40 @@
             }
         });
 
+        // Save Obmann for a Meldegruppe card
+        $(document).on('click', '.mg-save-obmann', function (e) {
+            e.preventDefault();
+            var wildart     = $(this).data('wildart');
+            var meldegruppe = $(this).data('meldegruppe');
+            var userId      = parseInt($(this).closest('.meldegruppe-setup-card').find('.mg-obmann-select').val(), 10);
+            if (!userId) {
+                window.AHGMH.showNotification('Bitte einen Benutzer auswählen.', 'warning');
+                return;
+            }
+            saveObmann(wildart, meldegruppe, userId);
+        });
+
+        // Remove Obmann assignment
+        $(document).on('click', '.mg-remove-obmann', function (e) {
+            e.preventDefault();
+            var wildart = $(this).data('wildart');
+            var userId  = parseInt($(this).data('user-id'), 10);
+            if (confirm('Obmann-Zuweisung entfernen?')) {
+                removeObmann(wildart, userId);
+            }
+        });
+
+        // Save Jagdbezirke for a Meldegruppe card
+        $(document).on('click', '.mg-save-jagdbezirke', function (e) {
+            e.preventDefault();
+            var meldegruppeId  = parseInt($(this).data('meldegruppe-id'), 10);
+            var jagdbezirkIds  = [];
+            $(this).closest('.meldegruppe-setup-card').find('.mg-jagdbezirk-cb:checked').each(function () {
+                jagdbezirkIds.push(parseInt($(this).data('jagdbezirk-id'), 10));
+            });
+            saveJagdbezirkeForMeldegruppe(meldegruppeId, jagdbezirkIds);
+        });
+
         // Load first wildart if available
         var firstWildart = $('.wildart-item').first();
         if (firstWildart.length > 0) {
@@ -295,6 +329,7 @@
             success: function (response) {
                 if (response.success) {
                     $detailPanel.html(response.data);
+                    updateGesamt();
                 } else {
                     $detailPanel.html('<div class="error">Fehler beim Laden: ' + (response.data || 'Unbekannter Fehler') + '</div>');
                 }
@@ -378,10 +413,10 @@
             success: function (response) {
                 if (response.success) {
                     window.AHGMH.showNotification('Meldegruppen gespeichert!', 'success');
-                    // TEMP FIX: Reload entire page instead of just config
+                    // Reload config panel so cards and limits table reflect new meldegruppen
                     setTimeout(function () {
-                        location.reload();
-                    }, 1000);
+                        loadWildartConfig(wildart);
+                    }, 500);
                 } else {
                     window.AHGMH.showNotification('Fehler beim Speichern: ' + (response.data || 'Unbekannter Fehler'), 'error');
                 }
@@ -391,6 +426,105 @@
             },
             complete: function () {
                 $btn.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+
+    /**
+     * Save Obmann assignment for a Meldegruppe
+     */
+    function saveObmann(wildart, meldegruppe, userId) {
+        var $card = $('.meldegruppe-setup-card[data-meldegruppe="' + meldegruppe + '"]');
+        var $btn  = $card.find('.mg-save-obmann');
+        $btn.prop('disabled', true).text('Speichern...');
+
+        $.ajax({
+            url:  ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action:      'ahgmh_assign_obmann',
+                nonce:       ahgmh_admin.nonce,
+                wildart:     wildart,
+                meldegruppe: meldegruppe,
+                user_id:     userId
+            },
+            success: function (response) {
+                if (response.success) {
+                    window.AHGMH.showNotification(response.data.message || 'Obmann gespeichert!', 'success');
+                    loadWildartConfig(wildart);
+                } else {
+                    window.AHGMH.showNotification('Fehler: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                }
+            },
+            error: function () {
+                window.AHGMH.showNotification('Netzwerkfehler beim Speichern des Obmanns.', 'error');
+            },
+            complete: function () {
+                $btn.prop('disabled', false).text('Speichern');
+            }
+        });
+    }
+
+    /**
+     * Remove Obmann assignment for a Wildart/User combination
+     */
+    function removeObmann(wildart, userId) {
+        $.ajax({
+            url:  ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action:  'ahgmh_remove_obmann',
+                nonce:   ahgmh_admin.nonce,
+                wildart: wildart,
+                user_id: userId
+            },
+            success: function (response) {
+                if (response.success) {
+                    window.AHGMH.showNotification('Obmann-Zuweisung entfernt!', 'success');
+                    loadWildartConfig(wildart);
+                } else {
+                    window.AHGMH.showNotification('Fehler: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                }
+            },
+            error: function () {
+                window.AHGMH.showNotification('Netzwerkfehler beim Entfernen.', 'error');
+            }
+        });
+    }
+
+    /**
+     * Save which Jagdbezirke belong to a specific Meldegruppe
+     */
+    function saveJagdbezirkeForMeldegruppe(meldegruppeId, jagdbezirkIds) {
+        if (!meldegruppeId) {
+            window.AHGMH.showNotification('Bitte zuerst Meldegruppen speichern (DB-ID fehlt).', 'warning');
+            return;
+        }
+
+        var $btn = $('.mg-save-jagdbezirke[data-meldegruppe-id="' + meldegruppeId + '"]');
+        $btn.prop('disabled', true).text('Speichern...');
+
+        $.ajax({
+            url:  ahgmh_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action:          'ahgmh_save_meldegruppe_jagdbezirke',
+                nonce:           ahgmh_admin.nonce,
+                meldegruppe_id:  meldegruppeId,
+                jagdbezirk_ids:  jagdbezirkIds
+            },
+            success: function (response) {
+                if (response.success) {
+                    window.AHGMH.showNotification('Jagdbezirke gespeichert!', 'success');
+                } else {
+                    window.AHGMH.showNotification('Fehler: ' + (response.data || 'Unbekannter Fehler'), 'error');
+                }
+            },
+            error: function () {
+                window.AHGMH.showNotification('Netzwerkfehler beim Speichern der Jagdbezirke.', 'error');
+            },
+            complete: function () {
+                $btn.prop('disabled', false).text('Jagdbezirke speichern');
             }
         });
     }

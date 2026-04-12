@@ -149,6 +149,15 @@ class AHGMH_Admin_Controller {
             true
         );
 
+        wp_localize_script(
+            'ahgmh-core',
+            'ahgmh_admin',
+            array(
+                'ajax_url' => admin_url( 'admin-ajax.php' ),
+                'nonce'    => wp_create_nonce( 'ahgmh_admin_nonce' ),
+            )
+        );
+
         if ( 'toplevel_page_abschussplan-hgmh' === $hook ) {
             wp_enqueue_script(
                 'ahgmh-dashboard',

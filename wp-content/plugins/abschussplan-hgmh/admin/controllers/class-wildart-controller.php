@@ -48,6 +48,28 @@ class AHGMH_Wildart_Controller {
         add_action( 'wp_ajax_ahgmh_save_wildart_meldegruppen', array( $this, 'ajax_save_wildart_meldegruppen' ) );
         add_action( 'wp_ajax_ahgmh_toggle_limit_mode', array( $this, 'ajax_toggle_limit_mode' ) );
         add_action( 'wp_ajax_ahgmh_save_limits', array( $this, 'ajax_save_limits' ) );
+
+        // Obmann assignment (Einrichtung tab — usermeta path via AHGMH_Permissions_Service)
+        add_action( 'wp_ajax_ahgmh_assign_obmann',            array( $this, 'ajax_assign_obmann' ) );
+        add_action( 'wp_ajax_ahgmh_remove_obmann',            array( $this, 'ajax_remove_obmann' ) );
+
+        // Jagdbezirk ↔ Meldegruppe assignment (Einrichtung tab)
+        add_action( 'wp_ajax_ahgmh_assign_jagdbezirk_meldegruppe', array( $this, 'ajax_assign_jagdbezirk_meldegruppe' ) );
+        add_action( 'wp_ajax_ahgmh_save_meldegruppe_jagdbezirke', array( $this, 'ajax_save_meldegruppe_jagdbezirke' ) );
+
+        // Keep DB tables in sync whenever Meldegruppen are saved via the Wildart-Config UI
+        add_action( 'ahgmh_meldegruppen_updated', array( $this, 'on_meldegruppen_updated' ), 10, 2 );
+    }
+
+    /**
+     * Sync DB Meldegruppen table when options-based config is saved.
+     *
+     * @param string $wildart     Wildart name
+     * @param array  $meldegruppen Updated list of Meldegruppe names
+     */
+    public function on_meldegruppen_updated( $wildart, $meldegruppen ) {
+        $repo = new AHGMH_Jagdbezirk_Repository();
+        $repo->sync_meldegruppen_for_wildart( $wildart, $meldegruppen );
     }
 
     /**
@@ -247,76 +269,135 @@ class AHGMH_Wildart_Controller {
     }
 
     /**
-     * AJAX: Assign Obmann to a meldegruppe.
+     * AJAX: Assign Obmann to a meldegruppe (Einrichtung tab).
+     * Uses the canonical usermeta path via AHGMH_Permissions_Service.
      *
-     * Test: POST with wildart, meldegruppe, user_id. Expect success.
+     * POST: wildart, meldegruppe, user_id
      */
     public function ajax_assign_obmann() {
         AHGMH_Validation_Service::verify_ajax_request();
 
-        try {
-            $wildart     = sanitize_text_field( $_POST['wildart'] ?? '' );
-            $meldegruppe = sanitize_text_field( $_POST['meldegruppe'] ?? '' );
-            $user_id     = absint( $_POST['user_id'] ?? 0 );
+        $wildart     = sanitize_text_field( $_POST['wildart'] ?? '' );
+        $meldegruppe = sanitize_text_field( $_POST['meldegruppe'] ?? '' );
+        $user_id     = absint( $_POST['user_id'] ?? 0 );
 
-            if ( empty( $wildart ) || empty( $meldegruppe ) || $user_id <= 0 ) {
-                wp_send_json_error( __( 'Ungültige Parameter', 'abschussplan-hgmh' ) );
-                return;
-            }
+        if ( empty( $wildart ) || empty( $meldegruppe ) || $user_id <= 0 ) {
+            wp_send_json_error( __( 'Ungültige Parameter', 'abschussplan-hgmh' ) );
+            return;
+        }
 
-            $result = $this->wildart_service->assign_obmann( $wildart, $meldegruppe, $user_id );
+        $user = get_user_by( 'ID', $user_id );
+        if ( ! $user ) {
+            wp_send_json_error( __( 'Benutzer nicht gefunden', 'abschussplan-hgmh' ) );
+            return;
+        }
 
-            if ( $result ) {
-                wp_send_json_success( array(
-                    'message' => __( 'Obmann erfolgreich zugewiesen', 'abschussplan-hgmh' ),
-                ) );
-            } else {
-                wp_send_json_error( __( 'Fehler beim Zuweisen des Obmanns', 'abschussplan-hgmh' ) );
-            }
-        } catch ( Exception $e ) {
-            wp_send_json_error(
-                __( 'Fehler beim Zuweisen: ', 'abschussplan-hgmh' ) . esc_html( $e->getMessage() )
-            );
+        if ( AHGMH_Permissions_Service::assign_user_to_meldegruppe( $user_id, $wildart, $meldegruppe ) ) {
+            wp_send_json_success( [
+                'message'      => sprintf(
+                    __( '%s erfolgreich als Obmann für %s (%s) zugewiesen', 'abschussplan-hgmh' ),
+                    $user->display_name, $meldegruppe, $wildart
+                ),
+                'user_id'      => $user_id,
+                'display_name' => $user->display_name,
+                'meldegruppe'  => $meldegruppe,
+            ] );
+        } else {
+            wp_send_json_error( __( 'Fehler beim Zuweisen des Obmanns', 'abschussplan-hgmh' ) );
         }
     }
 
     /**
-     * AJAX: Remove an Obmann assignment.
+     * AJAX: Remove an Obmann assignment (Einrichtung tab).
+     * Uses the canonical usermeta path via AHGMH_Permissions_Service.
      *
-     * Test: POST with wildart, meldegruppe. Expect success.
+     * POST: wildart, user_id
      */
     public function ajax_remove_obmann() {
         AHGMH_Validation_Service::verify_ajax_request();
 
-        try {
-            $wildart     = sanitize_text_field( $_POST['wildart'] ?? '' );
-            $meldegruppe = sanitize_text_field( $_POST['meldegruppe'] ?? '' );
+        $wildart = sanitize_text_field( $_POST['wildart'] ?? '' );
+        $user_id = absint( $_POST['user_id'] ?? 0 );
 
-            if ( empty( $wildart ) || empty( $meldegruppe ) ) {
-                wp_send_json_error( __( 'Ungültige Parameter', 'abschussplan-hgmh' ) );
-                return;
-            }
+        if ( empty( $wildart ) || $user_id <= 0 ) {
+            wp_send_json_error( __( 'Ungültige Parameter', 'abschussplan-hgmh' ) );
+            return;
+        }
 
-            $result = $this->wildart_service->remove_obmann_assignment( $wildart, $meldegruppe );
-
-            if ( $result ) {
-                wp_send_json_success( array(
-                    'message' => __( 'Obmann-Zuweisung erfolgreich entfernt', 'abschussplan-hgmh' ),
-                ) );
-            } else {
-                wp_send_json_error( __( 'Fehler beim Entfernen der Obmann-Zuweisung', 'abschussplan-hgmh' ) );
-            }
-        } catch ( Exception $e ) {
-            wp_send_json_error(
-                __( 'Fehler beim Entfernen: ', 'abschussplan-hgmh' ) . esc_html( $e->getMessage() )
-            );
+        if ( AHGMH_Permissions_Service::remove_user_assignment( $user_id, $wildart ) ) {
+            wp_send_json_success( [
+                'message' => __( 'Obmann-Zuweisung erfolgreich entfernt', 'abschussplan-hgmh' ),
+                'user_id' => $user_id,
+            ] );
+        } else {
+            wp_send_json_error( __( 'Fehler beim Entfernen der Obmann-Zuweisung', 'abschussplan-hgmh' ) );
         }
     }
 
     /**
-     * AJAX: Get Obmann assignments.
+     * AJAX: Assign a Jagdbezirk to one or more Meldegruppen (Einrichtung tab).
      *
-     * Test: POST with optional wildart. Expect success with assignments array.
+     * POST: jagdbezirk_id (int), meldegruppe_ids (int[])
+     */
+    public function ajax_assign_jagdbezirk_meldegruppe() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        $jagdbezirk_id  = absint( $_POST['jagdbezirk_id'] ?? 0 );
+        $meldegruppe_ids = isset( $_POST['meldegruppe_ids'] ) ? array_map( 'absint', (array) $_POST['meldegruppe_ids'] ) : [];
+
+        if ( $jagdbezirk_id <= 0 ) {
+            wp_send_json_error( __( 'Ungültige Jagdbezirk-ID', 'abschussplan-hgmh' ) );
+            return;
+        }
+
+        $repo   = new AHGMH_Jagdbezirk_Repository();
+        $result = $repo->assign_meldegruppen( $jagdbezirk_id, $meldegruppe_ids );
+
+        if ( $result ) {
+            wp_send_json_success( [
+                'message'        => __( 'Jagdbezirk-Zuweisung erfolgreich gespeichert', 'abschussplan-hgmh' ),
+                'jagdbezirk_id'  => $jagdbezirk_id,
+                'meldegruppe_ids' => $meldegruppe_ids,
+            ] );
+        } else {
+            wp_send_json_error( __( 'Fehler beim Speichern der Jagdbezirk-Zuweisung', 'abschussplan-hgmh' ) );
+        }
+    }
+
+    /**
+     * AJAX: Save which Jagdbezirke belong to a specific Meldegruppe (Einrichtung tab).
+     *
+     * POST: meldegruppe_id (int), jagdbezirk_ids (int[])
+     */
+    public function ajax_save_meldegruppe_jagdbezirke() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        $meldegruppe_id  = absint( $_POST['meldegruppe_id'] ?? 0 );
+        $jagdbezirk_ids  = isset( $_POST['jagdbezirk_ids'] ) ? array_map( 'absint', (array) $_POST['jagdbezirk_ids'] ) : [];
+
+        if ( $meldegruppe_id <= 0 ) {
+            wp_send_json_error( __( 'Ungültige Meldegruppe-ID', 'abschussplan-hgmh' ) );
+            return;
+        }
+
+        $repo   = new AHGMH_Jagdbezirk_Repository();
+        $result = $repo->save_jagdbezirke_for_meldegruppe( $meldegruppe_id, $jagdbezirk_ids );
+
+        if ( $result ) {
+            wp_send_json_success( [
+                'message'         => __( 'Jagdbezirke erfolgreich gespeichert', 'abschussplan-hgmh' ),
+                'meldegruppe_id'  => $meldegruppe_id,
+                'jagdbezirk_ids' => $jagdbezirk_ids,
+            ] );
+        } else {
+            wp_send_json_error( __( 'Fehler beim Speichern der Jagdbezirke', 'abschussplan-hgmh' ) );
+        }
+    }
+
+    /**
+     * AJAX: Get Obmann assignments (legacy stub, kept for backwards compat).
+     *
+     * POST: optional wildart
      */
     public function ajax_get_obmann_assignments() {
         AHGMH_Validation_Service::verify_ajax_request();

@@ -39,7 +39,7 @@ class AHGMH_Activity_Logger {
      */
     public function __construct() {
         global $wpdb;
-        $this->table_name = $wpdb->prefix . 'ahgmh_activity_log';
+        $this->table_name = $wpdb->prefix . 'hgmh_activity_log';
     }
 
     /**
@@ -60,11 +60,11 @@ class AHGMH_Activity_Logger {
         $ip_hash    = $ip_address ? hash( 'sha256', $ip_address ) : null;
 
         $data = array(
-            'user_id'    => get_current_user_id(),
-            'action'     => sanitize_text_field( $action ),
-            'context'    => wp_json_encode( $context ),
-            'ip_hash'    => $ip_hash,
-            'created_at' => current_time( 'mysql' ),
+            'user_id'         => get_current_user_id(),
+            'action'          => sanitize_text_field( $action ),
+            'details'         => wp_json_encode( $context ),
+            'ip_address_hash' => $ip_hash,
+            'created_at'      => current_time( 'mysql' ),
         );
 
         $result = $wpdb->insert(

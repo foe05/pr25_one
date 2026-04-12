@@ -372,6 +372,61 @@ class AHGMH_Jagdbezirk_Repository {
     }
 
     /**
+     * Sync which Jagdbezirke belong to a specific Meldegruppe.
+     *
+     * For each Jagdbezirk:
+     *   - if in $jagdbezirk_ids → ensure the junction row exists
+     *   - if NOT in $jagdbezirk_ids → remove the junction row
+     *
+     * @param int   $meldegruppe_id  DB ID of the Meldegruppe
+     * @param int[] $jagdbezirk_ids  IDs of Jagdbezirke that should be in this Meldegruppe
+     * @return bool
+     */
+    public function save_jagdbezirke_for_meldegruppe( int $meldegruppe_id, array $jagdbezirk_ids ): bool {
+        if ( $meldegruppe_id <= 0 ) {
+            return false;
+        }
+
+        $this->ensure_junction_table();
+
+        $jagdbezirk_ids = array_filter( array_map( 'absint', $jagdbezirk_ids ) );
+
+        // Remove the junction row for any Jagdbezirk that is no longer in this Meldegruppe
+        if ( ! empty( $jagdbezirk_ids ) ) {
+            $placeholders = implode( ', ', array_fill( 0, count( $jagdbezirk_ids ), '%d' ) );
+            $this->wpdb->query(
+                $this->wpdb->prepare(
+                    "DELETE FROM {$this->junction_table}
+                     WHERE meldegruppe_id = %d AND jagdbezirk_id NOT IN ($placeholders)",
+                    array_merge( [ $meldegruppe_id ], $jagdbezirk_ids )
+                )
+            );
+        } else {
+            // All removed
+            $this->wpdb->delete( $this->junction_table, [ 'meldegruppe_id' => $meldegruppe_id ], [ '%d' ] );
+        }
+
+        // Insert any missing rows (INSERT IGNORE to avoid duplicates)
+        foreach ( $jagdbezirk_ids as $jb_id ) {
+            $exists = $this->wpdb->get_var(
+                $this->wpdb->prepare(
+                    "SELECT id FROM {$this->junction_table} WHERE jagdbezirk_id = %d AND meldegruppe_id = %d",
+                    $jb_id, $meldegruppe_id
+                )
+            );
+            if ( ! $exists ) {
+                $this->wpdb->insert(
+                    $this->junction_table,
+                    [ 'jagdbezirk_id' => $jb_id, 'meldegruppe_id' => $meldegruppe_id, 'created_at' => current_time( 'mysql' ) ],
+                    [ '%d', '%d', '%s' ]
+                );
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Get all Meldegruppen assigned to a Jagdbezirk
      *
      * @param int $jagdbezirk_id Jagdbezirk ID
@@ -399,10 +454,186 @@ class AHGMH_Jagdbezirk_Repository {
      */
     public function get_all_meldegruppen($only_active = true) {
         $where_clause = $only_active ? "WHERE is_active = 1" : "";
+        $query        = "SELECT * FROM {$this->meldegruppen_table} {$where_clause} ORDER BY name ASC";
 
-        $query = "SELECT * FROM {$this->meldegruppen_table} {$where_clause} ORDER BY name ASC";
+        $results = $this->wpdb->get_results($query, ARRAY_A) ?: [];
 
-        return $this->wpdb->get_results($query, ARRAY_A) ?: [];
+        // If the DB table is empty, sync from WordPress options so the Jagdbezirk
+        // form can see Meldegruppen configured via the Wildart-Config UI.
+        if ( empty( $results ) ) {
+            $this->sync_meldegruppen_from_options();
+            $results = $this->wpdb->get_results($query, ARRAY_A) ?: [];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Sync Meldegruppen for a single Wildart into the DB tables.
+     * Called immediately after saving Meldegruppen via the Wildart-Config UI.
+     *
+     * @param string $wildart_name Wildart name
+     * @param array  $meldegruppen Array of Meldegruppe names
+     */
+    public function sync_meldegruppen_for_wildart( string $wildart_name, array $meldegruppen ): void {
+        $wildarten_table = $this->wpdb->prefix . 'hgmh_wildarten';
+        $wildart_name    = sanitize_text_field( $wildart_name );
+
+        if ( empty( $wildart_name ) || empty( $meldegruppen ) ) {
+            return;
+        }
+
+        // Get or create the Wildart row
+        $wildart_id = (int) $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT id FROM {$wildarten_table} WHERE name = %s",
+                $wildart_name
+            )
+        );
+
+        if ( ! $wildart_id ) {
+            $this->wpdb->insert(
+                $wildarten_table,
+                [ 'name' => $wildart_name, 'is_active' => 1 ],
+                [ '%s', '%d' ]
+            );
+            $wildart_id = (int) $this->wpdb->insert_id;
+        }
+
+        if ( ! $wildart_id ) {
+            return;
+        }
+
+        // Collect the names that should exist after this save
+        $desired_names = [];
+        foreach ( $meldegruppen as $meldegruppe_name ) {
+            $meldegruppe_name = sanitize_text_field( trim( $meldegruppe_name ) );
+            if ( empty( $meldegruppe_name ) ) {
+                continue;
+            }
+            $desired_names[] = $meldegruppe_name;
+
+            $exists = $this->wpdb->get_var(
+                $this->wpdb->prepare(
+                    "SELECT id FROM {$this->meldegruppen_table} WHERE wildart_id = %d AND name = %s",
+                    $wildart_id,
+                    $meldegruppe_name
+                )
+            );
+
+            if ( ! $exists ) {
+                $this->wpdb->insert(
+                    $this->meldegruppen_table,
+                    [ 'wildart_id' => $wildart_id, 'name' => $meldegruppe_name, 'is_active' => 1 ],
+                    [ '%d', '%s', '%d' ]
+                );
+            } else {
+                // Ensure the row is active
+                $this->wpdb->update(
+                    $this->meldegruppen_table,
+                    [ 'is_active' => 1 ],
+                    [ 'wildart_id' => $wildart_id, 'name' => $meldegruppe_name ],
+                    [ '%d' ],
+                    [ '%d', '%s' ]
+                );
+            }
+        }
+
+        // Deactivate rows that were removed from the list
+        if ( ! empty( $desired_names ) ) {
+            $placeholders = implode( ', ', array_fill( 0, count( $desired_names ), '%s' ) );
+            $this->wpdb->query(
+                $this->wpdb->prepare(
+                    "UPDATE {$this->meldegruppen_table}
+                     SET is_active = 0
+                     WHERE wildart_id = %d AND name NOT IN ($placeholders)",
+                    array_merge( [ $wildart_id ], $desired_names )
+                )
+            );
+        } else {
+            // All meldegruppen removed — deactivate all for this wildart
+            $this->wpdb->update(
+                $this->meldegruppen_table,
+                [ 'is_active' => 0 ],
+                [ 'wildart_id' => $wildart_id ],
+                [ '%d' ],
+                [ '%d' ]
+            );
+        }
+    }
+
+    /**
+     * Sync Meldegruppen (and their Wildarten) from WordPress options into the
+     * DB tables used by the Jagdbezirk system.
+     *
+     * Bridges the gap between the options-based Wildart-Config and the
+     * DB-based Jagdbezirk system. Safe to call multiple times (INSERT IGNORE).
+     */
+    private function sync_meldegruppen_from_options() {
+        $wildarten_table  = $this->wpdb->prefix . 'hgmh_wildarten';
+        $all_meldegruppen = get_option( 'ahgmh_wildart_meldegruppen', [] );
+
+        if ( empty( $all_meldegruppen ) || ! is_array( $all_meldegruppen ) ) {
+            return;
+        }
+
+        foreach ( $all_meldegruppen as $wildart_name => $meldegruppen ) {
+            if ( empty( $meldegruppen ) || ! is_array( $meldegruppen ) ) {
+                continue;
+            }
+
+            $wildart_name = sanitize_text_field( $wildart_name );
+
+            // Get or create Wildart row in hgmh_wildarten
+            $wildart_id = (int) $this->wpdb->get_var(
+                $this->wpdb->prepare(
+                    "SELECT id FROM {$wildarten_table} WHERE name = %s",
+                    $wildart_name
+                )
+            );
+
+            if ( ! $wildart_id ) {
+                $this->wpdb->insert(
+                    $wildarten_table,
+                    [ 'name' => $wildart_name, 'is_active' => 1 ],
+                    [ '%s', '%d' ]
+                );
+                $wildart_id = (int) $this->wpdb->insert_id;
+            }
+
+            if ( ! $wildart_id ) {
+                continue;
+            }
+
+            // Insert each Meldegruppe (skip duplicates)
+            foreach ( $meldegruppen as $meldegruppe_name ) {
+                $meldegruppe_name = sanitize_text_field( trim( $meldegruppe_name ) );
+                if ( empty( $meldegruppe_name ) ) {
+                    continue;
+                }
+
+                $exists = $this->wpdb->get_var(
+                    $this->wpdb->prepare(
+                        "SELECT id FROM {$this->meldegruppen_table}
+                         WHERE wildart_id = %d AND name = %s",
+                        $wildart_id,
+                        $meldegruppe_name
+                    )
+                );
+
+                if ( ! $exists ) {
+                    $this->wpdb->insert(
+                        $this->meldegruppen_table,
+                        [
+                            'wildart_id' => $wildart_id,
+                            'name'       => $meldegruppe_name,
+                            'is_active'  => 1,
+                        ],
+                        [ '%d', '%s', '%d' ]
+                    );
+                }
+            }
+        }
     }
 
     /**

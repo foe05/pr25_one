@@ -68,14 +68,109 @@ class AHGMH_Wildart_Service {
     
     /**
      * Get wildart configuration
+     *
+     * Returns everything the Einrichtung view needs to render the detail panel:
+     *  - categories, meldegruppen (option-based)
+     *  - limit_mode, limits
+     *  - wp_users           → all WP users for the Obmann dropdown
+     *  - obmann_assignments → meldegruppe_name → {user_id, display_name}
+     *  - jagdbezirke        → all Jagdbezirke with meldegruppe_ids[]
+     *  - meldegruppen_db    → DB rows for this wildart (id, name)
      */
     public function get_wildart_config($wildart) {
+        $meldegruppen = $this->get_meldegruppen($wildart);
+
         return [
-            'categories' => $this->get_categories($wildart),
-            'meldegruppen' => $this->get_meldegruppen($wildart),
-            'limit_mode' => $this->get_limit_mode($wildart),
-            'limits' => $this->get_limits($wildart)
+            'categories'         => $this->get_categories($wildart),
+            'meldegruppen'       => $meldegruppen,
+            'limit_mode'         => $this->get_limit_mode($wildart),
+            'limits'             => $this->get_limits($wildart),
+            'wp_users'           => $this->get_wp_users_for_dropdown(),
+            'obmann_assignments' => $this->get_obmann_assignments_for_wildart($wildart),
+            'jagdbezirke'        => $this->get_all_jagdbezirke_with_assignments(),
+            'meldegruppen_db'    => $this->get_meldegruppen_db_rows($wildart, $meldegruppen),
         ];
+    }
+
+    /**
+     * Get all WordPress users as a simple array for dropdown rendering.
+     */
+    private function get_wp_users_for_dropdown() {
+        $users  = get_users(['fields' => ['ID', 'display_name', 'user_login'], 'orderby' => 'display_name']);
+        $result = [];
+        foreach ($users as $user) {
+            $result[] = [
+                'id'           => (int) $user->ID,
+                'display_name' => $user->display_name,
+                'user_login'   => $user->user_login,
+            ];
+        }
+        return $result;
+    }
+
+    /**
+     * Build a meldegruppe_name → {user_id, display_name} map for this wildart.
+     * Reads from the canonical usermeta storage (ahgmh_assigned_meldegruppe_{wildart}).
+     */
+    private function get_obmann_assignments_for_wildart($wildart) {
+        $meta_key    = 'ahgmh_assigned_meldegruppe_' . sanitize_key($wildart);
+        $assignments = [];
+
+        $users = get_users([
+            'meta_key'     => $meta_key,
+            'meta_compare' => '!=',
+            'meta_value'   => '',
+            'fields'       => ['ID', 'display_name'],
+        ]);
+
+        foreach ($users as $user) {
+            $assigned_mg = get_user_meta((int) $user->ID, $meta_key, true);
+            if (!empty($assigned_mg)) {
+                $assignments[$assigned_mg] = [
+                    'user_id'      => (int) $user->ID,
+                    'display_name' => $user->display_name,
+                ];
+            }
+        }
+
+        return $assignments;
+    }
+
+    /**
+     * Get all Jagdbezirke (including inactive) with their current meldegruppe_ids[].
+     */
+    private function get_all_jagdbezirke_with_assignments() {
+        $repo = new AHGMH_Jagdbezirk_Repository();
+        return $repo->get_all(false);
+    }
+
+    /**
+     * Get Meldegruppe DB rows (id + name) for a specific wildart.
+     * Matches DB rows against the option-based list to filter by wildart.
+     *
+     * @param string $wildart
+     * @param array  $meldegruppen Option-based meldegruppe names for this wildart
+     * @return array [{id, name}]
+     */
+    private function get_meldegruppen_db_rows($wildart, $meldegruppen) {
+        if (empty($meldegruppen)) {
+            return [];
+        }
+
+        $repo   = new AHGMH_Jagdbezirk_Repository();
+        $all_db = $repo->get_all_meldegruppen(false);
+        $result = [];
+
+        foreach ($all_db as $row) {
+            if (in_array($row['name'], $meldegruppen, true)) {
+                $result[] = [
+                    'id'   => (int) $row['id'],
+                    'name' => $row['name'],
+                ];
+            }
+        }
+
+        return $result;
     }
     
     /**
@@ -138,6 +233,12 @@ class AHGMH_Wildart_Service {
 
         // Also update the global meldegruppen list for backwards compatibility
         $this->update_global_meldegruppen_list();
+
+        // Notify Jagdbezirk repository to re-sync DB tables on next access
+        // by clearing any cached state (the repository syncs lazily on empty table).
+        // Direct sync: reset the hgmh_meldegruppen table entries for this wildart
+        // so get_all_meldegruppen() triggers a full re-sync next time.
+        do_action( 'ahgmh_meldegruppen_updated', $wildart, array_values( $meldegruppen ) );
 
         return $result;
     }

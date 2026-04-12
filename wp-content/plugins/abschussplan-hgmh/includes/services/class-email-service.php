@@ -8,7 +8,7 @@
  * - Approval confirmations to submitters
  * - Rejection notifications to submitters
  *
- * All emails are logged to the activity log (ahgmh_email_log table)
+ * All emails are logged to the activity log (hgmh_email_log table)
  */
 
 // Exit if accessed directly
@@ -256,7 +256,7 @@ class AHGMH_Email_Service {
      */
     private static function log_email($email_type, $recipient, $subject, $submission_id = null) {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_email_log';
+        $table_name = $wpdb->prefix . 'hgmh_email_log';
 
         $result = $wpdb->insert(
             $table_name,
@@ -310,7 +310,7 @@ class AHGMH_Email_Service {
      */
     public static function get_submission_emails($submission_id) {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_email_log';
+        $table_name = $wpdb->prefix . 'hgmh_email_log';
 
         $results = $wpdb->get_results(
             $wpdb->prepare(
@@ -331,7 +331,7 @@ class AHGMH_Email_Service {
      */
     public static function get_email_logs($filters = array()) {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_email_log';
+        $table_name = $wpdb->prefix . 'hgmh_email_log';
 
         $where_conditions = array();
         $where_values = array();

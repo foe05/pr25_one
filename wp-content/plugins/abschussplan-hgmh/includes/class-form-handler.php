@@ -18,7 +18,6 @@ class AHGMH_Form_Handler {
     public function __construct() {
         // Register shortcodes for displaying the form and other components
         add_shortcode('abschuss_form', array($this, 'render_form'));
-        add_shortcode('abschuss_table', array($this, 'render_table'));
         add_shortcode('abschuss_summary_table', array($this, 'render_summary_table'));
         add_shortcode('abschuss_admin', array($this, 'render_admin'));
         add_shortcode('abschuss_summary', array($this, 'render_summary'));
@@ -71,10 +70,6 @@ class AHGMH_Form_Handler {
             return '<div class="alert alert-warning">Parameter "species" ist erforderlich für [abschuss_form]. Beispiel: [abschuss_form species="Rotwild"]</div>';
         }
 
-        // Log page view
-        $logger = new AHGMH_Page_View_Logger();
-        $logger->log_page_view('abschuss_form', $atts);
-        
         // Check permissions with new 3-level system
         if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_form', $atts)) {
             $user_id = get_current_user_id();
@@ -146,10 +141,6 @@ class AHGMH_Form_Handler {
             $atts,
             'abschuss_table'
         );
-
-        // Log page view
-        $logger = new AHGMH_Page_View_Logger();
-        $logger->log_page_view('abschuss_table', $atts);
 
         // Check permissions with new 3-level system
         if (!AHGMH_Permissions_Service::can_access_shortcode('abschuss_table', $atts)) {
@@ -245,19 +236,15 @@ class AHGMH_Form_Handler {
             'abschuss_summary_table'
         );
 
-        // Log page view
-        $logger = new AHGMH_Page_View_Logger();
-        $logger->log_page_view('abschuss_summary_table', $atts);
-
         // No permission check - this is public
         
         // Get current page and limit - check URL params first, then use shortcode attributes
         // URL params allow pagination to work properly
         $page = isset($_GET['abschuss_page']) ? max(1, intval($_GET['abschuss_page'])) : intval($atts['page']);
         $limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : intval($atts['limit']);
-        
+
         // Get submissions data without permission filtering
-        // Bug #13b & #14: Only show approved submissions in public summary table
+        // Only show approved submissions in public summary table
         $database = abschussplan_hgmh()->database;
         $species = sanitize_text_field($atts['species']);
         $meldegruppe = sanitize_text_field($atts['meldegruppe']);
@@ -347,10 +334,6 @@ class AHGMH_Form_Handler {
             'meldegruppe' => ''     // Optional - empty means all meldegruppen (filters by jagdbezirk internally)
         ), $atts, 'abschuss_summary');
 
-        // Log page view
-        $logger = new AHGMH_Page_View_Logger();
-        $logger->log_page_view('abschuss_summary', $atts);
-
         $selected_species = sanitize_text_field($atts['species']);
         $selected_meldegruppe = sanitize_text_field($atts['meldegruppe']);
         $user_id = get_current_user_id();
@@ -426,32 +409,30 @@ class AHGMH_Form_Handler {
         // Get current user
         $current_user = wp_get_current_user();
 
-        // Get form data
-        $game_species = isset($_POST['game_species']) ? sanitize_text_field($_POST['game_species']) : 'Rotwild';
-        $field1 = isset($_POST['field1']) ? sanitize_text_field($_POST['field1']) : ''; // Abschussdatum
-        $field2 = isset($_POST['field2']) ? sanitize_text_field($_POST['field2']) : ''; // Abschuss
-        $field3 = isset($_POST['field3']) ? sanitize_text_field($_POST['field3']) : ''; // WUS (optional)
-        $field4 = isset($_POST['field4']) ? sanitize_textarea_field($_POST['field4']) : ''; // Bemerkung (optional)
-        $meldegruppe = isset($_POST['field5']) ? sanitize_text_field($_POST['field5']) : ''; // Meldegruppe (for validation)
-        $field6 = isset($_POST['field6']) ? sanitize_textarea_field($_POST['field6']) : ''; // Interne Notiz (optional)
-        $field7 = isset($_POST['field7']) ? sanitize_text_field($_POST['field7']) : ''; // Jagdbezirk (new)
-
-        // field5 stores the Jagdbezirk name (for database compatibility with JOIN queries)
-        $field5 = $field7;
+        // Get form data using actual column names
+        $game_species  = isset($_POST['game_species']) ? sanitize_text_field($_POST['game_species'])    : 'Rotwild';
+        $harvest_date  = isset($_POST['field1'])       ? sanitize_text_field($_POST['field1'])          : '';
+        $category      = isset($_POST['field2'])       ? sanitize_text_field($_POST['field2'])          : '';
+        $wus_number    = isset($_POST['field3'])       ? sanitize_text_field($_POST['field3'])          : '';
+        $notes         = isset($_POST['field4'])       ? sanitize_textarea_field($_POST['field4'])      : '';
+        $meldegruppe   = isset($_POST['field5'])       ? sanitize_text_field($_POST['field5'])          : '';
+        $internal_note = isset($_POST['field6'])       ? sanitize_textarea_field($_POST['field6'])      : '';
+        $eigenjagdbezirk = isset($_POST['field7'])     ? sanitize_text_field($_POST['field7'])          : '';
+        // Treat 'undefined' string as empty (sent by jQuery when element doesn't exist in DOM)
+        if ($eigenjagdbezirk === 'undefined') {
+            $eigenjagdbezirk = '';
+        }
 
         // Validate data
         $errors = array();
 
-        // Required fields
-        if (empty($field1)) {
+        if (empty($harvest_date)) {
             $errors['field1'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
-            // Validate date format and ensure it's not in the future
             try {
-                $selected_date = new DateTime($field1);
+                $selected_date = new DateTime($harvest_date);
                 $tomorrow = new DateTime('tomorrow');
                 $tomorrow->setTime(0, 0, 0);
-
                 if ($selected_date >= $tomorrow) {
                     $errors['field1'] = __('Das Datum darf nicht in der Zukunft liegen.', 'abschussplan-hgmh');
                 }
@@ -460,84 +441,65 @@ class AHGMH_Form_Handler {
             }
         }
 
-        if (empty($field2)) {
+        if (empty($category)) {
             $errors['field2'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
-            // Validate dropdown value is in the allowed list (use dynamic categories for the species)
             $categories_key = 'ahgmh_categories_' . sanitize_key($game_species);
-            $categories = get_option($categories_key, array());
-
-            if (!in_array($field2, $categories)) {
+            $valid_categories = get_option($categories_key, array());
+            if (!in_array($category, $valid_categories)) {
                 $errors['field2'] = __('Bitte waehlen Sie einen gueltigen Wert aus.', 'abschussplan-hgmh');
             }
         }
 
-        // Validate Meldegruppe (field5 in form) - required field
         if (empty($meldegruppe)) {
             $errors['field5'] = __('Dieses Feld ist erforderlich.', 'abschussplan-hgmh');
         } else {
-            // Validate that the selected Meldegruppe exists in the current wildart configuration
             $wildart_meldegruppen = get_option('ahgmh_wildart_meldegruppen', []);
-            $valid_meldegruppen = isset($wildart_meldegruppen[$game_species]) ? $wildart_meldegruppen[$game_species] : ['Gruppe_A', 'Gruppe_B'];
-
+            $valid_meldegruppen = isset($wildart_meldegruppen[$game_species]) ? $wildart_meldegruppen[$game_species] : [];
             if (!in_array($meldegruppe, $valid_meldegruppen)) {
                 $errors['field5'] = __('Bitte waehlen Sie eine gueltige Meldegruppe aus.', 'abschussplan-hgmh');
             }
         }
 
-        // Validate Jagdbezirk (field7) - required field
-        if (empty($field7)) {
-            $errors['field7'] = __('Bitte waehlen Sie einen Jagdbezirk aus.', 'abschussplan-hgmh');
-        } else {
-            // Validate that the selected Jagdbezirk belongs to the selected Meldegruppe
+        if (!empty($eigenjagdbezirk)) {
             $database = abschussplan_hgmh()->database;
             $valid_jagdbezirke = $database->get_jagdbezirke_by_meldegruppe($meldegruppe);
             $valid_jagdbezirk_names = array_column($valid_jagdbezirke, 'jagdbezirk');
-
-            if (!in_array($field7, $valid_jagdbezirk_names)) {
+            if (!in_array($eigenjagdbezirk, $valid_jagdbezirk_names)) {
                 $errors['field7'] = __('Bitte waehlen Sie einen gueltigen Jagdbezirk aus.', 'abschussplan-hgmh');
             }
         }
 
-        // Validate WUS to ensure it's an integer if provided and within range
-        if (!empty($field3)) {
-            if (!is_numeric($field3)) {
+        if (!empty($wus_number)) {
+            if (!is_numeric($wus_number)) {
                 $errors['field3'] = __('WUS muss eine ganze Zahl sein.', 'abschussplan-hgmh');
-            } elseif ($field3 < 1000000 || $field3 > 9999999) {
+            } elseif ($wus_number < 1000000 || $wus_number > 9999999) {
                 $errors['field3'] = __('WUS muss zwischen 1000000 und 9999999 liegen.', 'abschussplan-hgmh');
+            } else {
+                $database = abschussplan_hgmh()->database;
+                if ($database->check_wus_exists($wus_number)) {
+                    $errors['field3'] = __('Diese WUS-Nummer ist bereits vergeben. Bitte geben Sie eine andere WUS-Nummer an.', 'abschussplan-hgmh');
+                }
             }
         }
-        
-        // Check if WUS number is unique (if provided)
-        if (!empty($field3) && is_numeric($field3)) {
-            $database = abschussplan_hgmh()->database;
-            $existing_wus = $database->check_wus_exists($field3);
-            if ($existing_wus) {
-                $errors['field3'] = __('Diese WUS-Nummer ist bereits vergeben. Bitte geben Sie eine andere WUS-Nummer an.', 'abschussplan-hgmh');
-            }
-        }
-        
-        // Note: Categories are always allowed regardless of limits
-        // Visual indication of limit status is handled in the frontend
 
-        // If there are errors, return them
         if (!empty($errors)) {
             wp_send_json_error(array(
                 'message' => __('Bitte beheben Sie die Fehler im Formular.', 'abschussplan-hgmh'),
-                'errors' => $errors
+                'errors'  => $errors
             ));
         }
 
-        // Process form data
         $data = array(
-            'user_id' => $current_user->ID,
-            'game_species' => $game_species,
-            'field1' => $field1,
-            'field2' => $field2,
-            'field3' => $field3,
-            'field4' => $field4,
-            'field5' => $field5,
-            'field6' => $field6
+            'user_id'        => $current_user->ID,
+            'game_species'   => $game_species,
+            'harvest_date'   => $harvest_date,
+            'category'       => $category,
+            'wus_number'     => $wus_number,
+            'notes'          => $notes,
+            'eigenjagdbezirk' => $eigenjagdbezirk,
+            'internal_note'  => $internal_note,
+            'status'         => 'approved', // Logged-in Obmann submissions are auto-approved
         );
         
         $database = abschussplan_hgmh()->database;
@@ -1280,20 +1242,6 @@ class AHGMH_Form_Handler {
      * Export submissions as CSV
      */
     public function export_csv() {
-        // Verify user has permission to export
-        if (!is_user_logged_in()) {
-            wp_send_json_error(array(
-                'message' => __('Sie müssen angemeldet sein, um Daten zu exportieren.', 'abschussplan-hgmh')
-            ));
-        }
-
-        // Verify nonce for security
-        if (!isset($_GET['nonce']) || !wp_verify_nonce(sanitize_text_field($_GET['nonce']), 'ahgmh_form_nonce')) {
-            wp_send_json_error(array(
-                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
-            ));
-        }
-
         try {
             // Sanitize input parameters
             $species = isset($_GET['species']) ? sanitize_text_field($_GET['species']) : '';
@@ -1306,46 +1254,52 @@ class AHGMH_Form_Handler {
             // Get database instance
             $database = abschussplan_hgmh()->database;
             
-            // Build query conditions
+            // Build query conditions (new normalized schema)
             $conditions = array();
             $params = array();
-            
+
             if (!empty($species)) {
-                $conditions[] = 'game_species = %s';
+                $conditions[] = 'w.name = %s';
                 $params[] = $species;
             }
-            
+
             if (!empty($from_date)) {
-                $conditions[] = 'DATE(field1) >= %s';
+                $conditions[] = 'DATE(s.harvest_date) >= %s';
                 $params[] = $from_date;
             }
-            
+
             if (!empty($to_date)) {
-                $conditions[] = 'DATE(field1) <= %s';
+                $conditions[] = 'DATE(s.harvest_date) <= %s';
                 $params[] = $to_date;
             }
-            
-            // Build WHERE clause
-            $where_clause = '';
-            if (!empty($conditions)) {
-                $where_clause = 'WHERE ' . implode(' AND ', $conditions);
-            }
-            
-            // Get submissions using WordPress database
+
+            $where_clause = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
+
+            // Query against the normalized hgmh_submissions_v2 schema
             global $wpdb;
-            $table_name = $database->get_table_name();
-            
-            $query = "SELECT s.id, s.game_species, s.field1, s.field2, s.field3, s.field4, s.field5, s.user_id, s.created_at, 
-                             j.meldegruppe
-                      FROM {$table_name} s 
-                      LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk 
-                      {$where_clause} 
-                      ORDER BY s.created_at DESC";
-            
+            $table_name      = $database->get_table_name();
+            $wildarten_table  = $wpdb->prefix . 'hgmh_wildarten';
+            $ejb_table        = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+            $jm_table         = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+            $meldegruppen_tbl = $wpdb->prefix . 'hgmh_meldegruppen';
+
+            $query = "SELECT s.id, s.submitted_by_user_id AS user_id, s.submitted_at AS created_at,
+                             s.category, s.harvest_date, s.wus_number, s.internal_note,
+                             w.name AS wildart_name,
+                             e.name AS eigenjagdbezirk_name,
+                             m.name AS meldegruppe_name
+                      FROM {$table_name} s
+                      LEFT JOIN $wildarten_table  w ON s.wildart_id = w.id
+                      LEFT JOIN $ejb_table        e ON s.eigenjagdbezirk_id = e.id
+                      LEFT JOIN $jm_table         jm ON e.id = jm.jagdbezirk_id
+                      LEFT JOIN $meldegruppen_tbl m ON jm.meldegruppe_id = m.id
+                      {$where_clause}
+                      ORDER BY s.submitted_at DESC";
+
             if (!empty($params)) {
                 $query = $wpdb->prepare($query, $params);
             }
-            
+
             $submissions = $wpdb->get_results($query, ARRAY_A);
             
             // Generate filename
@@ -1418,21 +1372,20 @@ class AHGMH_Form_Handler {
             
             // Write data rows
             foreach ($submissions as $submission) {
-                // Get user display name
                 $user = get_userdata($submission['user_id']);
                 $created_by = $user ? $user->display_name : 'System';
-                
+
                 fputcsv($output, array(
                     $submission['id'],
-                    $submission['game_species'],
-                    $submission['field1'],      // Abschussdatum
-                    $submission['field2'],      // Abschuss
-                    $submission['field3'],      // WUS
-                    $submission['field5'],      // Jagdbezirk
-                    $submission['meldegruppe'] ?? '', // Meldegruppe
-                    $submission['field4'],      // Bemerkung
+                    $submission['wildart_name'],
+                    $submission['harvest_date'],
+                    $submission['category'],
+                    $submission['wus_number'],
+                    $submission['eigenjagdbezirk_name'],
+                    $submission['meldegruppe_name'],
+                    $submission['internal_note'],
                     $created_by,
-                    $submission['created_at']
+                    $submission['created_at'],
                 ));
             }
             
@@ -1483,20 +1436,6 @@ class AHGMH_Form_Handler {
      * Used by the abschuss_form shortcode to dynamically load Jagdbezirke
      */
     public function ajax_get_jagdbezirke_by_meldegruppe() {
-        // Check if user is logged in
-        if (!is_user_logged_in()) {
-            wp_send_json_error(array(
-                'message' => __('Sie muessen angemeldet sein.', 'abschussplan-hgmh')
-            ));
-        }
-
-        // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'ahgmh_form_nonce')) {
-            wp_send_json_error(array(
-                'message' => __('Sicherheitscheck fehlgeschlagen.', 'abschussplan-hgmh')
-            ));
-        }
-
         // Get the meldegruppe parameter
         $meldegruppe = isset($_POST['meldegruppe']) ? sanitize_text_field($_POST['meldegruppe']) : '';
 

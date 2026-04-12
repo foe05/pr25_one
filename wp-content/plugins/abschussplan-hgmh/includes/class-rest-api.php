@@ -336,14 +336,14 @@ class AHGMH_REST_API {
         $formatted_submissions = array_map(function($submission) {
             return array(
                 'id' => intval($submission['id']),
-                'species' => $submission['game_species'],
-                'date' => $submission['field1'], // Abschussdatum
-                'category' => $submission['field2'], // Kategorie
-                'wus' => $submission['field3'], // WUS (optional)
-                'jagdbezirk' => $submission['field5'], // Jagdbezirk
-                'bemerkung' => $submission['field4'], // Bemerkung
-                'created_at' => $submission['created_at']
-                // Note: field6 (interne_notiz) is NOT exposed to public API
+                'species' => $submission['wildart_name'] ?? '',
+                'date' => $submission['harvest_date'] ?? '',
+                'category' => $submission['category'] ?? '',
+                'wus' => $submission['wus_number'] ?? '',
+                'jagdbezirk' => $submission['eigenjagdbezirk_name'] ?? '',
+                'meldegruppe' => $submission['meldegruppe_name'] ?? '',
+                'created_at' => $submission['submitted_at'] ?? ''
+                // Note: internal_note is NOT exposed to public API
             );
         }, $submissions);
 
@@ -423,28 +423,30 @@ class AHGMH_REST_API {
      */
     public function get_jagdbezirke($request) {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
 
-        // Get all active jagdbezirke
+        // Get all active eigenjagdbezirke grouped by meldegruppe (via junction table)
         $results = $wpdb->get_results(
-            "SELECT jagdbezirk, meldegruppe, wildart, bemerkung
-             FROM {$table_name}
-             WHERE ungueltig = 0 AND active = 1
-             ORDER BY meldegruppe, jagdbezirk",
+            "SELECT e.name as jagdbezirk, m.name as meldegruppe
+             FROM {$e} e
+             LEFT JOIN {$jm} jm ON e.id = jm.jagdbezirk_id
+             LEFT JOIN {$m} m ON jm.meldegruppe_id = m.id
+             WHERE e.is_active = 1
+             ORDER BY m.name, e.name",
             ARRAY_A
         );
 
         // Group by meldegruppe
         $grouped = array();
         foreach ($results as $row) {
-            $meldegruppe = $row['meldegruppe'];
+            $meldegruppe = $row['meldegruppe'] ?? '';
             if (!isset($grouped[$meldegruppe])) {
                 $grouped[$meldegruppe] = array();
             }
             $grouped[$meldegruppe][] = array(
-                'jagdbezirk' => $row['jagdbezirk'],
-                'wildart' => $row['wildart'],
-                'bemerkung' => $row['bemerkung']
+                'jagdbezirk' => $row['jagdbezirk']
             );
         }
 
@@ -535,14 +537,15 @@ class AHGMH_REST_API {
 
         // Create submission
         $data = array(
-            'user_id' => $user_id,
-            'game_species' => $species,
-            'field1' => $date,
-            'field2' => $category,
-            'field3' => $wus,
-            'field4' => $bemerkung,
-            'field5' => $jagdbezirk,
-            'field6' => $interne_notiz
+            'user_id'         => $user_id,
+            'game_species'    => $species,
+            'harvest_date'    => $date,
+            'category'        => $category,
+            'wus_number'      => $wus,
+            'notes'           => $bemerkung,
+            'eigenjagdbezirk' => $jagdbezirk,
+            'internal_note'   => $interne_notiz,
+            'status'          => 'approved',
         );
 
         $database = abschussplan_hgmh()->database;
@@ -576,17 +579,22 @@ class AHGMH_REST_API {
         $per_page = min($request->get_param('per_page'), 100);
 
         global $wpdb;
-        $database = abschussplan_hgmh()->database;
-        $table_name = $database->get_table_name();
+        $s = $wpdb->prefix . 'hgmh_submissions_v2';
+        $w = $wpdb->prefix . 'hgmh_wildarten';
+        $e = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
 
         $offset = ($page - 1) * $per_page;
 
-        // Get user's submissions
+        // Get user's submissions with JOINs for names
         $submissions = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT * FROM {$table_name}
-                 WHERE user_id = %d
-                 ORDER BY created_at DESC
+                "SELECT s.id, s.harvest_date, s.category, s.wus_number, s.internal_note,
+                        s.submitted_at, s.status, w.name AS wildart_name, e.name AS eigenjagdbezirk_name
+                 FROM {$s} s
+                 LEFT JOIN {$w} w ON s.wildart_id = w.id
+                 LEFT JOIN {$e} e ON s.eigenjagdbezirk_id = e.id
+                 WHERE s.submitted_by_user_id = %d
+                 ORDER BY s.submitted_at DESC
                  LIMIT %d OFFSET %d",
                 $user_id,
                 $per_page,
@@ -597,7 +605,7 @@ class AHGMH_REST_API {
 
         $total_count = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$table_name} WHERE user_id = %d",
+                "SELECT COUNT(*) FROM {$s} WHERE submitted_by_user_id = %d",
                 $user_id
             )
         );
@@ -606,14 +614,14 @@ class AHGMH_REST_API {
         $formatted_submissions = array_map(function($submission) {
             return array(
                 'id' => intval($submission['id']),
-                'species' => $submission['game_species'],
-                'date' => $submission['field1'],
-                'category' => $submission['field2'],
-                'wus' => $submission['field3'],
-                'jagdbezirk' => $submission['field5'],
-                'bemerkung' => $submission['field4'],
-                'interne_notiz' => $submission['field6'], // Visible to owner
-                'created_at' => $submission['created_at']
+                'species' => $submission['wildart_name'] ?? '',
+                'date' => $submission['harvest_date'] ?? '',
+                'category' => $submission['category'] ?? '',
+                'wus' => $submission['wus_number'] ?? '',
+                'jagdbezirk' => $submission['eigenjagdbezirk_name'] ?? '',
+                'interne_notiz' => $submission['internal_note'] ?? '', // Visible to owner
+                'status' => $submission['status'] ?? '',
+                'created_at' => $submission['submitted_at'] ?? ''
             );
         }, $submissions);
 
@@ -685,26 +693,30 @@ class AHGMH_REST_API {
         $to_date = $request->get_param('to_date');
         $format = $request->get_param('format');
 
-        $database = abschussplan_hgmh()->database;
         global $wpdb;
-        $table_name = $database->get_table_name();
+        $s = $wpdb->prefix . 'hgmh_submissions_v2';
+        $w  = $wpdb->prefix . 'hgmh_wildarten';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
+        $u  = $wpdb->users;
 
         // Build query
         $where_conditions = array();
         $params = array();
 
         if (!empty($species)) {
-            $where_conditions[] = 'game_species = %s';
+            $where_conditions[] = 'w.name = %s';
             $params[] = $species;
         }
 
         if (!empty($from_date)) {
-            $where_conditions[] = 'DATE(field1) >= %s';
+            $where_conditions[] = 'DATE(s.harvest_date) >= %s';
             $params[] = $from_date;
         }
 
         if (!empty($to_date)) {
-            $where_conditions[] = 'DATE(field1) <= %s';
+            $where_conditions[] = 'DATE(s.harvest_date) <= %s';
             $params[] = $to_date;
         }
 
@@ -713,11 +725,17 @@ class AHGMH_REST_API {
             $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
         }
 
-        $query = "SELECT s.*, j.meldegruppe
-                  FROM {$table_name} s
-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+        $query = "SELECT s.id, s.harvest_date, s.category, s.wus_number, s.submitted_at, s.status,
+                         w.name AS wildart_name, e.name AS eigenjagdbezirk_name,
+                         m.name AS meldegruppe_name, u.display_name AS created_by
+                  FROM {$s} s
+                  LEFT JOIN {$w} w  ON s.wildart_id = w.id
+                  LEFT JOIN {$e} e  ON s.eigenjagdbezirk_id = e.id
+                  LEFT JOIN {$jm} jm ON e.id = jm.jagdbezirk_id
+                  LEFT JOIN {$m} m  ON jm.meldegruppe_id = m.id
+                  LEFT JOIN {$u} u  ON s.submitted_by_user_id = u.ID
                   {$where_clause}
-                  ORDER BY s.created_at DESC";
+                  ORDER BY s.submitted_at DESC";
 
         if (!empty($params)) {
             $query = $wpdb->prepare($query, $params);
@@ -726,19 +744,17 @@ class AHGMH_REST_API {
         $submissions = $wpdb->get_results($query, ARRAY_A);
 
         // Format submissions
-        $formatted_submissions = array_map(function($submission) use ($user_id) {
-            $user = get_userdata($submission['user_id']);
+        $formatted_submissions = array_map(function($submission) {
             return array(
                 'id' => intval($submission['id']),
-                'species' => $submission['game_species'],
-                'date' => $submission['field1'],
-                'category' => $submission['field2'],
-                'wus' => $submission['field3'],
-                'jagdbezirk' => $submission['field5'],
-                'meldegruppe' => $submission['meldegruppe'],
-                'bemerkung' => $submission['field4'],
-                'created_by' => $user ? $user->display_name : 'Unbekannt',
-                'created_at' => $submission['created_at']
+                'species' => $submission['wildart_name'] ?? '',
+                'date' => $submission['harvest_date'] ?? '',
+                'category' => $submission['category'] ?? '',
+                'wus' => $submission['wus_number'] ?? '',
+                'jagdbezirk' => $submission['eigenjagdbezirk_name'] ?? '',
+                'meldegruppe' => $submission['meldegruppe_name'] ?? '',
+                'created_by' => $submission['created_by'] ?? 'Unbekannt',
+                'created_at' => $submission['submitted_at'] ?? ''
             );
         }, $submissions);
 

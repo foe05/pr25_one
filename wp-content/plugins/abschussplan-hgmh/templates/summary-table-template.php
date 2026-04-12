@@ -15,6 +15,10 @@ $current_page = isset($_GET['abschuss_page']) ? max(1, intval($_GET['abschuss_pa
 $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : (isset($limit) ? $limit : 10);
 ?>
 
+<?php
+// Pagination query args — only limit, no meldegruppe (filter is shortcode-only, not URL-based)
+$pagination_query_args = array('abschuss_limit' => $current_limit);
+?>
 <div class="abschuss-table-container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0"><?php echo esc_html__('Abschussmeldungen', 'abschussplan-hgmh'); ?></h2>
@@ -45,11 +49,12 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                 <thead>
                     <tr>
                         <th scope="col"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Wildart', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
-                        <th scope="col"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></th>
-                        <th scope="col"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,26 +62,25 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                         <tr>
                             <td data-label="<?php echo esc_attr__('Abschussdatum', 'abschussplan-hgmh'); ?>">
                                 <?php
-                                // Format the date in German format dd.mm.yy
-                                if (!empty($submission['field1'])) {
-                                    $date = DateTime::createFromFormat('Y-m-d', $submission['field1']);
+                                if (!empty($submission['harvest_date'])) {
+                                    $date = DateTime::createFromFormat('Y-m-d H:i:s', $submission['harvest_date']);
+                                    if (!$date) {
+                                        $date = DateTime::createFromFormat('Y-m-d', $submission['harvest_date']);
+                                    }
                                     if ($date) {
                                         echo esc_html($date->format('d.m.y'));
                                     } else {
-                                        echo esc_html($submission['field1']);
+                                        echo esc_html($submission['harvest_date']);
                                     }
                                 }
                                 ?>
                             </td>
-                            <td data-label="<?php echo esc_attr__('Meldegruppe', 'abschussplan-hgmh'); ?>">
-                                <?php echo esc_html($submission['meldegruppe'] ?? ''); ?>
-                            </td>
-                            <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>">
-                                <?php echo esc_html($submission['field5'] ?? ''); ?>
-                            </td>
-                            <td data-label="<?php echo esc_attr__('Abschuss', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field2']); ?></td>
-                            <td data-label="<?php echo esc_attr__('Bemerkung', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field4'] ?? ''); ?></td>
-                            <td data-label="<?php echo esc_attr__('WUS', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field3']); ?></td>
+                            <td data-label="<?php echo esc_attr__('Wildart', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['wildart_name'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Abschuss', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['category'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('WUS', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['wus_number'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Meldegruppe', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['meldegruppe_name'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['eigenjagdbezirk_name'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Bemerkung', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['notes'] ?? ''); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -88,7 +92,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                 <ul class="pagination">
                     <?php if ($current_page > 1) : ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page - 1, 'abschuss_limit' => $current_limit))); ?>" aria-label="<?php echo esc_attr__('Vorherige Seite', 'abschussplan-hgmh'); ?>">
+                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array_merge(array('abschuss_page' => $current_page - 1, 'abschuss_limit' => $current_limit), $pagination_query_args))); ?>" aria-label="<?php echo esc_attr__('Vorherige Seite', 'abschussplan-hgmh'); ?>">
                                 &laquo; <?php echo esc_html__('Zurück', 'abschussplan-hgmh'); ?>
                             </a>
                         </li>
@@ -106,7 +110,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                     // Show first page if we're not close to the beginning
                     if ($start > 1) : ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => 1, 'abschuss_limit' => $current_limit))); ?>">1</a>
+                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array_merge(array('abschuss_page' => 1, 'abschuss_limit' => $current_limit), $pagination_query_args))); ?>">1</a>
                         </li>
                         <?php if ($start > 2) : ?>
                             <li class="page-item disabled">
@@ -122,7 +126,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                             </li>
                         <?php else : ?>
                             <li class="page-item">
-                                <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $i, 'abschuss_limit' => $current_limit))); ?>">
+                                <a class="page-link" href="<?php echo esc_url(add_query_arg(array_merge(array('abschuss_page' => $i, 'abschuss_limit' => $current_limit), $pagination_query_args))); ?>">
                                     <?php echo esc_html($i); ?>
                                 </a>
                             </li>
@@ -139,7 +143,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
                             </li>
                         <?php endif; ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $total_pages, 'abschuss_limit' => $current_limit))); ?>">
+                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array_merge(array('abschuss_page' => $total_pages, 'abschuss_limit' => $current_limit), $pagination_query_args))); ?>">
                                 <?php echo esc_html($total_pages); ?>
                             </a>
                         </li>
@@ -147,7 +151,7 @@ $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_
 
                     <?php if ($current_page < $total_pages) : ?>
                         <li class="page-item">
-                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array('abschuss_page' => $current_page + 1, 'abschuss_limit' => $current_limit))); ?>" aria-label="<?php echo esc_attr__('Nächste Seite', 'abschussplan-hgmh'); ?>">
+                            <a class="page-link" href="<?php echo esc_url(add_query_arg(array_merge(array('abschuss_page' => $current_page + 1, 'abschuss_limit' => $current_limit), $pagination_query_args))); ?>" aria-label="<?php echo esc_attr__('Nächste Seite', 'abschussplan-hgmh'); ?>">
                                 <?php echo esc_html__('Weiter', 'abschussplan-hgmh'); ?> &raquo;
                             </a>
                         </li>

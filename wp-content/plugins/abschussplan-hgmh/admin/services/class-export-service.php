@@ -108,77 +108,71 @@ class AHGMH_Export_Service {
      * @return array Array von Submissions mit allen Feldern
      */
     private function get_submissions_data($filters) {
-        $table_name = $this->wpdb->prefix . 'ahgmh_submissions';
-        $jagdbezirke_table = $this->wpdb->prefix . 'ahgmh_jagdbezirke';
-        $users_table = $this->wpdb->users;
+        $s = $this->wpdb->prefix . 'hgmh_submissions_v2';
+        $w = $this->wpdb->prefix . 'hgmh_wildarten';
+        $e = $this->wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $m = $this->wpdb->prefix . 'hgmh_meldegruppen';
+        $u = $this->wpdb->users;
 
-        // Basis-Query mit JOINs für Meldegruppe und Benutzer
         $query = "SELECT
                     s.id,
-                    s.game_species AS wildart,
-                    s.field2 AS kategorie,
-                    s.field1 AS datum,
-                    s.field3 AS wus_nummer,
-                    j.meldegruppe,
-                    s.field5 AS jagdbezirk,
-                    u.display_name AS erfasser,
-                    s.created_at AS erfassungsdatum,
+                    w.name            AS wildart,
+                    s.category        AS kategorie,
+                    s.harvest_date    AS datum,
+                    s.wus_number      AS wus_nummer,
+                    m.name            AS meldegruppe,
+                    e.name            AS jagdbezirk,
+                    u.display_name    AS erfasser,
+                    s.submitted_at    AS erfassungsdatum,
                     s.status,
-                    s.field4 AS bemerkung,
-                    s.field6 AS interne_notiz,
-                    s.submitter_email,
-                    s.approved_by,
+                    s.notes           AS bemerkung,
+                    s.internal_note   AS interne_notiz,
+                    s.submitted_by_email AS submitter_email,
+                    s.approved_by_user_id AS approved_by,
                     s.approved_at,
-                    s.rejected_by,
-                    s.rejected_at,
-                    s.rejection_reason
-                FROM {$table_name} s
-                LEFT JOIN {$jagdbezirke_table} j ON s.field5 = j.jagdbezirk
-                LEFT JOIN {$users_table} u ON s.user_id = u.ID";
+                    s.approval_comment AS rejection_reason
+                FROM $s s
+                LEFT JOIN $w w ON s.wildart_id = w.id
+                LEFT JOIN $e e ON s.eigenjagdbezirk_id = e.id
+                LEFT JOIN {$this->wpdb->prefix}hgmh_jagdbezirk_meldegruppen jm ON e.id = jm.jagdbezirk_id
+                LEFT JOIN $m m ON jm.meldegruppe_id = m.id
+                LEFT JOIN $u u ON s.submitted_by_user_id = u.ID";
 
         // WHERE-Bedingungen aufbauen
         $where_conditions = array();
-        $where_values = array();
+        $where_values     = array();
 
-        // Filter: Wildart
         if (!empty($filters['wildart'])) {
-            $where_conditions[] = 's.game_species = %s';
-            $where_values[] = sanitize_text_field($filters['wildart']);
+            $where_conditions[] = 'w.name = %s';
+            $where_values[]     = sanitize_text_field($filters['wildart']);
         }
 
-        // Filter: Datum von
         if (!empty($filters['date_from'])) {
-            $where_conditions[] = 'DATE(s.created_at) >= %s';
-            $where_values[] = sanitize_text_field($filters['date_from']);
+            $where_conditions[] = 'DATE(s.submitted_at) >= %s';
+            $where_values[]     = sanitize_text_field($filters['date_from']);
         }
 
-        // Filter: Datum bis
         if (!empty($filters['date_to'])) {
-            $where_conditions[] = 'DATE(s.created_at) <= %s';
-            $where_values[] = sanitize_text_field($filters['date_to']);
+            $where_conditions[] = 'DATE(s.submitted_at) <= %s';
+            $where_values[]     = sanitize_text_field($filters['date_to']);
         }
 
-        // Filter: Meldegruppe
         if (!empty($filters['meldegruppe'])) {
-            $where_conditions[] = 'j.meldegruppe = %s';
-            $where_values[] = sanitize_text_field($filters['meldegruppe']);
+            $where_conditions[] = 'm.name = %s';
+            $where_values[]     = sanitize_text_field($filters['meldegruppe']);
         }
 
-        // Filter: Status
         if (!empty($filters['status'])) {
             $where_conditions[] = 's.status = %s';
-            $where_values[] = sanitize_text_field($filters['status']);
+            $where_values[]     = sanitize_text_field($filters['status']);
         }
 
-        // WHERE-Klausel zusammensetzen
         if (!empty($where_conditions)) {
             $query .= ' WHERE ' . implode(' AND ', $where_conditions);
         }
 
-        // Sortierung
-        $query .= ' ORDER BY s.created_at DESC';
+        $query .= ' ORDER BY s.submitted_at DESC';
 
-        // Query vorbereiten und ausführen
         if (!empty($where_values)) {
             $query = $this->wpdb->prepare($query, $where_values);
         }
@@ -189,19 +183,15 @@ class AHGMH_Export_Service {
             return array();
         }
 
-        // Daten aufbereiten und bereinigen
         $sanitized = array();
         foreach ($results as $row) {
-            // Erfasser-Namen ermitteln (falls nicht per JOIN verfügbar)
             $erfasser_name = !empty($row['erfasser']) ? $row['erfasser'] : '';
             if (empty($erfasser_name) && !empty($row['submitter_email'])) {
                 $erfasser_name = $row['submitter_email'];
             }
 
-            // Status übersetzen
             $status_translated = $this->translate_status($row['status']);
 
-            // Genehmiger-Namen ermitteln
             $genehmiger_name = '';
             if (!empty($row['approved_by'])) {
                 $approver = get_userdata($row['approved_by']);
@@ -211,21 +201,21 @@ class AHGMH_Export_Service {
             }
 
             $sanitized[] = array(
-                'id' => absint($row['id']),
-                'wildart' => esc_html($row['wildart'] ?? ''),
-                'kategorie' => esc_html($row['kategorie'] ?? ''),
-                'datum' => esc_html($row['datum'] ?? ''),
-                'wus_nummer' => esc_html($row['wus_nummer'] ?? ''),
-                'meldegruppe' => esc_html($row['meldegruppe'] ?? ''),
-                'jagdbezirk' => esc_html($row['jagdbezirk'] ?? ''),
-                'erfasser' => esc_html($erfasser_name),
+                'id'             => absint($row['id']),
+                'wildart'        => esc_html($row['wildart'] ?? ''),
+                'kategorie'      => esc_html($row['kategorie'] ?? ''),
+                'datum'          => esc_html($row['datum'] ?? ''),
+                'wus_nummer'     => esc_html($row['wus_nummer'] ?? ''),
+                'meldegruppe'    => esc_html($row['meldegruppe'] ?? ''),
+                'jagdbezirk'     => esc_html($row['jagdbezirk'] ?? ''),
+                'erfasser'       => esc_html($erfasser_name),
                 'erfassungsdatum' => esc_html($row['erfassungsdatum'] ?? ''),
-                'status' => esc_html($status_translated),
-                'bemerkung' => esc_html($row['bemerkung'] ?? ''),
-                'interne_notiz' => esc_html($row['interne_notiz'] ?? ''),
-                'genehmigt_von' => esc_html($genehmiger_name),
-                'genehmigt_am' => esc_html($row['approved_at'] ?? ''),
-                'ablehnungsgrund' => esc_html($row['rejection_reason'] ?? '')
+                'status'         => esc_html($status_translated),
+                'bemerkung'      => esc_html($row['bemerkung'] ?? ''),
+                'interne_notiz'  => esc_html($row['interne_notiz'] ?? ''),
+                'genehmigt_von'  => esc_html($genehmiger_name),
+                'genehmigt_am'   => esc_html($row['approved_at'] ?? ''),
+                'ablehnungsgrund' => esc_html($row['rejection_reason'] ?? ''),
             );
         }
 
@@ -426,13 +416,11 @@ class AHGMH_Export_Service {
      * @return array Liste der Meldegruppen
      */
     public function get_available_meldegruppen() {
-        $table_name = $this->wpdb->prefix . 'ahgmh_jagdbezirke';
+        $table = $this->wpdb->prefix . 'hgmh_meldegruppen';
 
-        $results = $this->wpdb->get_col(
-            "SELECT DISTINCT meldegruppe FROM {$table_name} WHERE meldegruppe != '' ORDER BY meldegruppe"
-        );
-
-        return $results ? $results : array();
+        return $this->wpdb->get_col(
+            "SELECT DISTINCT name FROM $table WHERE name != '' ORDER BY name"
+        ) ?: array();
     }
 
     /**

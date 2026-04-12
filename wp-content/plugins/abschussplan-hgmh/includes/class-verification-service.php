@@ -114,10 +114,9 @@ class AHGMH_Verification_Service {
             return false;
         }
 
-        $token = sanitize_text_field($token);
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $token      = sanitize_text_field($token);
+        $table_name = $wpdb->prefix . 'hgmh_submissions_v2';
 
-        // Get submission by token
         $submission = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $table_name WHERE verification_token = %s",
             $token
@@ -127,42 +126,18 @@ class AHGMH_Verification_Service {
             return false;
         }
 
-        // Check if already verified
-        if ($submission['verification_status'] === 'verified') {
+        // Already verified
+        if (!empty($submission['verified_at'])) {
             return false;
         }
 
-        // Check if token is expired
-        $expires_at = strtotime($submission['token_expires_at']);
+        // Check expiry using submitted_at + TOKEN_EXPIRY_HOURS
+        $expires_at = strtotime($submission['submitted_at']) + (self::TOKEN_EXPIRY_HOURS * HOUR_IN_SECONDS);
         if (time() > $expires_at) {
-            // Mark as expired
-            self::mark_token_expired($submission['id']);
             return false;
         }
 
         return $submission;
-    }
-
-    /**
-     * Mark token as expired in database
-     *
-     * @param int $submission_id Submission ID
-     * @return bool Success status
-     */
-    private static function mark_token_expired($submission_id) {
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
-
-        $result = $wpdb->update(
-            $table_name,
-            array('verification_status' => 'expired'),
-            array('id' => $submission_id),
-            array('%s'),
-            array('%d')
-        );
-
-        return $result !== false;
     }
 
     /**
@@ -177,34 +152,36 @@ class AHGMH_Verification_Service {
         if (!$submission) {
             return array(
                 'success' => false,
-                'message' => __('Ungültiger oder abgelaufener Verifizierungslink.', 'abschussplan-hgmh')
+                'message' => __('Ungültiger oder abgelaufener Verifizierungslink.', 'abschussplan-hgmh'),
             );
         }
 
         global $wpdb;
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $table_name = $wpdb->prefix . 'hgmh_submissions_v2';
 
-        // Update status to verified
+        // Mark as verified: set verified_at, advance status to 'pending' (awaiting Obmann)
         $result = $wpdb->update(
             $table_name,
             array(
-                'verification_status' => 'verified'
+                'verified_at'          => current_time('mysql'),
+                'status'               => 'pending',
+                'verification_token'   => null,
             ),
             array('id' => $submission['id']),
-            array('%s'),
+            array('%s', '%s', '%s'),
             array('%d')
         );
 
         if ($result === false) {
             return array(
                 'success' => false,
-                'message' => __('Fehler bei der Verifizierung. Bitte versuchen Sie es später erneut.', 'abschussplan-hgmh')
+                'message' => __('Fehler bei der Verifizierung. Bitte versuchen Sie es später erneut.', 'abschussplan-hgmh'),
             );
         }
 
         return array(
             'success' => true,
-            'message' => __('Email erfolgreich verifiziert! Ihre Meldung wurde bestätigt.', 'abschussplan-hgmh')
+            'message' => __('Email erfolgreich verifiziert! Ihre Meldung wurde bestätigt.', 'abschussplan-hgmh'),
         );
     }
 
@@ -258,8 +235,10 @@ class AHGMH_Verification_Service {
      * @return string HTML email body
      */
     private static function build_verification_email_body($verification_url, $submission_data) {
-        $species = isset($submission_data['game_species']) ? esc_html($submission_data['game_species']) : '';
-        $category = isset($submission_data['field2']) ? esc_html($submission_data['field2']) : '';
+        $species  = isset($submission_data['wildart_name']) ? esc_html($submission_data['wildart_name'])
+                  : (isset($submission_data['game_species']) ? esc_html($submission_data['game_species']) : '');
+        $category = isset($submission_data['category']) ? esc_html($submission_data['category'])
+                  : (isset($submission_data['field2']) ? esc_html($submission_data['field2']) : '');
 
         $body = '<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">';
         $body .= '<div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">';
@@ -293,44 +272,60 @@ class AHGMH_Verification_Service {
     }
 
     /**
-     * Create submission with verification pending status
+     * Create submission with email-verification-pending status.
      *
-     * @param array $data Submission data including email and IP
+     * Accepts legacy field names (game_species, field1-6) and maps them
+     * to the normalized hgmh_submissions_v2 schema.
+     *
+     * @param array $data Submission data including 'email' for the submitter
      * @return int|false Submission ID on success, false on failure
      */
     public static function create_pending_submission($data) {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $table_name             = $wpdb->prefix . 'hgmh_submissions_v2';
+        $wildarten_table        = $wpdb->prefix . 'hgmh_wildarten';
+        $eigenjagdbezirke_table = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
 
-        // Generate token
+        // Resolve wildart_id
+        $wildart_name = isset($data['game_species']) ? sanitize_text_field($data['game_species']) : '';
+        $wildart_id   = 0;
+        if ($wildart_name) {
+            $wildart_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $wildarten_table WHERE name = %s AND is_active = 1",
+                $wildart_name
+            ));
+        }
+
+        // Resolve eigenjagdbezirk_id (field5 = jagdbezirk name)
+        $ejb_name = isset($data['field5']) ? sanitize_text_field($data['field5']) : '';
+        $ejb_id   = 0;
+        if ($ejb_name) {
+            $ejb_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $eigenjagdbezirke_table WHERE name = %s AND is_active = 1",
+                $ejb_name
+            ));
+        }
+
         $token = self::generate_token();
 
-        // Calculate expiry time
-        $expires_at = date('Y-m-d H:i:s', strtotime('+' . self::TOKEN_EXPIRY_HOURS . ' hours'));
-
-        // Sanitize submission data
-        $sanitized_data = array(
-            'user_id' => isset($data['user_id']) ? intval($data['user_id']) : 0,
-            'game_species' => isset($data['game_species']) ? sanitize_text_field($data['game_species']) : 'Rotwild',
-            'field1' => sanitize_text_field($data['field1']),
-            'field2' => sanitize_text_field($data['field2']),
-            'field3' => sanitize_text_field($data['field3']),
-            'field4' => sanitize_text_field($data['field4']),
-            'field5' => sanitize_text_field($data['field5']),
-            'field6' => isset($data['field6']) ? sanitize_textarea_field($data['field6']) : '',
-            'verification_status' => 'pending',
-            'verification_token' => $token,
-            'token_expires_at' => $expires_at,
-            'submitter_email' => sanitize_email($data['email']),
-            'submitter_ip' => sanitize_text_field($data['ip'])
+        $insert_data = array(
+            'wildart_id'           => $wildart_id,
+            'eigenjagdbezirk_id'   => $ejb_id,
+            'category'             => isset($data['field2']) ? sanitize_text_field($data['field2']) : '',
+            'harvest_date'         => isset($data['field1']) ? sanitize_text_field($data['field1']) : '',
+            'wus_number'           => isset($data['field3']) ? sanitize_text_field($data['field3']) : '',
+            'internal_note'        => isset($data['field6']) ? sanitize_textarea_field($data['field6']) : '',
+            'submitted_by_user_id' => isset($data['user_id']) ? absint($data['user_id']) : 0,
+            'submitted_by_email'   => isset($data['email']) ? sanitize_email($data['email']) : '',
+            'status'               => 'pending_email',
+            'verification_token'   => $token,
         );
 
-        // Insert submission
         $result = $wpdb->insert(
             $table_name,
-            $sanitized_data,
-            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
+            $insert_data,
+            array('%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s')
         );
 
         if ($result === false) {
@@ -342,11 +337,16 @@ class AHGMH_Verification_Service {
 
         $submission_id = $wpdb->insert_id;
 
-        // Send verification email
+        // Build email context with new field names
+        $email_context = array(
+            'wildart_name' => $wildart_name,
+            'category'     => $insert_data['category'],
+        );
+
         $email_sent = self::send_verification_email(
-            $sanitized_data['submitter_email'],
+            $insert_data['submitted_by_email'],
             $token,
-            $sanitized_data
+            $email_context
         );
 
         if (!$email_sent && defined('WP_DEBUG') && WP_DEBUG) {
@@ -392,15 +392,18 @@ class AHGMH_Verification_Service {
     public static function cleanup_expired_tokens() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $table_name   = $wpdb->prefix . 'hgmh_submissions_v2';
+        $expiry_hours = self::TOKEN_EXPIRY_HOURS;
 
-        // Update expired tokens
+        // Expire pending_email submissions whose token window has passed.
+        // submitted_at + TOKEN_EXPIRY_HOURS hours < NOW()
         $result = $wpdb->query($wpdb->prepare(
             "UPDATE $table_name
-             SET verification_status = 'expired'
-             WHERE verification_status = 'pending'
-             AND token_expires_at < %s",
-            current_time('mysql')
+             SET status = 'expired', verification_token = NULL
+             WHERE status = 'pending_email'
+             AND submitted_at < DATE_SUB(%s, INTERVAL %d HOUR)",
+            current_time('mysql'),
+            $expiry_hours
         ));
 
         return $result !== false ? $result : 0;

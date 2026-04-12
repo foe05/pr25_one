@@ -42,10 +42,6 @@ class AHGMH_Public_Form_Handler {
             return '<div class="alert alert-warning">Parameter "species" ist erforderlich für [abschuss_form_public]. Beispiel: [abschuss_form_public species="Rotwild"]</div>';
         }
 
-        // Log page view
-        $logger = new AHGMH_Page_View_Logger();
-        $logger->log_page_view('abschuss_form_public', $atts);
-
         // Enqueue form-specific scripts
         wp_enqueue_script('jquery-ui-datepicker');
         wp_enqueue_style('jquery-ui-css', 'https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css');

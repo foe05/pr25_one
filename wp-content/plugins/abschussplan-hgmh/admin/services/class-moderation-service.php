@@ -10,304 +10,214 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Moderation Service for handling submission approval, rejection, and updates
+ * Moderation Service for handling submission approval, rejection, and updates.
+ * Uses HGMH_Submission_Repository / hgmh_submissions_v2.
  */
 class AHGMH_Moderation_Service {
 
+    /** @var HGMH_Submission_Repository */
+    private $repo;
+
+    public function __construct() {
+        $this->repo = new HGMH_Submission_Repository();
+    }
+
     /**
-     * Approve a submission
-     * - Set status to 'approved'
-     * - Send email notification to submitter
-     * - Log moderation action
+     * Approve a submission.
      *
-     * @param int $submission_id The submission ID to approve
-     * @return bool Success/failure
+     * @param int $submission_id
+     * @return bool
      */
     public function approve_submission($submission_id) {
-        global $wpdb;
-
         $submission_id = absint($submission_id);
-
         if ($submission_id <= 0) {
-            error_log('AHGMH Moderation: Invalid submission ID for approval');
             return false;
         }
 
-        try {
-            $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $submission = $this->repo->find($submission_id);
+        if (!$submission) {
+            error_log('AHGMH Moderation: Submission not found for ID ' . $submission_id);
+            return false;
+        }
 
-            // Get submission details for email notification
-            $submission = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM $table_name WHERE id = %d",
-                $submission_id
-            ), ARRAY_A);
+        $result = $this->repo->update_status($submission_id, 'approved', [
+            'approved_by_user_id' => get_current_user_id(),
+            'approved_at'         => current_time('mysql'),
+        ]);
 
-            if (!$submission) {
-                error_log('AHGMH Moderation: Submission not found for ID ' . $submission_id);
-                return false;
-            }
-
-            // Update status to 'approved'
-            $result = $wpdb->update(
-                $table_name,
-                array('status' => 'approved'),
-                array('id' => $submission_id),
-                array('%s'),
-                array('%d')
-            );
-
-            if ($result === false) {
-                error_log('AHGMH Moderation: Failed to update submission status to approved for ID ' . $submission_id);
-                return false;
-            }
-
-            // Send email notification to submitter
+        if ($result) {
             $this->send_approval_notification($submission);
-
-            // Log moderation action
-            error_log('AHGMH Moderation: Submission #' . $submission_id . ' approved');
-
-            return true;
-
-        } catch (Exception $e) {
-            error_log('AHGMH Moderation Error (approve): ' . $e->getMessage());
-            return false;
+            $this->log_moderation_action($submission_id, 'approve', $submission->status, 'approved');
         }
+
+        return $result;
     }
 
     /**
-     * Reject a submission with comment
-     * - Set status to 'rejected'
-     * - Store rejection comment
-     * - Send email notification with reason
-     * - Log moderation action
+     * Reject a submission with a mandatory comment.
      *
-     * @param int $submission_id The submission ID to reject
+     * @param int    $submission_id
      * @param string $comment Rejection reason (required)
-     * @return bool Success/failure
+     * @return bool
      */
     public function reject_submission($submission_id, $comment) {
-        global $wpdb;
-
         $submission_id = absint($submission_id);
-        $comment = sanitize_textarea_field($comment);
+        $comment       = sanitize_textarea_field($comment);
 
-        if ($submission_id <= 0) {
-            error_log('AHGMH Moderation: Invalid submission ID for rejection');
+        if ($submission_id <= 0 || empty($comment)) {
             return false;
         }
 
-        if (empty($comment)) {
-            error_log('AHGMH Moderation: Rejection comment is required');
+        $submission = $this->repo->find($submission_id);
+        if (!$submission) {
+            error_log('AHGMH Moderation: Submission not found for ID ' . $submission_id);
             return false;
         }
 
-        try {
-            $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $result = $this->repo->update_status($submission_id, 'rejected', [
+            'approved_by_user_id' => get_current_user_id(),
+            'approved_at'         => current_time('mysql'),
+            'approval_comment'    => $comment,
+        ]);
 
-            // Get submission details for email notification
-            $submission = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM $table_name WHERE id = %d",
-                $submission_id
-            ), ARRAY_A);
-
-            if (!$submission) {
-                error_log('AHGMH Moderation: Submission not found for ID ' . $submission_id);
-                return false;
-            }
-
-            // Update status to 'rejected' and store comment in field6
-            $result = $wpdb->update(
-                $table_name,
-                array(
-                    'status' => 'rejected',
-                    'field6' => $comment // Store rejection comment
-                ),
-                array('id' => $submission_id),
-                array('%s', '%s'),
-                array('%d')
-            );
-
-            if ($result === false) {
-                error_log('AHGMH Moderation: Failed to update submission status to rejected for ID ' . $submission_id);
-                return false;
-            }
-
-            // Send email notification to submitter with rejection reason
+        if ($result) {
             $this->send_rejection_notification($submission, $comment);
-
-            // Log moderation action
-            error_log('AHGMH Moderation: Submission #' . $submission_id . ' rejected. Reason: ' . substr($comment, 0, 50));
-
-            return true;
-
-        } catch (Exception $e) {
-            error_log('AHGMH Moderation Error (reject): ' . $e->getMessage());
-            return false;
+            $this->log_moderation_action($submission_id, 'reject', $submission->status, 'rejected', $comment);
         }
+
+        return $result;
     }
 
     /**
-     * Update submission data
-     * - Validate updated data
-     * - Update in database
-     * - Log changes
+     * Update editable fields of a submission.
      *
-     * @param int $submission_id The submission ID
-     * @param array $data Updated field values
-     * @return bool Success/failure
+     * @param int   $submission_id
+     * @param array $data Allowed keys: wildart_id, eigenjagdbezirk_id, category,
+     *                    harvest_date, wus_number, internal_note
+     * @return bool
      */
     public function update_submission($submission_id, $data) {
-        global $wpdb;
-
         $submission_id = absint($submission_id);
-
-        if ($submission_id <= 0) {
-            error_log('AHGMH Moderation: Invalid submission ID for update');
+        if ($submission_id <= 0 || empty($data) || !is_array($data)) {
             return false;
         }
 
-        if (empty($data) || !is_array($data)) {
-            error_log('AHGMH Moderation: No data provided for update');
+        $allowed = ['wildart_id', 'eigenjagdbezirk_id', 'category', 'harvest_date', 'wus_number', 'notes', 'internal_note'];
+        $clean   = [];
+
+        foreach ($data as $key => $value) {
+            if (!in_array($key, $allowed, true)) {
+                continue;
+            }
+            if (in_array($key, ['wildart_id', 'eigenjagdbezirk_id'], true)) {
+                $clean[$key] = absint($value);
+            } elseif (in_array($key, ['notes', 'internal_note'], true)) {
+                $clean[$key] = sanitize_textarea_field($value);
+            } else {
+                $clean[$key] = sanitize_text_field($value);
+            }
+        }
+
+        if (empty($clean)) {
             return false;
         }
 
-        try {
-            $table_name = $wpdb->prefix . 'ahgmh_submissions';
+        $result = $this->repo->update($submission_id, $clean);
 
-            // Sanitize data
-            $sanitized_data = array();
-            $allowed_fields = array('game_species', 'field1', 'field2', 'field3', 'field4', 'field5', 'field6');
-
-            foreach ($data as $key => $value) {
-                if (in_array($key, $allowed_fields)) {
-                    if ($key === 'field6') {
-                        $sanitized_data[$key] = sanitize_textarea_field($value);
-                    } else {
-                        $sanitized_data[$key] = sanitize_text_field($value);
-                    }
-                }
-            }
-
-            if (empty($sanitized_data)) {
-                error_log('AHGMH Moderation: No valid fields to update');
-                return false;
-            }
-
-            // Build format array
-            $formats = array_fill(0, count($sanitized_data), '%s');
-
-            // Update submission
-            $result = $wpdb->update(
-                $table_name,
-                $sanitized_data,
-                array('id' => $submission_id),
-                $formats,
-                array('%d')
-            );
-
-            if ($result === false) {
-                error_log('AHGMH Moderation: Failed to update submission ID ' . $submission_id);
-                return false;
-            }
-
-            // Log changes
-            error_log('AHGMH Moderation: Submission #' . $submission_id . ' updated. Fields: ' . implode(', ', array_keys($sanitized_data)));
-
-            return true;
-
-        } catch (Exception $e) {
-            error_log('AHGMH Moderation Error (update): ' . $e->getMessage());
-            return false;
+        if ($result) {
+            $this->log_moderation_action($submission_id, 'edit', null, null, implode(', ', array_keys($clean)));
         }
+
+        return $result;
     }
 
     /**
-     * Send approval notification email to submitter
+     * Log a moderation action to hgmh_moderation_history.
+     */
+    private function log_moderation_action($submission_id, $action, $old_status, $new_status, $comment = '') {
+        global $wpdb;
+        $user = wp_get_current_user();
+
+        $wpdb->insert(
+            $wpdb->prefix . 'hgmh_moderation_history',
+            [
+                'submission_id'        => absint($submission_id),
+                'action'               => sanitize_text_field($action),
+                'performed_by_user_id' => $user->ID,
+                'performed_by_email'   => $user->user_email,
+                'old_status'           => $old_status ? sanitize_text_field($old_status) : null,
+                'new_status'           => $new_status ? sanitize_text_field($new_status) : null,
+                'comment'              => sanitize_textarea_field($comment),
+                'performed_at'         => current_time('mysql'),
+            ],
+            ['%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s']
+        );
+    }
+
+    /**
+     * Send approval notification email to submitter.
      *
-     * @param array $submission The submission data
-     * @return bool Email sent successfully
+     * @param object $submission Enriched submission from HGMH_Submission_Repository::find()
      */
     private function send_approval_notification($submission) {
-        // Get submitter email
-        $user_id = isset($submission['user_id']) ? absint($submission['user_id']) : 0;
-
-        if ($user_id > 0) {
-            $user = get_user_by('id', $user_id);
-
-            if ($user) {
-                $to = $user->user_email;
-                $subject = __('Meldung genehmigt', 'abschussplan-hgmh');
-
-                $message = sprintf(
-                    __('Guten Tag,
-
-Ihre Abschussmeldung (ID: %d) wurde genehmigt.
-
-Wildart: %s
-Datum: %s
-
-Mit freundlichen Grüßen
-Hegegemeinschaft HGMH', 'abschussplan-hgmh'),
-                    $submission['id'],
-                    isset($submission['game_species']) ? $submission['game_species'] : 'N/A',
-                    isset($submission['created_at']) ? $submission['created_at'] : 'N/A'
-                );
-
-                $headers = array('Content-Type: text/plain; charset=UTF-8');
-
-                return wp_mail($to, $subject, $message, $headers);
-            }
+        $to = $this->resolve_recipient_email($submission);
+        if (!$to) {
+            return false;
         }
 
-        return false;
+        $subject = __('Meldung genehmigt', 'abschussplan-hgmh');
+        $message = sprintf(
+            __("Guten Tag,\n\nIhre Abschussmeldung (ID: %d) wurde genehmigt.\n\nWildart: %s\nKategorie: %s\nAbschussdatum: %s\n\nMit freundlichen Grüßen\nHegegemeinschaft HGMH", 'abschussplan-hgmh'),
+            absint($submission->id),
+            esc_html($submission->wildart_name ?? ''),
+            esc_html($submission->category ?? ''),
+            esc_html($submission->harvest_date ?? '')
+        );
+
+        return wp_mail($to, $subject, $message, ['Content-Type: text/plain; charset=UTF-8']);
     }
 
     /**
-     * Send rejection notification email to submitter
+     * Send rejection notification email to submitter.
      *
-     * @param array $submission The submission data
-     * @param string $comment Rejection reason
-     * @return bool Email sent successfully
+     * @param object $submission Enriched submission from HGMH_Submission_Repository::find()
+     * @param string $comment    Rejection reason
      */
     private function send_rejection_notification($submission, $comment) {
-        // Get submitter email
-        $user_id = isset($submission['user_id']) ? absint($submission['user_id']) : 0;
+        $to = $this->resolve_recipient_email($submission);
+        if (!$to) {
+            return false;
+        }
 
-        if ($user_id > 0) {
-            $user = get_user_by('id', $user_id);
+        $subject = __('Meldung abgelehnt', 'abschussplan-hgmh');
+        $message = sprintf(
+            __("Guten Tag,\n\nIhre Abschussmeldung (ID: %d) wurde abgelehnt.\n\nWildart: %s\nKategorie: %s\nAbschussdatum: %s\n\nGrund der Ablehnung:\n%s\n\nBitte korrigieren Sie die Meldung und reichen Sie sie erneut ein.\n\nMit freundlichen Grüßen\nHegegemeinschaft HGMH", 'abschussplan-hgmh'),
+            absint($submission->id),
+            esc_html($submission->wildart_name ?? ''),
+            esc_html($submission->category ?? ''),
+            esc_html($submission->harvest_date ?? ''),
+            esc_html($comment)
+        );
 
+        return wp_mail($to, $subject, $message, ['Content-Type: text/plain; charset=UTF-8']);
+    }
+
+    /**
+     * Resolve the recipient email address from a submission object.
+     * Falls back from submitted_by_email → WP user email.
+     */
+    private function resolve_recipient_email($submission) {
+        if (!empty($submission->submitted_by_email)) {
+            return sanitize_email($submission->submitted_by_email);
+        }
+
+        if (!empty($submission->submitted_by_user_id)) {
+            $user = get_userdata(absint($submission->submitted_by_user_id));
             if ($user) {
-                $to = $user->user_email;
-                $subject = __('Meldung abgelehnt', 'abschussplan-hgmh');
-
-                $message = sprintf(
-                    __('Guten Tag,
-
-Ihre Abschussmeldung (ID: %d) wurde abgelehnt.
-
-Wildart: %s
-Datum: %s
-
-Grund der Ablehnung:
-%s
-
-Bitte korrigieren Sie die Meldung und reichen Sie sie erneut ein.
-
-Mit freundlichen Grüßen
-Hegegemeinschaft HGMH', 'abschussplan-hgmh'),
-                    $submission['id'],
-                    isset($submission['game_species']) ? $submission['game_species'] : 'N/A',
-                    isset($submission['created_at']) ? $submission['created_at'] : 'N/A',
-                    $comment
-                );
-
-                $headers = array('Content-Type: text/plain; charset=UTF-8');
-
-                return wp_mail($to, $subject, $message, $headers);
+                return $user->user_email;
             }
         }
 
-        return false;
+        return null;
     }
 }

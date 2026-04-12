@@ -100,18 +100,21 @@ class AHGMH_Wildart_View {
                 <p class="description" style="margin-bottom: 10px;">
                     <?php echo esc_html__('Definieren Sie die Unterkategorien fuer diese Wildart (z.B. Geschlecht, Altersklasse).', 'abschussplan-hgmh'); ?>
                 </p>
-                <div class="categories-config">
+                <div id="categories-list">
                     <?php if (!empty($config['categories'])): ?>
-                        <?php foreach ($config['categories'] as $index => $category): ?>
-                            <div class="category-row" style="display: flex; gap: 8px; margin-bottom: 8px;">
-                                <input type="text" class="category-input regular-text" value="<?php echo esc_attr($category); ?>" />
-                                <button class="button remove-category"><?php echo esc_html__('Entfernen', 'abschussplan-hgmh'); ?></button>
+                        <?php foreach ($config['categories'] as $category): ?>
+                            <div class="config-item" style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                <input type="text" class="category-input regular-text" value="<?php echo esc_attr($category); ?>" data-original="<?php echo esc_attr($category); ?>" />
+                                <button type="button" class="button remove-item" data-type="category" data-value="<?php echo esc_attr($category); ?>">
+                                    <span class="dashicons dashicons-trash"></span>
+                                </button>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                    <button class="button add-category" style="margin-top: 4px;">
-                        <?php echo esc_html__('+ Kategorie hinzufuegen', 'abschussplan-hgmh'); ?>
-                    </button>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <input type="text" id="new-category-input" class="regular-text" placeholder="<?php echo esc_attr__('Neue Kategorie...', 'abschussplan-hgmh'); ?>" />
+                    <button id="add-category" class="button">+ <?php echo esc_html__('Hinzufuegen', 'abschussplan-hgmh'); ?></button>
                 </div>
                 <p class="submit" style="margin-bottom: 0;">
                     <button class="button button-primary save-categories" data-wildart="<?php echo esc_attr($wildart); ?>">
@@ -126,18 +129,21 @@ class AHGMH_Wildart_View {
                 <p class="description" style="margin-bottom: 10px;">
                     <?php echo esc_html__('Definieren Sie die Meldegruppen (Reviere/Bereiche) fuer diese Wildart.', 'abschussplan-hgmh'); ?>
                 </p>
-                <div class="meldegruppen-config">
+                <div id="meldegruppen-list">
                     <?php if (!empty($config['meldegruppen'])): ?>
-                        <?php foreach ($config['meldegruppen'] as $index => $meldegruppe): ?>
-                            <div class="meldegruppe-row" style="display: flex; gap: 8px; margin-bottom: 8px;">
-                                <input type="text" class="meldegruppe-input regular-text" value="<?php echo esc_attr($meldegruppe); ?>" />
-                                <button class="button remove-meldegruppe"><?php echo esc_html__('Entfernen', 'abschussplan-hgmh'); ?></button>
+                        <?php foreach ($config['meldegruppen'] as $meldegruppe): ?>
+                            <div class="config-item" style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                <input type="text" class="meldegruppe-input regular-text" value="<?php echo esc_attr($meldegruppe); ?>" data-original="<?php echo esc_attr($meldegruppe); ?>" />
+                                <button type="button" class="button remove-item" data-type="meldegruppe" data-value="<?php echo esc_attr($meldegruppe); ?>">
+                                    <span class="dashicons dashicons-trash"></span>
+                                </button>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                    <button class="button add-meldegruppe" style="margin-top: 4px;">
-                        <?php echo esc_html__('+ Meldegruppe hinzufuegen', 'abschussplan-hgmh'); ?>
-                    </button>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <input type="text" id="new-meldegruppe-input" class="regular-text" placeholder="<?php echo esc_attr__('Neue Meldegruppe...', 'abschussplan-hgmh'); ?>" />
+                    <button id="add-meldegruppe" class="button">+ <?php echo esc_html__('Hinzufuegen', 'abschussplan-hgmh'); ?></button>
                 </div>
                 <p class="submit" style="margin-bottom: 0;">
                     <button class="button button-primary save-meldegruppen" data-wildart="<?php echo esc_attr($wildart); ?>">
@@ -145,6 +151,111 @@ class AHGMH_Wildart_View {
                     </button>
                 </p>
             </div>
+
+            <!-- Meldegruppen-Konfiguration: Obleute & Jagdbezirke -->
+            <?php if (!empty($config['meldegruppen'])): ?>
+            <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f1;">
+                <h4 style="margin-top: 0;"><?php echo esc_html__('Meldegruppen-Konfiguration', 'abschussplan-hgmh'); ?></h4>
+                <p class="description" style="margin-bottom: 12px;">
+                    <?php echo esc_html__('Weisen Sie jeder Meldegruppe einen Obmann und Jagdbezirke zu.', 'abschussplan-hgmh'); ?>
+                </p>
+
+                <?php foreach ($config['meldegruppen'] as $meldegruppe):
+                    // Find the DB ID for this meldegruppe
+                    $mg_db_id = 0;
+                    foreach ($config['meldegruppen_db'] as $db_row) {
+                        if ($db_row['name'] === $meldegruppe) {
+                            $mg_db_id = (int) $db_row['id'];
+                            break;
+                        }
+                    }
+                    $obmann = $config['obmann_assignments'][$meldegruppe] ?? null;
+                ?>
+                <div class="meldegruppe-setup-card"
+                     data-meldegruppe="<?php echo esc_attr($meldegruppe); ?>"
+                     data-meldegruppe-id="<?php echo esc_attr($mg_db_id); ?>"
+                     style="border: 1px solid #c3c4c7; border-radius: 4px; padding: 14px 16px; margin-bottom: 14px; background: #fafafa;">
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0;">
+                        <strong style="font-size: 14px;"><?php echo esc_html($meldegruppe); ?></strong>
+                        <?php if ($mg_db_id === 0): ?>
+                            <span style="font-size: 11px; color: #996d01; background: #fff8e5; padding: 2px 8px; border-radius: 3px;">
+                                <?php echo esc_html__('Meldegruppen zuerst speichern', 'abschussplan-hgmh'); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- 2a) Obmann -->
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <label style="font-weight: 600; min-width: 70px; font-size: 13px;">
+                            <?php echo esc_html__('Obmann:', 'abschussplan-hgmh'); ?>
+                        </label>
+                        <select class="mg-obmann-select"
+                                data-wildart="<?php echo esc_attr($wildart); ?>"
+                                data-meldegruppe="<?php echo esc_attr($meldegruppe); ?>">
+                            <option value="0"><?php echo esc_html__('— kein Obmann —', 'abschussplan-hgmh'); ?></option>
+                            <?php foreach ($config['wp_users'] as $user): ?>
+                                <option value="<?php echo esc_attr($user['id']); ?>"
+                                    <?php selected($obmann['user_id'] ?? 0, $user['id']); ?>>
+                                    <?php echo esc_html($user['display_name']); ?> (<?php echo esc_html($user['user_login']); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="button"
+                                class="button mg-save-obmann"
+                                data-wildart="<?php echo esc_attr($wildart); ?>"
+                                data-meldegruppe="<?php echo esc_attr($meldegruppe); ?>">
+                            <?php echo esc_html__('Speichern', 'abschussplan-hgmh'); ?>
+                        </button>
+                        <?php if ($obmann): ?>
+                            <button type="button"
+                                    class="button-link mg-remove-obmann"
+                                    data-wildart="<?php echo esc_attr($wildart); ?>"
+                                    data-user-id="<?php echo esc_attr($obmann['user_id']); ?>"
+                                    title="<?php echo esc_attr__('Obmann entfernen', 'abschussplan-hgmh'); ?>"
+                                    style="color: #b32d2e;">
+                                <span class="dashicons dashicons-no-alt"></span>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- 2b) Jagdbezirke -->
+                    <?php if (!empty($config['jagdbezirke'])): ?>
+                    <div>
+                        <label style="font-weight: 600; display: block; margin-bottom: 6px; font-size: 13px;">
+                            <?php echo esc_html__('Jagdbezirke:', 'abschussplan-hgmh'); ?>
+                        </label>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+                            <?php foreach ($config['jagdbezirke'] as $jb):
+                                $is_checked = $mg_db_id > 0 && in_array($mg_db_id, $jb['meldegruppe_ids'], true);
+                            ?>
+                                <label style="display: flex; align-items: center; gap: 5px; font-weight: 400; font-size: 13px; cursor: pointer;">
+                                    <input type="checkbox"
+                                           class="mg-jagdbezirk-cb"
+                                           data-jagdbezirk-id="<?php echo esc_attr($jb['id']); ?>"
+                                           data-meldegruppe-id="<?php echo esc_attr($mg_db_id); ?>"
+                                           <?php checked($is_checked, true); ?> />
+                                    <?php echo esc_html($jb['name']); ?>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                        <button type="button"
+                                class="button mg-save-jagdbezirke"
+                                data-meldegruppe-id="<?php echo esc_attr($mg_db_id); ?>"
+                                <?php if ($mg_db_id === 0) echo 'disabled'; ?>>
+                            <?php echo esc_html__('Jagdbezirke speichern', 'abschussplan-hgmh'); ?>
+                        </button>
+                    </div>
+                    <?php else: ?>
+                        <p style="color: #646970; font-size: 12px; margin: 0;">
+                            <?php echo esc_html__('Noch keine Jagdbezirke konfiguriert.', 'abschussplan-hgmh'); ?>
+                        </p>
+                    <?php endif; ?>
+
+                </div><!-- .meldegruppe-setup-card -->
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
 
             <!-- Limits Configuration -->
             <div>
@@ -249,7 +360,15 @@ class AHGMH_Wildart_View {
                                     </td>
                                 <?php endforeach; ?>
                                 <td style="text-align: center;">
-                                    <span id="gesamt-<?php echo esc_attr(strtolower(str_replace([' ', '(', ')'], ['-', '', ''], $category))); ?>" class="gesamt-value" style="font-weight: 600;">0</span>
+                                    <span id="gesamt_<?php echo esc_attr(preg_replace('/[^a-z0-9]/', '_', strtolower($category))); ?>" class="gesamt-value" style="font-weight: 600;">
+                                        <?php
+                                        $gesamt = 0;
+                                        foreach ($meldegruppen as $mg) {
+                                            $gesamt += intval($limits[$mg][$category] ?? 0);
+                                        }
+                                        echo esc_html($gesamt);
+                                        ?>
+                                    </span>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

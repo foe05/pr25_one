@@ -82,10 +82,10 @@ class HGMH_Submission_Repository {
     public function __construct() {
         global $wpdb;
         $this->wpdb = $wpdb;
-        $this->submissions_table = $wpdb->prefix . 'ahgmh_submissions_v2';
-        $this->wildart_table = $wpdb->prefix . 'ahgmh_wildart';
-        $this->eigenjagdbezirk_table = $wpdb->prefix . 'ahgmh_eigenjagdbezirk';
-        $this->meldegruppe_table = $wpdb->prefix . 'ahgmh_meldegruppe';
+        $this->submissions_table = $wpdb->prefix . 'hgmh_submissions_v2';
+        $this->wildart_table = $wpdb->prefix . 'hgmh_wildarten';
+        $this->eigenjagdbezirk_table = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $this->meldegruppe_table = $wpdb->prefix . 'hgmh_meldegruppen';
     }
 
     /**
@@ -107,7 +107,8 @@ class HGMH_Submission_Repository {
             FROM {$this->submissions_table} s
             LEFT JOIN {$this->wildart_table} w ON s.wildart_id = w.id
             LEFT JOIN {$this->eigenjagdbezirk_table} e ON s.eigenjagdbezirk_id = e.id
-            LEFT JOIN {$this->meldegruppe_table} m ON s.meldegruppe_id = m.id
+            LEFT JOIN {$this->wpdb->prefix}hgmh_jagdbezirk_meldegruppen jm ON e.id = jm.jagdbezirk_id
+            LEFT JOIN {$this->meldegruppe_table} m ON jm.meldegruppe_id = m.id
             WHERE s.id = %d",
             $id
         );
@@ -133,20 +134,23 @@ class HGMH_Submission_Repository {
     public function create($data) {
         // Prepare data for insertion
         $insert_data = array(
-            'wildart_id' => isset($data['wildart_id']) ? (int) $data['wildart_id'] : 0,
-            'eigenjagdbezirk_id' => isset($data['eigenjagdbezirk_id']) ? (int) $data['eigenjagdbezirk_id'] : 0,
-            'meldegruppe_id' => isset($data['meldegruppe_id']) ? (int) $data['meldegruppe_id'] : 0,
-            'category' => isset($data['category']) ? sanitize_text_field($data['category']) : '',
-            'harvest_date' => isset($data['harvest_date']) ? sanitize_text_field($data['harvest_date']) : '',
-            'submitted_by_user_id' => isset($data['submitted_by_user_id']) ? (int) $data['submitted_by_user_id'] : 0,
-            'status' => isset($data['status']) ? sanitize_text_field($data['status']) : 'pending'
+            'wildart_id'            => isset($data['wildart_id']) ? (int) $data['wildart_id'] : 0,
+            'eigenjagdbezirk_id'    => isset($data['eigenjagdbezirk_id']) ? (int) $data['eigenjagdbezirk_id'] : 0,
+            'category'              => isset($data['category']) ? sanitize_text_field($data['category']) : '',
+            'harvest_date'          => isset($data['harvest_date']) ? sanitize_text_field($data['harvest_date']) : '',
+            'wus_number'            => isset($data['wus_number']) ? sanitize_text_field($data['wus_number']) : null,
+            'notes'                 => isset($data['notes']) ? sanitize_textarea_field($data['notes']) : null,
+            'internal_note'         => isset($data['internal_note']) ? sanitize_textarea_field($data['internal_note']) : null,
+            'submitted_by_user_id'  => isset($data['submitted_by_user_id']) ? (int) $data['submitted_by_user_id'] : 0,
+            'submitted_by_email'    => isset($data['submitted_by_email']) ? sanitize_email($data['submitted_by_email']) : null,
+            'status'                => isset($data['status']) ? sanitize_text_field($data['status']) : 'pending',
         );
 
         // Insert data with proper data types
         $result = $this->wpdb->insert(
             $this->submissions_table,
             $insert_data,
-            array('%d', '%d', '%d', '%s', '%s', '%d', '%s')
+            array('%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s')
         );
 
         // Log error for debugging if WP_DEBUG is enabled
@@ -188,11 +192,6 @@ class HGMH_Submission_Repository {
             $format[] = '%d';
         }
 
-        if (isset($data['meldegruppe_id'])) {
-            $update_data['meldegruppe_id'] = (int) $data['meldegruppe_id'];
-            $format[] = '%d';
-        }
-
         if (isset($data['category'])) {
             $update_data['category'] = sanitize_text_field($data['category']);
             $format[] = '%s';
@@ -200,6 +199,21 @@ class HGMH_Submission_Repository {
 
         if (isset($data['harvest_date'])) {
             $update_data['harvest_date'] = sanitize_text_field($data['harvest_date']);
+            $format[] = '%s';
+        }
+
+        if (isset($data['wus_number'])) {
+            $update_data['wus_number'] = sanitize_text_field($data['wus_number']);
+            $format[] = '%s';
+        }
+
+        if (isset($data['notes'])) {
+            $update_data['notes'] = sanitize_textarea_field($data['notes']);
+            $format[] = '%s';
+        }
+
+        if (isset($data['internal_note'])) {
+            $update_data['internal_note'] = sanitize_textarea_field($data['internal_note']);
             $format[] = '%s';
         }
 
@@ -272,6 +286,8 @@ class HGMH_Submission_Repository {
             return array();
         }
 
+        $junction_table_alias = $this->wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+
         // Start building the query
         $sql = "SELECT
                 s.*,
@@ -281,26 +297,43 @@ class HGMH_Submission_Repository {
             FROM {$this->submissions_table} s
             LEFT JOIN {$this->wildart_table} w ON s.wildart_id = w.id
             LEFT JOIN {$this->eigenjagdbezirk_table} e ON s.eigenjagdbezirk_id = e.id
-            LEFT JOIN {$this->meldegruppe_table} m ON s.meldegruppe_id = m.id
+            LEFT JOIN {$junction_table_alias} jm2 ON e.id = jm2.jagdbezirk_id
+            LEFT JOIN {$this->meldegruppe_table} m ON jm2.meldegruppe_id = m.id
             WHERE 1=1";
 
         $prepare_args = array();
 
-        // Filter by obmann's assigned meldegruppen
-        // Get all user meta keys for meldegruppe assignments
+        // Filter by obmann's assigned meldegruppen via junction table.
+        // Also include submissions stored with eigenjagdbezirk_id=0 (wildarts without configured Jagdbezirke)
+        // by matching on the wildart name against the user's meta keys.
         $usermeta_table = $this->wpdb->usermeta;
+        $junction_table = $this->wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
         $meta_like = 'ahgmh_assigned_meldegruppe_%';
 
-        // Subquery to get meldegruppe IDs for user's assigned meldegruppen
-        $sql .= " AND s.meldegruppe_id IN (
-            SELECT mg.id
-            FROM {$this->meldegruppe_table} mg
-            INNER JOIN {$usermeta_table} um ON mg.name = um.meta_value
-            WHERE um.user_id = %d
-            AND um.meta_key LIKE %s
+        $sql .= " AND (
+            s.eigenjagdbezirk_id IN (
+                SELECT ej.id
+                FROM {$this->eigenjagdbezirk_table} ej
+                INNER JOIN {$junction_table} jm ON ej.id = jm.jagdbezirk_id
+                INNER JOIN {$this->meldegruppe_table} mg ON jm.meldegruppe_id = mg.id
+                INNER JOIN {$usermeta_table} um ON mg.name = um.meta_value
+                WHERE um.user_id = %d
+                AND um.meta_key LIKE %s
+            )
+            OR (
+                s.eigenjagdbezirk_id = 0
+                AND s.wildart_id IN (
+                    SELECT w.id
+                    FROM {$this->wildart_table} w
+                    INNER JOIN {$usermeta_table} um
+                        ON um.meta_key = CONCAT('ahgmh_assigned_meldegruppe_', LOWER(w.name))
+                    WHERE um.user_id = %d
+                )
+            )
         )";
         $prepare_args[] = (int) $user_id;
         $prepare_args[] = $meta_like;
+        $prepare_args[] = (int) $user_id;
 
         // Apply optional wildart_id filter
         if ($wildart_id !== null) {
@@ -315,7 +348,7 @@ class HGMH_Submission_Repository {
         }
 
         // Order by most recent first
-        $sql .= " ORDER BY s.created_at DESC";
+        $sql .= " ORDER BY s.submitted_at DESC";
 
         // Prepare and execute query
         if (!empty($prepare_args)) {
@@ -355,16 +388,33 @@ class HGMH_Submission_Repository {
             $usermeta_table = $this->wpdb->usermeta;
             $meta_like = 'ahgmh_assigned_meldegruppe_%';
 
-            // Subquery to filter by obmann's assigned meldegruppen
-            $sql .= " WHERE s.meldegruppe_id IN (
-                SELECT mg.id
-                FROM {$this->meldegruppe_table} mg
-                INNER JOIN {$usermeta_table} um ON mg.name = um.meta_value
-                WHERE um.user_id = %d
-                AND um.meta_key LIKE %s
+            // Subquery to filter by obmann's assigned meldegruppen via junction table.
+            // Also include eigenjagdbezirk_id=0 submissions for wildarts the user is assigned to.
+            $junction_table = $this->wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+            $sql .= " WHERE (
+                s.eigenjagdbezirk_id IN (
+                    SELECT ej.id
+                    FROM {$this->eigenjagdbezirk_table} ej
+                    INNER JOIN {$junction_table} jm ON ej.id = jm.jagdbezirk_id
+                    INNER JOIN {$this->meldegruppe_table} mg ON jm.meldegruppe_id = mg.id
+                    INNER JOIN {$usermeta_table} um ON mg.name = um.meta_value
+                    WHERE um.user_id = %d
+                    AND um.meta_key LIKE %s
+                )
+                OR (
+                    s.eigenjagdbezirk_id = 0
+                    AND s.wildart_id IN (
+                        SELECT w.id
+                        FROM {$this->wildart_table} w
+                        INNER JOIN {$usermeta_table} um
+                            ON um.meta_key = CONCAT('ahgmh_assigned_meldegruppe_', LOWER(w.name))
+                        WHERE um.user_id = %d
+                    )
+                )
             )";
             $prepare_args[] = (int) $obmann_user_id;
             $prepare_args[] = $meta_like;
+            $prepare_args[] = (int) $obmann_user_id;
 
             // Add status filter with AND
             $sql .= " AND s.status = %s";
@@ -409,12 +459,11 @@ class HGMH_Submission_Repository {
         );
         $format = array('%s');
 
-        // Add timestamp fields based on status change
-        if ($new_status === 'approved' && !isset($additional_data['approved_at'])) {
+        // Add timestamp fields based on status change.
+        // hgmh_submissions_v2 uses approved_at/approved_by_user_id/approval_comment
+        // for both approvals and rejections (status column distinguishes them).
+        if (in_array($new_status, array('approved', 'rejected'), true) && !isset($additional_data['approved_at'])) {
             $update_data['approved_at'] = current_time('mysql');
-            $format[] = '%s';
-        } elseif ($new_status === 'rejected' && !isset($additional_data['rejected_at'])) {
-            $update_data['rejected_at'] = current_time('mysql');
             $format[] = '%s';
         }
 

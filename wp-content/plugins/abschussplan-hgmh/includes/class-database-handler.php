@@ -22,352 +22,171 @@ class AHGMH_Database_Handler {
      */
     public function __construct() {
         global $wpdb;
-        $this->table_name = $wpdb->prefix . 'ahgmh_submissions';
-
-        // Run migration for status field (safe to run multiple times)
-        $this->migrate_add_status_field();
+        $this->table_name = $wpdb->prefix . 'hgmh_submissions_v2';
     }
 
     /**
-     * Create the database table
+     * Create all plugin database tables.
+     * Only creates the current normalized schema (hgmh_* prefix).
      */
     public function create_table() {
         global $wpdb;
-        
-        $charset_collate = $wpdb->get_charset_collate();
-        
-        $sql = "CREATE TABLE $this->table_name (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            user_id bigint(20) NOT NULL DEFAULT 0,
-            game_species varchar(100) NOT NULL DEFAULT 'Rotwild',
-            field1 text NOT NULL,
-            field2 text NOT NULL,
-            field3 text NOT NULL,
-            field4 text NOT NULL,
-            field5 text NOT NULL,
-            field6 text,
-            status varchar(50) NOT NULL DEFAULT 'pending',
-            approved_by bigint(20) DEFAULT NULL,
-            approved_at datetime DEFAULT NULL,
-            rejected_by bigint(20) DEFAULT NULL,
-            rejected_at datetime DEFAULT NULL,
-            rejection_reason text,
-            time_to_approval int(11) DEFAULT NULL,
-            verification_status enum('pending','verified','expired') DEFAULT 'pending',
-            verification_token varchar(64) DEFAULT NULL,
-            token_expires_at datetime DEFAULT NULL,
-            submitter_email varchar(255) DEFAULT NULL,
-            submitter_ip varchar(100) DEFAULT NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id),
-            KEY status (status),
-            KEY approved_by (approved_by),
-            KEY rejected_by (rejected_by),
-            KEY verification_token (verification_token),
-            KEY verification_status (verification_status),
-            KEY game_species_idx (game_species),
-            KEY category_idx (field2(100)),
-            KEY jagdbezirk_idx (field5(100)),
-            KEY created_at_idx (created_at),
-            KEY species_category_idx (game_species, field2(100)),
-            KEY species_jagdbezirk_idx (game_species, field5(100)),
-            KEY species_date_idx (game_species, created_at)
-        ) $charset_collate;";
-        
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
 
-        // Create Jagdbezirk configuration table
-        $this->create_jagdbezirk_table();
+        // Drop tables removed in previous versions so stale schemas do not persist.
+        $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}hgmh_page_views" );
+        $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}hgmh_operation_log_details" );
+        $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}hgmh_operation_logs" );
 
-        // Create page views tracking table
-        $this->create_page_views_table();
+        // Create meldegruppen configuration tables
+        $this->create_meldegruppen_config_table();
+        $this->create_meldegruppen_limits_table();
 
-        // Run data migration from v1 to v2 schema if needed
-        $this->run_migration_002();
-
-        // Create moderation history table
-        $this->create_moderation_history_table();
-
-        // Create email log table
-        $this->create_email_log_table();
-
-        // Create activity log table
-        $this->create_activity_log_table();
-
-        // Create operation log tables for undo functionality
-        $this->create_operation_log_tables();
+        // Create all v2 normalized schema tables (submissions, wildarten,
+        // eigenjagdbezirke, meldegruppen, moderation history, activity log, email log)
+        $this->create_v2_schema_tables();
     }
     
     /**
-     * Get the table name
+     * Get the main submissions table name
      */
     public function get_table_name() {
         return $this->table_name;
     }
 
     /**
-     * Run migration 002 to migrate existing data from v1 to v2 schema
-     *
-     * This method is called during database upgrades to migrate existing data
-     * from the old schema (field1-6) to the new normalized schema.
-     *
-     * @return bool True on success, false on failure
+     * Create all v2 normalized schema tables needed by the current codebase.
+     * Uses CREATE TABLE IF NOT EXISTS so it is safe to call on existing installs.
      */
-    public function run_migration_002() {
-        // Check if migration has already been completed
-        if (get_option('ahgmh_migration_002_completed', false)) {
-            return true;
-        }
-
-        // Check if migration file exists
-        $migration_file = AHGMH_PLUGIN_DIR . 'migrations/002_migrate_existing_data.php';
-        if (!file_exists($migration_file)) {
-            error_log('AHGMH Migration 002: Migration file not found at ' . $migration_file);
-            return false;
-        }
-
-        // Load the migration file
-        require_once $migration_file;
-
-        // Check if class exists
-        if (!class_exists('AHGMH_Migration_002')) {
-            error_log('AHGMH Migration 002: AHGMH_Migration_002 class not found');
-            return false;
-        }
-
-        // Instantiate and run the migration
-        $migration = new AHGMH_Migration_002();
-        $result = $migration->up();
-
-        // Track completion if successful
-        if ($result) {
-            update_option('ahgmh_migration_002_completed', true);
-            error_log('AHGMH Migration 002: Successfully completed and marked as done');
-        } else {
-            error_log('AHGMH Migration 002: Migration failed');
-        }
-
-        return $result;
-    }
-
-    /**
-     * Create the Jagdbezirk configuration table
-     */
-    public function create_jagdbezirk_table() {
+    private function create_v2_schema_tables() {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        $charset_collate = $wpdb->get_charset_collate();
-        
-        $sql = "CREATE TABLE $table_name (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            wildart varchar(255) DEFAULT NULL,
-            jagdbezirk varchar(255) NOT NULL,
-            meldegruppe varchar(255) NOT NULL,
-            ungueltig tinyint(1) NOT NULL DEFAULT 0,
-            active tinyint(1) NOT NULL DEFAULT 1,
-            bemerkung text,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id),
-            KEY wildart_active (wildart, active),
-            KEY jagdbezirk_idx (jagdbezirk)
-        ) $charset_collate;";
-        
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
-        
-        // Create wildart-specific meldegruppen configuration table
-        $this->create_meldegruppen_config_table();
-        
-        // Create meldegruppen-specific limits table
-        $this->create_meldegruppen_limits_table();
-        
-        // Add some default Jagdbezirke if table is empty
-        $this->seed_default_jagdbezirke();
-    }
-
-    /**
-     * Create the page views tracking table
-     */
-    public function create_page_views_table() {
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ahgmh_page_views';
         $charset_collate = $wpdb->get_charset_collate();
 
-        $sql = "CREATE TABLE $table_name (
+        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+
+        dbDelta( "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_wildarten (
             id bigint(20) NOT NULL AUTO_INCREMENT,
-            shortcode_name varchar(100) NOT NULL,
-            user_id bigint(20) NOT NULL DEFAULT 0,
-            user_display_name varchar(255) DEFAULT '',
-            ip_address varchar(100) DEFAULT NULL,
-            shortcode_attributes text,
-            page_url text,
-            referer text,
-            user_agent text,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id),
-            KEY shortcode_name (shortcode_name),
-            KEY user_id (user_id),
-            KEY created_at (created_at)
-        ) $charset_collate;";
+            name varchar(100) NOT NULL,
+            display_order int(11) DEFAULT 0,
+            is_active tinyint(1) DEFAULT 1,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY name (name),
+            KEY is_active (is_active)
+        ) $charset_collate;" );
 
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
-    }
-
-    /**
-     * Create the moderation history table for audit trail
-     */
-    public function create_moderation_history_table() {
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ahgmh_moderation_history';
-        $charset_collate = $wpdb->get_charset_collate();
-
-        $sql = "CREATE TABLE $table_name (
+        dbDelta( "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_meldegruppen (
             id bigint(20) NOT NULL AUTO_INCREMENT,
-            submission_id mediumint(9) NOT NULL,
+            wildart_id bigint(20) NOT NULL,
+            name varchar(100) NOT NULL,
+            obmann_user_id bigint(20) DEFAULT NULL,
+            is_active tinyint(1) DEFAULT 1,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY wildart_name (wildart_id, name),
+            KEY wildart_id (wildart_id),
+            KEY obmann_user_id (obmann_user_id)
+        ) $charset_collate;" );
+
+        dbDelta( "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_eigenjagdbezirke (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            meldegruppe_id bigint(20) NOT NULL,
+            name varchar(255) NOT NULL,
+            description text,
+            is_active tinyint(1) DEFAULT 1,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY meldegruppe_name (meldegruppe_id, name),
+            KEY meldegruppe_id (meldegruppe_id)
+        ) $charset_collate;" );
+
+        dbDelta( "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_jagdbezirk_meldegruppen (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            jagdbezirk_id bigint(20) NOT NULL,
+            meldegruppe_id bigint(20) NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY jagdbezirk_meldegruppe (jagdbezirk_id, meldegruppe_id),
+            KEY jagdbezirk_id (jagdbezirk_id),
+            KEY meldegruppe_id (meldegruppe_id)
+        ) $charset_collate;" );
+
+        dbDelta( "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_submissions_v2 (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            wildart_id bigint(20) NOT NULL,
+            eigenjagdbezirk_id bigint(20) NOT NULL,
+            category varchar(100) NOT NULL,
+            harvest_date datetime NOT NULL,
+            wus_number varchar(50) DEFAULT NULL,
+            notes text DEFAULT NULL,
+            internal_note text,
+            submitted_by_user_id bigint(20) DEFAULT NULL,
+            submitted_by_email varchar(255) DEFAULT NULL,
+            submitted_at datetime DEFAULT CURRENT_TIMESTAMP,
+            status varchar(50) DEFAULT 'pending_email',
+            verification_token varchar(64) DEFAULT NULL,
+            verified_at datetime DEFAULT NULL,
+            approved_by_user_id bigint(20) DEFAULT NULL,
+            approved_at datetime DEFAULT NULL,
+            approval_comment text,
+            time_to_email_verify int(11) DEFAULT NULL,
+            time_to_approval int(11) DEFAULT NULL,
+            total_processing_time int(11) DEFAULT NULL,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY wildart_id (wildart_id),
+            KEY eigenjagdbezirk_id (eigenjagdbezirk_id),
+            KEY status (status),
+            KEY harvest_date (harvest_date)
+        ) $charset_collate;" );
+
+        dbDelta( "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_moderation_history (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            submission_id bigint(20) NOT NULL,
             action varchar(50) NOT NULL,
-            previous_status varchar(20) DEFAULT NULL,
-            new_status varchar(20) DEFAULT NULL,
-            moderator_id bigint(20) NOT NULL DEFAULT 0,
-            moderator_name varchar(255) DEFAULT '',
+            performed_by_user_id bigint(20) DEFAULT NULL,
+            performed_by_email varchar(255) DEFAULT NULL,
+            old_status varchar(50) DEFAULT NULL,
+            new_status varchar(50) DEFAULT NULL,
             comment text,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id),
+            performed_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
             KEY submission_id (submission_id),
-            KEY moderator_id (moderator_id),
+            KEY performed_by_user_id (performed_by_user_id),
+            KEY action (action)
+        ) $charset_collate;" );
+
+        dbDelta( "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_activity_log (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) DEFAULT NULL,
+            user_email varchar(255) DEFAULT NULL,
+            ip_address_hash varchar(64),
+            action varchar(100) NOT NULL,
+            entity_type varchar(50) DEFAULT NULL,
+            entity_id bigint(20) DEFAULT NULL,
+            details text,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY user_id (user_id),
             KEY action (action),
             KEY created_at (created_at)
-        ) $charset_collate;";
+        ) $charset_collate;" );
 
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
-    }
-
-    /**
-     * Create operation log tables for undo functionality
-     *
-     * Creates two tables:
-     * 1. ahgmh_operation_logs - Main table for tracking bulk operations
-     * 2. ahgmh_operation_log_details - Details of changed records for each operation
-     */
-    public function create_operation_log_tables() {
-        global $wpdb;
-
-        $charset_collate = $wpdb->get_charset_collate();
-
-        // Main operation logs table
-        $operations_table = $wpdb->prefix . 'ahgmh_operation_logs';
-        $sql = "CREATE TABLE $operations_table (
+        dbDelta( "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}hgmh_email_log (
             id bigint(20) NOT NULL AUTO_INCREMENT,
-            operation_type varchar(50) NOT NULL,
-            user_id bigint(20) NOT NULL DEFAULT 0,
-            affected_count int(11) NOT NULL DEFAULT 0,
-            description text,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id),
-            KEY user_id (user_id),
-            KEY operation_type (operation_type),
-            KEY created_at (created_at)
-        ) $charset_collate;";
-
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
-
-        // Operation log details table - stores individual record changes
-        $details_table = $wpdb->prefix . 'ahgmh_operation_log_details';
-        $sql = "CREATE TABLE $details_table (
-            id bigint(20) NOT NULL AUTO_INCREMENT,
-            log_id bigint(20) NOT NULL,
-            record_id bigint(20) NOT NULL,
-            field_name varchar(100) NOT NULL,
-            old_value text,
-            new_value text,
-            PRIMARY KEY  (id),
-            KEY log_id (log_id),
-            KEY record_id (record_id)
-        ) $charset_collate;";
-
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
-    }
-
-    /**
-     * Migrate existing installations to add status field
-     * Safe to run multiple times - checks if column exists first
-     */
-    public function migrate_add_status_field() {
-        global $wpdb;
-
-        // Check if status column already exists
-        $row = $wpdb->get_results("SHOW COLUMNS FROM {$this->table_name} LIKE 'status'");
-
-        if (empty($row)) {
-            // Column doesn't exist, add it
-            $wpdb->query("
-                ALTER TABLE {$this->table_name}
-                ADD COLUMN status varchar(50) DEFAULT 'pending_approval' NOT NULL
-                AFTER field6
-            ");
-
-            error_log('AHGMH: Added status field to submissions table');
-        }
-    }
-
-    /**
-     * Create the email log table
-     */
-    public function create_email_log_table() {
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ahgmh_email_log';
-        $charset_collate = $wpdb->get_charset_collate();
-
-        $sql = "CREATE TABLE $table_name (
-            id bigint(20) NOT NULL AUTO_INCREMENT,
-            email_type varchar(100) NOT NULL,
-            recipient varchar(255) NOT NULL,
-            subject text NOT NULL,
-            sent_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             submission_id bigint(20) DEFAULT NULL,
-            PRIMARY KEY  (id),
-            KEY email_type (email_type),
+            email_type varchar(50) NOT NULL,
+            recipient_email varchar(255) NOT NULL,
+            subject varchar(255) DEFAULT NULL,
+            body text,
+            status varchar(20) DEFAULT 'sent',
+            error_message text,
+            sent_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
             KEY submission_id (submission_id),
+            KEY email_type (email_type),
+            KEY recipient_email (recipient_email),
             KEY sent_at (sent_at)
-        ) $charset_collate;";
-
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
-    }
-
-    /**
-     * Create activity log table for tracking user activities
-     */
-    public function create_activity_log_table() {
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ahgmh_activity_log';
-        $charset_collate = $wpdb->get_charset_collate();
-
-        $sql = "CREATE TABLE $table_name (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            user_id bigint(20) NOT NULL,
-            action varchar(50) NOT NULL,
-            context longtext,
-            ip_hash varchar(64),
-            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id),
-            KEY user_id_idx (user_id),
-            KEY action_idx (action),
-            KEY created_at_idx (created_at)
-        ) $charset_collate;";
-
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
+        ) $charset_collate;" );
     }
 
     /**
@@ -376,7 +195,7 @@ class AHGMH_Database_Handler {
     public function create_meldegruppen_config_table() {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        $table_name = $wpdb->prefix . 'hgmh_meldegruppen_config';
         $charset_collate = $wpdb->get_charset_collate();
         
         $sql = "CREATE TABLE $table_name (
@@ -406,7 +225,7 @@ class AHGMH_Database_Handler {
     public function create_meldegruppen_limits_table() {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        $table_name = $wpdb->prefix . 'hgmh_meldegruppen_limits';
         $charset_collate = $wpdb->get_charset_collate();
         
         $sql = "CREATE TABLE $table_name (
@@ -431,143 +250,153 @@ class AHGMH_Database_Handler {
     }
      
     /**
-     * Seed default Jagdbezirke if table is empty
-     */
-    private function seed_default_jagdbezirke() {
-        global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        // Check if table has any records
-        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
-        
-        if ($count == 0) {
-            // Add some default entries
-            $defaults = array(
-                array('jagdbezirk' => 'Jagdbezirk 1', 'meldegruppe' => 'Gruppe A', 'ungueltig' => 0, 'bemerkung' => 'Standard Jagdbezirk'),
-                array('jagdbezirk' => 'Jagdbezirk 2', 'meldegruppe' => 'Gruppe B', 'ungueltig' => 0, 'bemerkung' => 'Standard Jagdbezirk'),
-                array('jagdbezirk' => 'Jagdbezirk 3', 'meldegruppe' => 'Gruppe A', 'ungueltig' => 1, 'bemerkung' => 'Inaktiver Jagdbezirk')
-            );
-            
-            foreach ($defaults as $default) {
-                $wpdb->insert(
-                    $table_name,
-                    $default,
-                    array('%s', '%s', '%d', '%s')
-                );
-            }
-        }
-    }
-
-    /**
-     * Insert form submission into database
+     * Insert form submission into database.
      *
-     * @param array $data Form data
-     * @return int|false The number of rows inserted, or false on error
+     * Accepts legacy field names (game_species, field1-field6) and maps them
+     * to the normalized hgmh_submissions_v2 schema.
+     *
+     * Field mapping:
+     *   game_species → wildart_id (looked up by name in hgmh_wildarten)
+     * Expected keys: game_species, harvest_date, category, wus_number, notes,
+     *   eigenjagdbezirk (name string, resolved to ID), internal_note, user_id,
+     *   submitter_email, status.
+     *
+     * @param array $data Submission data
+     * @return int|false Insert ID on success, false on error
      */
     public function insert_submission($data) {
         global $wpdb;
-        
-        // Sanitize data - include user_id and game_species
-        $sanitized_data = array(
-            'user_id' => isset($data['user_id']) ? intval($data['user_id']) : 0,
-            'game_species' => isset($data['game_species']) ? sanitize_text_field($data['game_species']) : 'Rotwild',
-            'field1' => sanitize_text_field($data['field1']),
-            'field2' => sanitize_text_field($data['field2']),
-            'field3' => sanitize_text_field($data['field3']),
-            'field4' => sanitize_text_field($data['field4']),
-            'field5' => sanitize_text_field($data['field5']),
-            'field6' => isset($data['field6']) ? sanitize_textarea_field($data['field6']) : ''
+
+        $wildarten_table        = $wpdb->prefix . 'hgmh_wildarten';
+        $eigenjagdbezirke_table = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+
+        // Resolve wildart_id by name
+        $wildart_name = isset($data['game_species']) ? sanitize_text_field($data['game_species']) : '';
+        $wildart_id   = 0;
+        if ( $wildart_name ) {
+            $wildart_id = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM $wildarten_table WHERE name = %s AND is_active = 1",
+                $wildart_name
+            ) );
+        }
+
+        // Resolve eigenjagdbezirk_id by name (empty → 0 for wildarts without Jagdbezirke)
+        $ejb_name = isset($data['eigenjagdbezirk']) ? sanitize_text_field($data['eigenjagdbezirk']) : '';
+        $ejb_id   = 0;
+        if ( $ejb_name ) {
+            $ejb_id = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM $eigenjagdbezirke_table WHERE name = %s AND is_active = 1",
+                $ejb_name
+            ) );
+        }
+
+        $insert_data = array(
+            'wildart_id'           => $wildart_id,
+            'eigenjagdbezirk_id'   => $ejb_id,
+            'harvest_date'         => isset($data['harvest_date'])   ? sanitize_text_field($data['harvest_date'])      : '',
+            'category'             => isset($data['category'])       ? sanitize_text_field($data['category'])          : '',
+            'wus_number'           => isset($data['wus_number'])     ? sanitize_text_field($data['wus_number'])        : '',
+            'notes'                => isset($data['notes'])          ? sanitize_textarea_field($data['notes'])         : '',
+            'internal_note'        => isset($data['internal_note'])  ? sanitize_textarea_field($data['internal_note']) : '',
+            'submitted_by_user_id' => isset($data['user_id'])        ? absint($data['user_id'])                        : get_current_user_id(),
+            'submitted_by_email'   => isset($data['submitter_email']) ? sanitize_email($data['submitter_email'])       : '',
+            'status'               => isset($data['status'])         ? sanitize_text_field($data['status'])            : 'pending_email',
         );
-        
-        // Insert data
+
         $result = $wpdb->insert(
             $this->table_name,
-            $sanitized_data,
-            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
+            $insert_data,
+            array('%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s')
         );
-        
-        // Log error for debugging if WP_DEBUG is enabled
-        if ($result === false && defined('WP_DEBUG') && WP_DEBUG) {
+
+        if ( $result === false && defined('WP_DEBUG') && WP_DEBUG ) {
             error_log('AHGMH insert error: ' . $wpdb->last_error);
-            error_log('AHGMH last query: ' . $wpdb->last_query);
         }
-        
+
         return $result ? $wpdb->insert_id : false;
+    }
+
+    /**
+     * Shared JOIN fragment for enriched submission queries.
+     *
+     * @return string SQL snippet
+     */
+    private function submission_joins() {
+        global $wpdb;
+        $w  = $wpdb->prefix . 'hgmh_wildarten';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
+        return "LEFT JOIN $w w ON s.wildart_id = w.id
+                LEFT JOIN $e e ON s.eigenjagdbezirk_id = e.id
+                LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+                LEFT JOIN $m m ON jm.meldegruppe_id = m.id";
     }
 
     /**
      * Get all form submissions
      *
-     * @param int $limit Number of results to get
-     * @param int $offset Offset for pagination
-     * @param bool $approved_only If true, only return approved submissions (for public views)
-     * @return array Array of submissions
+     * @param int  $limit        Number of results (0 = unlimited)
+     * @param int  $offset       Offset for pagination
+     * @param bool $approved_only Only return approved submissions
+     * @return array
      */
     public function get_submissions($limit = 10, $offset = 0, $approved_only = false) {
         global $wpdb;
 
-        $query = "SELECT s.*, j.meldegruppe
+        $query = "SELECT s.*, w.name AS wildart_name, e.name AS eigenjagdbezirk_name, m.name AS meldegruppe_name
                   FROM $this->table_name s
-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
+                  " . $this->submission_joins();
 
-        // Bug #13b & #14: Only return approved submissions for public views
         if ($approved_only) {
             $query .= " WHERE s.status = 'approved'";
         }
 
-        $query .= " ORDER BY s.created_at DESC";
+        $query .= " ORDER BY s.submitted_at DESC";
 
         if ($limit > 0) {
             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
         }
 
-        $results = $wpdb->get_results($query, ARRAY_A);
-
-        return $results;
+        return $wpdb->get_results($query, ARRAY_A) ?: array();
     }
 
     /**
      * Get a single submission by ID
      *
      * @param int $id Submission ID
-     * @return array|null Submission data or null if not found
+     * @return array|null
      */
     public function get_submission_by_id($id) {
         global $wpdb;
 
         $query = $wpdb->prepare(
-            "SELECT s.*, j.meldegruppe
+            "SELECT s.*, w.name AS wildart_name, e.name AS eigenjagdbezirk_name, m.name AS meldegruppe_name
              FROM $this->table_name s
-             LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
+             " . $this->submission_joins() . "
              WHERE s.id = %d",
             $id
         );
 
-        $result = $wpdb->get_row($query, ARRAY_A);
-
-        return $result;
+        return $wpdb->get_row($query, ARRAY_A);
     }
 
     /**
      * Count total submissions
      *
-     * @param bool $approved_only If true, only count approved submissions (for public views)
-     * @return int Total count of submissions
+     * @param bool $approved_only Only count approved submissions
+     * @return int
      */
     public function count_submissions($approved_only = false) {
         global $wpdb;
 
         $query = "SELECT COUNT(*) FROM $this->table_name";
 
-        // Bug #13b & #14: Only count approved submissions for public views
         if ($approved_only) {
             $query .= " WHERE status = 'approved'";
         }
 
-        $count = $wpdb->get_var($query);
-
-        return (int) $count;
+        return (int) $wpdb->get_var($query);
     }
 
     /**
@@ -577,21 +406,18 @@ class AHGMH_Database_Handler {
      */
     public function count_submissions_this_month() {
         global $wpdb;
-        
-        // Get the current month and year in a more reliable way
-        $current_month = date('m');
-        $current_year = date('Y');
-        
+
+        $current_month = gmdate('m');
+        $current_year  = gmdate('Y');
+
         $query = $wpdb->prepare(
-            "SELECT COUNT(*) FROM $this->table_name 
-             WHERE MONTH(created_at) = %s 
-             AND YEAR(created_at) = %s",
+            "SELECT COUNT(*) FROM $this->table_name
+             WHERE MONTH(submitted_at) = %s
+             AND YEAR(submitted_at) = %s",
             $current_month, $current_year
         );
-        
-        $count = $wpdb->get_var($query);
-        
-        return (int) $count;
+
+        return (int) $wpdb->get_var($query);
     }
 
     /**
@@ -601,31 +427,31 @@ class AHGMH_Database_Handler {
      */
     public function count_active_users() {
         global $wpdb;
-        
-        $query = "SELECT COUNT(DISTINCT user_id) FROM $this->table_name WHERE user_id > 0";
-        $count = $wpdb->get_var($query);
-        
-        return (int) $count;
+
+        $query = "SELECT COUNT(DISTINCT submitted_by_user_id) FROM $this->table_name WHERE submitted_by_user_id > 0";
+        return (int) $wpdb->get_var($query);
     }
 
     /**
      * Count submissions by species and category
      *
-     * @param string $species Species name
+     * @param string $species  Wildart name
      * @param string $category Category name
      * @return int Count of submissions
      */
     public function count_submissions_by_species_category($species, $category) {
         global $wpdb;
-        
+
+        $w = $wpdb->prefix . 'hgmh_wildarten';
+
         $query = $wpdb->prepare(
-            "SELECT COUNT(*) FROM $this->table_name 
-             WHERE game_species = %s AND field2 = %s",
+            "SELECT COUNT(*) FROM $this->table_name s
+             INNER JOIN $w w ON s.wildart_id = w.id
+             WHERE w.name = %s AND s.category = %s",
             $species, $category
         );
-        $count = $wpdb->get_var($query);
-        
-        return (int) $count;
+
+        return (int) $wpdb->get_var($query);
     }
 
 
@@ -651,20 +477,21 @@ class AHGMH_Database_Handler {
     /**
      * Update a submission
      *
-     * @param int $id The submission ID
-     * @param array $data The updated data
-     * @return bool Whether the update was successful
+     * @param int   $id   Submission ID
+     * @param array $data Updated data (new schema field names)
+     * @return bool
      */
     public function update_submission($id, $data) {
         global $wpdb;
 
-        // Fields that should use integer format
-        $integer_fields = array('user_id', 'approved_by', 'rejected_by', 'time_to_approval');
+        $integer_fields = array(
+            'wildart_id', 'eigenjagdbezirk_id',
+            'submitted_by_user_id', 'approved_by_user_id', 'time_to_approval',
+        );
 
-        // Remove any empty values except created_at and user_id which can be empty/zero but valid
         $filtered_data = array();
         foreach ($data as $key => $value) {
-            if ($value !== null && ($key === 'created_at' || $key === 'user_id' || $value !== '')) {
+            if ($value !== null && $value !== '') {
                 $filtered_data[$key] = $value;
             }
         }
@@ -673,14 +500,9 @@ class AHGMH_Database_Handler {
             return false;
         }
 
-        // Build format array dynamically based on filtered data with correct types
         $formats = array();
         foreach ($filtered_data as $key => $value) {
-            if (in_array($key, $integer_fields)) {
-                $formats[] = '%d';
-            } else {
-                $formats[] = '%s';
-            }
+            $formats[] = in_array($key, $integer_fields, true) ? '%d' : '%s';
         }
 
         $result = $wpdb->update(
@@ -697,62 +519,74 @@ class AHGMH_Database_Handler {
     /**
      * Delete all submissions for a specific species
      *
-     * @param string $species The game species
-     * @return bool True on success, false on failure
+     * @param string $species Wildart name
+     * @return bool
      */
     public function delete_submissions_by_species($species) {
         global $wpdb;
-        
+
+        $w = $wpdb->prefix . 'hgmh_wildarten';
+
+        $wildart_id = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM $w WHERE name = %s",
+            sanitize_text_field($species)
+        ) );
+
+        if ( ! $wildart_id ) {
+            return false;
+        }
+
         $result = $wpdb->delete(
             $this->table_name,
-            array('game_species' => $species),
-            array('%s')
+            array('wildart_id' => $wildart_id),
+            array('%d')
         );
-        
+
         return $result !== false;
     }
 
     /**
-     * Get submission counts per category
+     * Get submission counts per category.
      *
-     * @param string $species Filter by game species (optional)
-     * @param string $meldegruppe Filter by meldegruppe (optional - legacy, maintained for compatibility)
-     * @param string $jagdbezirk Filter by jagdbezirk (optional - direct filtering)
-     * @param bool $approved_only If true, only count approved submissions (for public views)
-     * @return array Array with category counts
+     * @param string $species      Wildart name (optional)
+     * @param string $meldegruppe  Meldegruppe name (optional)
+     * @param string $jagdbezirk   Eigenjagdbezirk name (optional)
+     * @param bool   $approved_only Only count approved submissions
+     * @return array category => count
      */
     public function get_category_counts($species = '', $meldegruppe = '', $jagdbezirk = '', $approved_only = false) {
         global $wpdb;
 
-        $query = "SELECT s.field2 as category, COUNT(*) as count
-                  FROM $this->table_name s";
+        $w  = $wpdb->prefix . 'hgmh_wildarten';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
 
-        // Add JOIN only if meldegruppe filter is needed (legacy compatibility)
-        if (!empty($meldegruppe)) {
-            $query .= " LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
-        }
+        $query = "SELECT s.category, COUNT(*) as count
+                  FROM $this->table_name s
+                  LEFT JOIN $w w  ON s.wildart_id = w.id
+                  LEFT JOIN $e e  ON s.eigenjagdbezirk_id = e.id
+                  LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+                  LEFT JOIN $m m  ON jm.meldegruppe_id = m.id
+                  WHERE s.category != ''";
 
-        $query .= " WHERE s.field2 != ''";
-
-        // Bug #13b & #14: Only count approved submissions for public views
         if ($approved_only) {
             $query .= " AND s.status = 'approved'";
         }
 
         if (!empty($species)) {
-            $query .= $wpdb->prepare(" AND s.game_species = %s", $species);
+            $query .= $wpdb->prepare(" AND w.name = %s", $species);
         }
 
         if (!empty($meldegruppe)) {
-            $query .= $wpdb->prepare(" AND j.meldegruppe = %s", $meldegruppe);
+            $query .= $wpdb->prepare(" AND m.name = %s", $meldegruppe);
         }
 
-        // Direct jagdbezirk filtering (no JOIN needed) - 3rd parameter is jagdbezirk value
         if (!empty($jagdbezirk)) {
-            $query .= $wpdb->prepare(" AND s.field5 = %s", $jagdbezirk);
+            $query .= $wpdb->prepare(" AND e.name = %s", $jagdbezirk);
         }
 
-        $query .= " GROUP BY s.field2";
+        $query .= " GROUP BY s.category";
         $results = $wpdb->get_results($query, ARRAY_A);
 
         $counts = array();
@@ -766,86 +600,83 @@ class AHGMH_Database_Handler {
     /**
      * Get submissions filtered by species
      *
-     * @param int $limit Number of results to get
-     * @param int $offset Offset for pagination
-     * @param string $species Filter by game species (optional)
-     * @param bool $approved_only If true, only return approved submissions (for public views)
-     * @return array Array of submissions
+     * @param int    $limit        Number of results (0 = unlimited)
+     * @param int    $offset       Offset for pagination
+     * @param string $species      Wildart name (optional)
+     * @param bool   $approved_only Only return approved submissions
+     * @return array
      */
     public function get_submissions_by_species($limit = 10, $offset = 0, $species = '', $approved_only = false) {
         global $wpdb;
 
-        $query = "SELECT s.*, j.meldegruppe
+        $query = "SELECT s.*, w.name AS wildart_name, e.name AS eigenjagdbezirk_name, m.name AS meldegruppe_name
                   FROM $this->table_name s
-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk";
+                  " . $this->submission_joins();
 
-        $where_clauses = array();
+        $where = array();
 
         if (!empty($species)) {
-            $where_clauses[] = $wpdb->prepare("s.game_species = %s", $species);
+            $where[] = $wpdb->prepare("w.name = %s", $species);
         }
 
-        // Bug #13b & #14: Only return approved submissions for public views
         if ($approved_only) {
-            $where_clauses[] = "s.status = 'approved'";
+            $where[] = "s.status = 'approved'";
         }
 
-        if (!empty($where_clauses)) {
-            $query .= " WHERE " . implode(" AND ", $where_clauses);
+        if ($where) {
+            $query .= " WHERE " . implode(" AND ", $where);
         }
 
-        $query .= " ORDER BY s.created_at DESC";
+        $query .= " ORDER BY s.submitted_at DESC";
 
         if ($limit > 0) {
             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
         }
 
-        $results = $wpdb->get_results($query, ARRAY_A);
-
-        return $results;
+        return $wpdb->get_results($query, ARRAY_A) ?: array();
     }
 
     /**
      * Count submissions filtered by species
      *
-     * @param string $species Filter by game species (optional)
-     * @param bool $approved_only If true, only count approved submissions (for public views)
-     * @return int Total count of submissions
+     * @param string $species      Wildart name (optional)
+     * @param bool   $approved_only Only count approved submissions
+     * @return int
      */
     public function count_submissions_by_species($species = '', $approved_only = false) {
         global $wpdb;
 
-        $query = "SELECT COUNT(*) FROM $this->table_name";
+        $w = $wpdb->prefix . 'hgmh_wildarten';
 
-        $where_clauses = array();
+        $query = "SELECT COUNT(*) FROM $this->table_name s
+                  LEFT JOIN $w w ON s.wildart_id = w.id";
+
+        $where = array();
 
         if (!empty($species)) {
-            $where_clauses[] = $wpdb->prepare("game_species = %s", $species);
+            $where[] = $wpdb->prepare("w.name = %s", $species);
         }
 
-        // Bug #13b & #14: Only count approved submissions for public views
         if ($approved_only) {
-            $where_clauses[] = "status = 'approved'";
+            $where[] = "s.status = 'approved'";
         }
 
-        if (!empty($where_clauses)) {
-            $query .= " WHERE " . implode(" AND ", $where_clauses);
+        if ($where) {
+            $query .= " WHERE " . implode(" AND ", $where);
         }
 
-        $count = $wpdb->get_var($query);
-
-        return (int) $count;
+        return (int) $wpdb->get_var($query);
     }
      
     /**
      * Get submissions filtered by species and meldegruppe
      *
-     * @param string $species Game species
-     * @param string $meldegruppe Meldegruppe name
-     * @param int $limit Number of results to return
-     * @param int $offset Number of results to skip
-     * @param bool $approved_only If true, only return approved submissions (for public views)
-     * @return array Array of submission records
+     * @param string $species      Wildart name
+     * @param string $meldegruppe  Meldegruppe name
+     * @param int    $limit        Number of results (0 = unlimited)
+     * @param int    $offset       Offset for pagination
+     * @param bool   $approved_only Only return approved submissions
+     * @return array
      */
     public function get_submissions_by_species_and_meldegruppe($species, $meldegruppe, $limit = 10, $offset = 0, $approved_only = false) {
         global $wpdb;
@@ -854,35 +685,31 @@ class AHGMH_Database_Handler {
             return array();
         }
 
-        $where_clause = "WHERE s.game_species = %s AND j.meldegruppe = %s";
+        $query = "SELECT s.*, w.name AS wildart_name, e.name AS eigenjagdbezirk_name, m.name AS meldegruppe_name
+                  FROM $this->table_name s
+                  " . $this->submission_joins() . "
+                  WHERE w.name = %s AND m.name = %s";
 
-        // Bug #13b & #14: Only return approved submissions for public views
         if ($approved_only) {
-            $where_clause .= " AND s.status = 'approved'";
+            $query .= " AND s.status = 'approved'";
         }
 
-        $query = "SELECT s.*, j.meldegruppe
-                  FROM $this->table_name s
-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
-                  {$where_clause}
-                  ORDER BY s.created_at DESC";
+        $query .= " ORDER BY s.submitted_at DESC";
 
         if ($limit > 0) {
             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
         }
 
-        $results = $wpdb->get_results($wpdb->prepare($query, $species, $meldegruppe), ARRAY_A);
-
-        return $results ? $results : array();
+        return $wpdb->get_results($wpdb->prepare($query, $species, $meldegruppe), ARRAY_A) ?: array();
     }
 
     /**
      * Count submissions filtered by species and meldegruppe
      *
-     * @param string $species Game species
-     * @param string $meldegruppe Meldegruppe name
-     * @param bool $approved_only If true, only count approved submissions (for public views)
-     * @return int Total count of submissions
+     * @param string $species      Wildart name
+     * @param string $meldegruppe  Meldegruppe name
+     * @param bool   $approved_only Only count approved submissions
+     * @return int
      */
     public function count_submissions_by_species_and_meldegruppe($species, $meldegruppe, $approved_only = false) {
         global $wpdb;
@@ -891,31 +718,34 @@ class AHGMH_Database_Handler {
             return 0;
         }
 
-        $where_clause = "WHERE s.game_species = %s AND j.meldegruppe = %s";
-
-        // Bug #13b & #14: Only count approved submissions for public views
-        if ($approved_only) {
-            $where_clause .= " AND s.status = 'approved'";
-        }
+        $w  = $wpdb->prefix . 'hgmh_wildarten';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
 
         $query = "SELECT COUNT(*)
                   FROM $this->table_name s
-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
-                  {$where_clause}";
+                  LEFT JOIN $w w  ON s.wildart_id = w.id
+                  LEFT JOIN $e e  ON s.eigenjagdbezirk_id = e.id
+                  LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+                  LEFT JOIN $m m  ON jm.meldegruppe_id = m.id
+                  WHERE w.name = %s AND m.name = %s";
 
-        $count = $wpdb->get_var($wpdb->prepare($query, $species, $meldegruppe));
+        if ($approved_only) {
+            $query .= " AND s.status = 'approved'";
+        }
 
-        return (int) $count;
+        return (int) $wpdb->get_var($wpdb->prepare($query, $species, $meldegruppe));
     }
 
     /**
      * Get submissions filtered by meldegruppe only
      *
-     * @param string $meldegruppe The meldegruppe to filter by
-     * @param int $limit Number of submissions to return
-     * @param int $offset Offset for pagination
-     * @param bool $approved_only If true, only return approved submissions (for public views)
-     * @return array Array of submissions
+     * @param string $meldegruppe  Meldegruppe name
+     * @param int    $limit        Number of results (0 = unlimited)
+     * @param int    $offset       Offset for pagination
+     * @param bool   $approved_only Only return approved submissions
+     * @return array
      */
     public function get_submissions_by_meldegruppe($meldegruppe, $limit = 10, $offset = 0, $approved_only = false) {
         global $wpdb;
@@ -924,34 +754,30 @@ class AHGMH_Database_Handler {
             return array();
         }
 
-        $where_clause = "WHERE j.meldegruppe = %s";
+        $query = "SELECT s.*, w.name AS wildart_name, e.name AS eigenjagdbezirk_name, m.name AS meldegruppe_name
+                  FROM $this->table_name s
+                  " . $this->submission_joins() . "
+                  WHERE m.name = %s";
 
-        // Bug #13b & #14: Only return approved submissions for public views
         if ($approved_only) {
-            $where_clause .= " AND s.status = 'approved'";
+            $query .= " AND s.status = 'approved'";
         }
 
-        $query = "SELECT s.*, j.meldegruppe
-                  FROM $this->table_name s
-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
-                  {$where_clause}
-                  ORDER BY s.created_at DESC";
+        $query .= " ORDER BY s.submitted_at DESC";
 
         if ($limit > 0) {
             $query .= $wpdb->prepare(" LIMIT %d OFFSET %d", $limit, $offset);
         }
 
-        $results = $wpdb->get_results($wpdb->prepare($query, $meldegruppe), ARRAY_A);
-
-        return $results ? $results : array();
+        return $wpdb->get_results($wpdb->prepare($query, $meldegruppe), ARRAY_A) ?: array();
     }
 
     /**
      * Count submissions filtered by meldegruppe only
      *
-     * @param string $meldegruppe The meldegruppe to filter by
-     * @param bool $approved_only If true, only count approved submissions (for public views)
-     * @return int Number of submissions
+     * @param string $meldegruppe  Meldegruppe name
+     * @param bool   $approved_only Only count approved submissions
+     * @return int
      */
     public function count_submissions_by_meldegruppe($meldegruppe, $approved_only = false) {
         global $wpdb;
@@ -960,21 +786,22 @@ class AHGMH_Database_Handler {
             return 0;
         }
 
-        $where_clause = "WHERE j.meldegruppe = %s";
-
-        // Bug #13b & #14: Only count approved submissions for public views
-        if ($approved_only) {
-            $where_clause .= " AND s.status = 'approved'";
-        }
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
 
         $query = "SELECT COUNT(*)
                   FROM $this->table_name s
-                  LEFT JOIN {$wpdb->prefix}ahgmh_jagdbezirke j ON s.field5 = j.jagdbezirk
-                  {$where_clause}";
+                  LEFT JOIN $e e  ON s.eigenjagdbezirk_id = e.id
+                  LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+                  LEFT JOIN $m m  ON jm.meldegruppe_id = m.id
+                  WHERE m.name = %s";
 
-        $count = $wpdb->get_var($wpdb->prepare($query, $meldegruppe));
+        if ($approved_only) {
+            $query .= " AND s.status = 'approved'";
+        }
 
-        return (int) $count;
+        return (int) $wpdb->get_var($wpdb->prepare($query, $meldegruppe));
     }
 
     /**
@@ -985,10 +812,12 @@ class AHGMH_Database_Handler {
      */
     public function check_wus_exists($wus_number) {
         global $wpdb;
-        
-        $query = "SELECT COUNT(*) FROM $this->table_name WHERE field3 = %s";
-        $count = $wpdb->get_var($wpdb->prepare($query, $wus_number));
-        
+
+        $count = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM $this->table_name WHERE wus_number = %s",
+            $wus_number
+        ) );
+
         return (int) $count > 0;
     }
 
@@ -1024,7 +853,7 @@ class AHGMH_Database_Handler {
             return $this->get_global_meldegruppen();
         }
         
-        $config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        $config_table = $wpdb->prefix . 'hgmh_meldegruppen_config';
         
         if (empty($wildart)) {
             // Get all meldegruppen for all wildarten
@@ -1041,21 +870,18 @@ class AHGMH_Database_Handler {
     }
 
     /**
-     * Get global meldegruppen from jagdbezirke table
-     * 
-     * @return array Array of global meldegruppen
+     * Get global meldegruppen from normalized table
+     *
+     * @return array Array of meldegruppe names
      */
     public function get_global_meldegruppen() {
         global $wpdb;
-        
-        $jagdbezirke_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        $query = "SELECT DISTINCT meldegruppe 
-                  FROM $jagdbezirke_table 
-                  WHERE ungueltig = 0 
-                  ORDER BY meldegruppe";
-        
-        return $wpdb->get_col($query);
+
+        $table = $wpdb->prefix . 'hgmh_meldegruppen';
+
+        return $wpdb->get_col(
+            "SELECT DISTINCT name FROM $table WHERE is_active = 1 ORDER BY name"
+        );
     }
     
     /**
@@ -1086,7 +912,7 @@ class AHGMH_Database_Handler {
     public function save_meldegruppen_config($wildart, $meldegruppen, $jagdbezirke_map = array()) {
         global $wpdb;
         
-        $config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        $config_table = $wpdb->prefix . 'hgmh_meldegruppen_config';
         
         // First, delete existing config for this wildart
         $wpdb->delete($config_table, array('wildart' => $wildart), array('%s'));
@@ -1129,7 +955,7 @@ class AHGMH_Database_Handler {
     public function meldegruppe_has_custom_limits($species, $meldegruppe) {
         global $wpdb;
         
-        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        $limits_table = $wpdb->prefix . 'hgmh_meldegruppen_limits';
         
         $query = $wpdb->prepare(
             "SELECT COUNT(*) FROM $limits_table 
@@ -1151,7 +977,7 @@ class AHGMH_Database_Handler {
     public function get_meldegruppen_limits($species, $meldegruppe = null) {
         global $wpdb;
         
-        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        $limits_table = $wpdb->prefix . 'hgmh_meldegruppen_limits';
         
         if ($meldegruppe === null) {
             // Get species default limits (for meldegruppen without custom limits)
@@ -1190,7 +1016,7 @@ class AHGMH_Database_Handler {
     public function get_meldegruppen_allow_exceeding($species, $meldegruppe = null) {
         global $wpdb;
         
-        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        $limits_table = $wpdb->prefix . 'hgmh_meldegruppen_limits';
         
         if ($meldegruppe === null) {
             // Get species default settings
@@ -1231,7 +1057,7 @@ class AHGMH_Database_Handler {
     public function save_meldegruppen_limits($species, $meldegruppe, $limits, $allow_exceeding = array(), $has_custom_limits = true) {
         global $wpdb;
         
-        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        $limits_table = $wpdb->prefix . 'hgmh_meldegruppen_limits';
         
         // First, delete existing limits for this species/meldegruppe combination
         if ($meldegruppe === null) {
@@ -1269,7 +1095,7 @@ class AHGMH_Database_Handler {
     public function toggle_meldegruppe_custom_limits($species, $meldegruppe, $has_custom_limits) {
         global $wpdb;
         
-        $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+        $limits_table = $wpdb->prefix . 'hgmh_meldegruppen_limits';
         
         if (!$has_custom_limits) {
             // Delete custom limits, meldegruppe will fall back to species defaults
@@ -1324,301 +1150,276 @@ class AHGMH_Database_Handler {
     
     /**
      * Remove all plugin data (for uninstall)
-     * This method removes the database table
      */
     public static function cleanup_database() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'ahgmh_submissions';
-        $jagdbezirk_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        $operation_logs_table = $wpdb->prefix . 'ahgmh_operation_logs';
-        $operation_log_details_table = $wpdb->prefix . 'ahgmh_operation_log_details';
+        $tables = array(
+            'hgmh_submissions_v2',
+            'hgmh_eigenjagdbezirke',
+            'hgmh_jagdbezirk_meldegruppen',
+            'hgmh_meldegruppen',
+            'hgmh_wildarten',
+            'hgmh_moderation_history',
+            'hgmh_activity_log',
+            'hgmh_email_log',
+            'hgmh_meldegruppen_config',
+            'hgmh_meldegruppen_limits',
+        );
 
-        $wpdb->query("DROP TABLE IF EXISTS $table_name");
-        $wpdb->query("DROP TABLE IF EXISTS $jagdbezirk_table");
-        $wpdb->query("DROP TABLE IF EXISTS $operation_log_details_table");
-        $wpdb->query("DROP TABLE IF EXISTS $operation_logs_table");
+        foreach ($tables as $table) {
+            $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}{$table}");
+        }
     }
     
     /**
-     * Get all Jagdbezirke
+     * Get all Eigenjagdbezirke
+     *
+     * @return array
      */
     public function get_jagdbezirke() {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        // Check if table exists
-        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-        if (!$table_exists) {
-            // Create table if it doesn't exist
-            $this->create_jagdbezirk_table();
-        }
 
-        $query = "SELECT * FROM $table_name ORDER BY jagdbezirk ASC";
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
 
-        return $wpdb->get_results($query, ARRAY_A);
+        return $wpdb->get_results(
+            "SELECT e.id, e.name AS jagdbezirk, m.name AS meldegruppe, e.description AS bemerkung, e.is_active AS active
+             FROM $e e
+             LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+             LEFT JOIN $m m ON jm.meldegruppe_id = m.id
+             ORDER BY e.name ASC",
+            ARRAY_A
+        ) ?: array();
     }
 
     /**
-     * Get active Jagdbezirke (not marked as invalid)
+     * Get active Eigenjagdbezirke
+     *
+     * @return array
      */
     public function get_active_jagdbezirke() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
 
-        // Check if table exists
-        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
-        if (!$table_exists) {
-            // Create table if it doesn't exist
-            $this->create_jagdbezirk_table();
-        }
-        
-        $query = "SELECT * FROM $table_name WHERE ungueltig = 0 AND wildart IS NULL ORDER BY jagdbezirk ASC";
-        
-        return $wpdb->get_results($query, ARRAY_A);
+        return $wpdb->get_results(
+            "SELECT e.id, e.name AS jagdbezirk, m.name AS meldegruppe, e.description AS bemerkung
+             FROM $e e
+             LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+             LEFT JOIN $m m ON jm.meldegruppe_id = m.id
+             WHERE e.is_active = 1
+             ORDER BY e.name ASC",
+            ARRAY_A
+        ) ?: array();
     }
-    
+
     /**
-     * Insert new Jagdbezirk
+     * Insert new Eigenjagdbezirk
+     *
+     * @param array $data Keys: jagdbezirk (name), meldegruppe_id or meldegruppe (name), bemerkung
+     * @return int|false Insert ID or false
      */
     public function insert_jagdbezirk($data) {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        $sanitized_data = array(
-            'jagdbezirk' => sanitize_text_field($data['jagdbezirk']),
-            'meldegruppe' => sanitize_text_field($data['meldegruppe']),
-            'ungueltig' => (isset($data['ungueltig']) && ($data['ungueltig'] === '1' || $data['ungueltig'] === 1)) ? 1 : 0,
-            'bemerkung' => sanitize_textarea_field($data['bemerkung'])
-        );
-        
+
+        $e = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $m = $wpdb->prefix . 'hgmh_meldegruppen';
+
+        // Resolve meldegruppe_id
+        if (!empty($data['meldegruppe_id'])) {
+            $meldegruppe_id = absint($data['meldegruppe_id']);
+        } elseif (!empty($data['meldegruppe'])) {
+            $meldegruppe_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $m WHERE name = %s",
+                sanitize_text_field($data['meldegruppe'])
+            ));
+        } else {
+            $meldegruppe_id = 0;
+        }
+
         $result = $wpdb->insert(
-            $table_name,
-            $sanitized_data,
-            array('%s', '%s', '%d', '%s')
+            $e,
+            array(
+                'name'          => sanitize_text_field($data['jagdbezirk']),
+                'meldegruppe_id' => $meldegruppe_id,
+                'description'   => isset($data['bemerkung']) ? sanitize_textarea_field($data['bemerkung']) : '',
+                'is_active'     => isset($data['ungueltig']) && $data['ungueltig'] ? 0 : 1,
+            ),
+            array('%s', '%d', '%s', '%d')
         );
-        
+
         return $result ? $wpdb->insert_id : false;
     }
-    
+
     /**
-     * Update Jagdbezirk
+     * Update Eigenjagdbezirk
+     *
+     * @param int   $id   Record ID
+     * @param array $data Keys: jagdbezirk, meldegruppe_id or meldegruppe, bemerkung, ungueltig
+     * @return int|false
      */
     public function update_jagdbezirk($id, $data) {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        $sanitized_data = array(
-            'jagdbezirk' => sanitize_text_field($data['jagdbezirk']),
-            'meldegruppe' => sanitize_text_field($data['meldegruppe']),
-            'ungueltig' => (isset($data['ungueltig']) && ($data['ungueltig'] === '1' || $data['ungueltig'] === 1)) ? 1 : 0,
-            'bemerkung' => sanitize_textarea_field($data['bemerkung'])
-        );
-        
-        return $wpdb->update(
-            $table_name,
-            $sanitized_data,
-            array('id' => $id),
-            array('%s', '%s', '%d', '%s'),
-            array('%d')
-        );
+
+        $e = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $m = $wpdb->prefix . 'hgmh_meldegruppen';
+
+        $update = array('name' => sanitize_text_field($data['jagdbezirk']));
+
+        if (!empty($data['meldegruppe_id'])) {
+            $update['meldegruppe_id'] = absint($data['meldegruppe_id']);
+        } elseif (!empty($data['meldegruppe'])) {
+            $update['meldegruppe_id'] = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $m WHERE name = %s",
+                sanitize_text_field($data['meldegruppe'])
+            ));
+        }
+
+        if (isset($data['bemerkung'])) {
+            $update['description'] = sanitize_textarea_field($data['bemerkung']);
+        }
+
+        if (isset($data['ungueltig'])) {
+            $update['is_active'] = $data['ungueltig'] ? 0 : 1;
+        }
+
+        return $wpdb->update($e, $update, array('id' => $id), null, array('%d'));
     }
-    
+
     /**
-     * Delete Jagdbezirk
+     * Delete Eigenjagdbezirk
+     *
+     * @param int $id
+     * @return int|false
      */
     public function delete_jagdbezirk($id) {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        return $wpdb->delete(
-            $table_name,
-            array('id' => $id),
-            array('%d')
-        );
+        return $wpdb->delete($wpdb->prefix . 'hgmh_eigenjagdbezirke', array('id' => $id), array('%d'));
     }
-    
+
     /**
-     * Delete all Jagdbezirke
+     * Delete all Eigenjagdbezirke
+     *
+     * @return int|false
      */
     public function delete_all_jagdbezirke() {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        return $wpdb->query("DELETE FROM $table_name");
+        return $wpdb->query("DELETE FROM {$wpdb->prefix}hgmh_eigenjagdbezirke");
     }
 
     /**
-     * Get jagdbezirke for specific wildart
+     * Get eigenjagdbezirke for a specific wildart (via meldegruppe relationship)
+     *
+     * @param string $wildart Wildart name
+     * @return array
      */
     public function get_wildart_jagdbezirke($wildart) {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        if ($this->is_wildart_specific_enabled()) {
-            // Return wildart-specific jagdbezirke
-            $results = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM $table_name WHERE wildart = %s AND active = 1 ORDER BY jagdbezirk ASC",
-                $wildart
-            ), ARRAY_A);
-        } else {
-            // Return global jagdbezirke
-            $results = $wpdb->get_results(
-                "SELECT * FROM $table_name WHERE wildart IS NULL AND active = 1 ORDER BY jagdbezirk ASC",
-                ARRAY_A
-            );
-        }
-        
-        return $results ?: array();
+
+        $e = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $m = $wpdb->prefix . 'hgmh_meldegruppen';
+        $w = $wpdb->prefix . 'hgmh_wildarten';
+
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT e.id, e.name AS jagdbezirk, m.name AS meldegruppe, e.description AS bemerkung
+             FROM $e e
+             INNER JOIN $m m ON e.meldegruppe_id = m.id
+             INNER JOIN $w w ON m.wildart_id = w.id
+             WHERE w.name = %s AND e.is_active = 1
+             ORDER BY e.name ASC",
+            sanitize_text_field($wildart)
+        ), ARRAY_A) ?: array();
     }
 
     /**
-     * Save wildart-specific jagdbezirk
+     * Save an eigenjagdbezirk for a specific wildart
+     *
+     * @param string $wildart         Wildart name
+     * @param array  $jagdbezirk_data Keys: jagdbezirk, meldegruppe, bemerkung
+     * @return int|false
      */
     public function save_wildart_jagdbezirk($wildart, $jagdbezirk_data) {
-        global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        return $wpdb->insert(
-            $table_name,
-            array(
-                'wildart' => $wildart,
-                'jagdbezirk' => $jagdbezirk_data['jagdbezirk'],
-                'meldegruppe' => $jagdbezirk_data['meldegruppe'],
-                'bemerkung' => $jagdbezirk_data['bemerkung'],
-                'active' => 1
-            ),
-            array('%s', '%s', '%s', '%s', '%d')
-        );
+        $data = array_merge($jagdbezirk_data, array('wildart' => $wildart));
+        return $this->insert_jagdbezirk($data);
     }
 
     /**
-     * Save global jagdbezirk
+     * Save a global eigenjagdbezirk (no specific wildart)
+     *
+     * @param array $jagdbezirk_data Keys: jagdbezirk, meldegruppe, bemerkung
+     * @return int|false
      */
     public function save_global_jagdbezirk($jagdbezirk_data) {
-        global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        return $wpdb->insert(
-            $table_name,
-            array(
-                'wildart' => null,
-                'jagdbezirk' => $jagdbezirk_data['jagdbezirk'],
-                'meldegruppe' => $jagdbezirk_data['meldegruppe'],
-                'bemerkung' => $jagdbezirk_data['bemerkung'],
-                'active' => 1
-            ),
-            array('%s', '%s', '%s', '%s', '%d')
-        );
+        return $this->insert_jagdbezirk($jagdbezirk_data);
     }
 
     /**
-     * Clear global jagdbezirke
+     * Deactivate all eigenjagdbezirke not assigned to a specific wildart
+     *
+     * @return int|false
      */
     public function clear_global_jagdbezirke() {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        return $wpdb->query("DELETE FROM $table_name WHERE wildart IS NULL");
+        return $wpdb->query("DELETE FROM {$wpdb->prefix}hgmh_eigenjagdbezirke WHERE meldegruppe_id = 0 OR meldegruppe_id IS NULL");
     }
 
     /**
-     * Clear wildart-specific jagdbezirke
+     * Deactivate all wildart-specific eigenjagdbezirke
+     *
+     * @return int|false
      */
     public function clear_wildart_jagdbezirke() {
         global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        
-        return $wpdb->query("DELETE FROM $table_name WHERE wildart IS NOT NULL");
+        $e = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $m = $wpdb->prefix . 'hgmh_meldegruppen';
+        return $wpdb->query(
+            "DELETE e FROM $e e INNER JOIN $m m ON e.meldegruppe_id = m.id WHERE m.wildart_id > 0"
+        );
     }
 
     /**
      * Get all meldegruppen (for public summary validation)
      *
-     * @return array Array of all available meldegruppen
+     * @return array Array of all meldegruppe names
      */
     public function get_all_meldegruppen() {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'ahgmh_jagdbezirke';
+        $table = $wpdb->prefix . 'hgmh_meldegruppen';
 
-        $query = "SELECT DISTINCT meldegruppe FROM $table_name WHERE meldegruppe != '' ORDER BY meldegruppe";
-        $results = $wpdb->get_col($query);
-
-        return $results ?: array();
+        return $wpdb->get_col(
+            "SELECT DISTINCT name FROM $table WHERE name != '' ORDER BY name"
+        ) ?: array();
     }
 
     /**
-     * Get Jagdbezirke by Meldegruppe name
-     * Returns all active Jagdbezirke assigned to a specific Meldegruppe
-     * Uses the new schema with junction table (hgmh_jagdbezirk_meldegruppen)
+     * Get Eigenjagdbezirke by Meldegruppe name.
      *
      * @param string $meldegruppe Meldegruppe name
-     * @return array Array of Jagdbezirke
+     * @return array
      */
     public function get_jagdbezirke_by_meldegruppe($meldegruppe) {
         global $wpdb;
 
         $meldegruppe = sanitize_text_field($meldegruppe);
 
-        // New schema tables
-        $eigenjagdbezirke_table = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
-        $meldegruppen_table = $wpdb->prefix . 'hgmh_meldegruppen';
-        $junction_table = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
 
-        // Check if new schema tables exist
-        $junction_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $junction_table));
-        $eigenjagdbezirke_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $eigenjagdbezirke_table));
-        $meldegruppen_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $meldegruppen_table));
-
-        if ($junction_exists && $eigenjagdbezirke_exists && $meldegruppen_exists) {
-            // Use new schema with junction table
-            $query = $wpdb->prepare(
-                "SELECT e.id, e.name as jagdbezirk, m.name as meldegruppe, e.description as bemerkung
-                 FROM $eigenjagdbezirke_table e
-                 INNER JOIN $junction_table jm ON e.id = jm.jagdbezirk_id
-                 INNER JOIN $meldegruppen_table m ON jm.meldegruppe_id = m.id
-                 WHERE m.name = %s AND e.is_active = 1
-                 ORDER BY e.name ASC",
-                $meldegruppe
-            );
-
-            $results = $wpdb->get_results($query, ARRAY_A);
-
-            if (!empty($results)) {
-                return $results;
-            }
-        }
-
-        // Fallback to legacy table structure
-        $legacy_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
-        $legacy_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $legacy_table));
-
-        if ($legacy_exists) {
-            $query = $wpdb->prepare(
-                "SELECT id, jagdbezirk, meldegruppe, bemerkung
-                 FROM $legacy_table
-                 WHERE meldegruppe = %s AND ungueltig = 0
-                 ORDER BY jagdbezirk ASC",
-                $meldegruppe
-            );
-
-            $results = $wpdb->get_results($query, ARRAY_A);
-            return $results ?: array();
-        }
-
-        return array();
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT e.id, e.name AS jagdbezirk, m.name AS meldegruppe, e.description AS bemerkung
+             FROM $e e
+             INNER JOIN $jm jm ON e.id = jm.jagdbezirk_id
+             INNER JOIN $m m ON jm.meldegruppe_id = m.id
+             WHERE m.name = %s AND e.is_active = 1
+             ORDER BY e.name ASC",
+            $meldegruppe
+        ), ARRAY_A) ?: array();
     }
 
     /**
@@ -1998,23 +1799,22 @@ class AHGMH_Database_Handler {
         }
         
         if ($confirm_delete_data) {
-            // Delete all submissions for this wildart
-            $deleted_submissions = $wpdb->delete(
-                $this->table_name,
-                array('game_species' => $wildart_name),
-                array('%s')
-            );
-            
-            // Delete wildart-specific jagdbezirke
-            $jagdbezirke_table = $wpdb->prefix . 'ahgmh_jagdbezirke';
-            $deleted_jagdbezirke = $wpdb->delete(
-                $jagdbezirke_table,
-                array('wildart' => $wildart_name),
-                array('%s')
-            );
-            
+            // Delete all submissions for this wildart (look up ID first)
+            $w_table    = $wpdb->prefix . 'hgmh_wildarten';
+            $wildart_id = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM $w_table WHERE name = %s",
+                $wildart_name
+            ) );
+
+            if ($wildart_id) {
+                $wpdb->delete($this->table_name, array('wildart_id' => $wildart_id), array('%d'));
+
+                // Remove the wildart entry itself
+                $wpdb->delete($w_table, array('id' => $wildart_id), array('%d'));
+            }
+
             // Delete wildart-specific meldegruppen configuration
-            $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+            $meldegruppen_config_table = $wpdb->prefix . 'hgmh_meldegruppen_config';
             $deleted_config = $wpdb->delete(
                 $meldegruppen_config_table,
                 array('wildart' => $wildart_name),
@@ -2022,7 +1822,7 @@ class AHGMH_Database_Handler {
             );
             
             // Delete wildart-specific limits
-            $limits_table = $wpdb->prefix . 'ahgmh_meldegruppen_limits';
+            $limits_table = $wpdb->prefix . 'hgmh_meldegruppen_limits';
             $deleted_limits = $wpdb->delete(
                 $limits_table,
                 array('wildart' => $wildart_name),
@@ -2087,7 +1887,7 @@ class AHGMH_Database_Handler {
             }
         }
         
-        $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        $meldegruppen_config_table = $wpdb->prefix . 'hgmh_meldegruppen_config';
         
         // Clear existing meldegruppen for this wildart
         $wpdb->delete(
@@ -2164,7 +1964,7 @@ class AHGMH_Database_Handler {
     private function initialize_wildart_meldegruppen_config($wildart) {
         global $wpdb;
         
-        $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        $meldegruppen_config_table = $wpdb->prefix . 'hgmh_meldegruppen_config';
         
         // Check if configuration already exists
         $existing = $wpdb->get_var($wpdb->prepare("
@@ -2221,7 +2021,7 @@ class AHGMH_Database_Handler {
     public function save_meldegruppen_limit($wildart, $meldegruppe, $kategorie, $limit) {
         global $wpdb;
         
-        $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+        $meldegruppen_config_table = $wpdb->prefix . 'hgmh_meldegruppen_config';
         
         // Check if entry exists
         $existing_id = $wpdb->get_var($wpdb->prepare("
@@ -2325,13 +2125,22 @@ class AHGMH_Database_Handler {
      */
     public function count_submissions_by_species_category_meldegruppe($species, $category, $meldegruppe) {
         global $wpdb;
-        
-        return $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*) 
-            FROM {$this->table_name} 
-            WHERE game_species = %s 
-                AND field2 = %s 
-                AND field4 = %s
+
+        $w  = $wpdb->prefix . 'hgmh_wildarten';
+        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
+
+        return (int) $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*)
+            FROM {$this->table_name} s
+            LEFT JOIN $w w  ON s.wildart_id = w.id
+            LEFT JOIN $e e  ON s.eigenjagdbezirk_id = e.id
+            LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+            LEFT JOIN $m m  ON jm.meldegruppe_id = m.id
+            WHERE w.name = %s
+              AND s.category = %s
+              AND m.name = %s
         ", sanitize_text_field($species), sanitize_text_field($category), sanitize_text_field($meldegruppe)));
     }
     
@@ -2349,7 +2158,7 @@ class AHGMH_Database_Handler {
 
         if (!empty($meldegruppe)) {
             // Try to get meldegruppe-specific limit from config table
-            $meldegruppen_config_table = $wpdb->prefix . 'ahgmh_meldegruppen_config';
+            $meldegruppen_config_table = $wpdb->prefix . 'hgmh_meldegruppen_config';
             $limit_value = $wpdb->get_var($wpdb->prepare("
                 SELECT limit_value FROM $meldegruppen_config_table
                 WHERE wildart = %s AND meldegruppe = %s AND kategorie = %s

@@ -41,7 +41,9 @@
             formData.append('field4', $('#field4').val());
             formData.append('field5', $('#field5').val());
             formData.append('field6', $('#field6').val());
-            formData.append('field7', $('#field7').val()); // Jagdbezirk
+            // Only append field7 if the container is visible (element may not exist when no Jagdbezirke are configured)
+            var field7Val = ($('#jagdbezirk-container').is(':visible') && $('#field7').length) ? ($('#field7').val() || '') : '';
+            formData.append('field7', field7Val); // Jagdbezirk
 
             // Additional date validation
             var dateValue = new Date($('#field1').val());
@@ -288,29 +290,28 @@
                                 );
                             });
 
+                            // Auto-select if only one Jagdbezirk is available
+                            if (response.data.jagdbezirke.length === 1) {
+                                $jagdbezirkSelect.val(response.data.jagdbezirke[0].value);
+                            }
+
                             // Show the Jagdbezirk container
                             $jagdbezirkContainer.show();
                         } else {
-                            // No Jagdbezirke found for this Meldegruppe
-                            $jagdbezirkSelect.append(
-                                '<option value="" disabled>Keine Jagdbezirke für diese Meldegruppe</option>'
-                            );
-                            $jagdbezirkContainer.show();
+                            // No Jagdbezirke configured for this Meldegruppe - keep container hidden
+                            $jagdbezirkContainer.hide();
+                            $jagdbezirkSelect.html('<option value="" selected disabled>Bitte zuerst Meldegruppe wählen...</option>');
                         }
                     } else {
-                        // Error loading Jagdbezirke
-                        $jagdbezirkSelect.html(
-                            '<option value="" disabled>Fehler beim Laden der Jagdbezirke</option>'
-                        );
-                        $jagdbezirkContainer.show();
+                        // Error loading Jagdbezirke - keep container hidden
+                        $jagdbezirkContainer.hide();
+                        $jagdbezirkSelect.html('<option value="" selected disabled>Bitte zuerst Meldegruppe wählen...</option>');
                     }
                 },
                 error: function() {
-                    // Show error
-                    $jagdbezirkSelect.html(
-                        '<option value="" disabled>Fehler beim Laden der Jagdbezirke</option>'
-                    );
-                    $jagdbezirkContainer.show();
+                    // Error - keep container hidden
+                    $jagdbezirkContainer.hide();
+                    $jagdbezirkSelect.html('<option value="" selected disabled>Bitte zuerst Meldegruppe wählen...</option>');
                 },
                 complete: function() {
                     // Hide loading indicator and re-enable select
@@ -320,6 +321,12 @@
                 }
             });
         });
+
+        // If Meldegruppe is already pre-selected (PHP auto-select for single option),
+        // trigger change to load Jagdbezirke immediately on page load
+        if ($('#field5').val()) {
+            $('#field5').trigger('change');
+        }
     });
 
     /**
