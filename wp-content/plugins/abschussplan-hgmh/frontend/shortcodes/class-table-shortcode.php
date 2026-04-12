@@ -32,9 +32,12 @@ class AHGMH_Table_Shortcode {
      * Register AJAX handlers
      */
     private function register_ajax_handlers() {
-        add_action('wp_ajax_ahgmh_table_approve', array($this, 'ajax_approve_submission'));
-        add_action('wp_ajax_ahgmh_table_reject', array($this, 'ajax_reject_submission'));
-        add_action('wp_ajax_ahgmh_table_update', array($this, 'ajax_update_submission'));
+        add_action('wp_ajax_ahgmh_table_approve',          array($this, 'ajax_approve_submission'));
+        add_action('wp_ajax_ahgmh_table_reject',           array($this, 'ajax_reject_submission'));
+        add_action('wp_ajax_ahgmh_table_update',           array($this, 'ajax_update_submission'));
+        add_action('wp_ajax_ahgmh_table_delete',           array($this, 'ajax_delete_submission'));
+        add_action('wp_ajax_ahgmh_table_get_options',      array($this, 'ajax_get_table_options'));
+        add_action('wp_ajax_ahgmh_table_get_jagdbezirke',  array($this, 'ajax_get_table_jagdbezirke'));
     }
 
     /**
@@ -105,16 +108,43 @@ class AHGMH_Table_Shortcode {
         // Get database instance
         $database = abschussplan_hgmh()->database;
 
-        // Get submissions
-        // Note: The database doesn't have status filtering yet (Spec 005 not implemented)
-        // For now, get all submissions - will be enhanced when status field is added
-        $submissions = $database->get_submissions($limit, $offset);
+        // Resolve species: URL param overrides shortcode attribute
+        $species = isset($_GET['ahgmh_species']) ? sanitize_text_field($_GET['ahgmh_species']) : sanitize_text_field($atts['species']);
 
-        // Get total count
-        $total_submissions = $database->count_submissions();
+        // Get submissions filtered by species if provided
+        if (!empty($species)) {
+            $submissions = $database->get_submissions_by_species($limit, $offset, $species);
+            $total_submissions = $database->count_submissions_by_species($species);
+        } else {
+            $submissions = $database->get_submissions($limit, $offset);
+            $total_submissions = $database->count_submissions();
+        }
 
         // Calculate pagination
         $total_pages = ceil($total_submissions / $limit);
+
+        // Guarantee script is loaded even when has_shortcode() check in enqueue_scripts() misses this
+        // (e.g. page builders, template files, Gutenberg reusable blocks)
+        wp_enqueue_script(
+            'ahgmh-table-moderation',
+            AHGMH_PLUGIN_URL . 'frontend/assets/js/table-moderation.js',
+            array('jquery'),
+            AHGMH_PLUGIN_VERSION,
+            true
+        );
+        wp_localize_script('ahgmh-table-moderation', 'ahgmh_table_moderation', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('ahgmh_table_moderation_nonce'),
+            'strings'  => array(
+                'confirm_approve'      => __('Möchten Sie diese Meldung wirklich freigeben?', 'abschussplan-hgmh'),
+                'confirm_reject'       => __('Möchten Sie diese Meldung wirklich ablehnen?', 'abschussplan-hgmh'),
+                'error_comment_required' => __('Bitte geben Sie einen Kommentar ein.', 'abschussplan-hgmh'),
+                'success_approved'     => __('Meldung erfolgreich freigegeben.', 'abschussplan-hgmh'),
+                'success_rejected'     => __('Meldung erfolgreich abgelehnt.', 'abschussplan-hgmh'),
+                'success_updated'      => __('Meldung erfolgreich aktualisiert.', 'abschussplan-hgmh'),
+                'error_generic'        => __('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh'),
+            ),
+        ));
 
         // Start output buffer
         ob_start();
@@ -218,8 +248,13 @@ class AHGMH_Table_Shortcode {
      * AJAX handler for updating a submission
      */
     public function ajax_update_submission() {
-        // Verify AJAX request with nonce and capability
-        AHGMH_Validation_Service::verify_ajax_request('ahgmh_table_moderation_nonce', 'manage_options');
+        // Nonce check
+        check_ajax_referer('ahgmh_table_moderation_nonce', 'nonce');
+
+        // Must be logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => __('Nicht autorisiert.', 'abschussplan-hgmh')));
+        }
 
         try {
             // Get submission ID
@@ -231,43 +266,63 @@ class AHGMH_Table_Shortcode {
                 ));
             }
 
-            // Sanitize and validate form data
-            // Based on database schema: game_species, field1-field6
+            // Admins can edit any submission; regular users only their own
+            if (!current_user_can('manage_options')) {
+                $database   = abschussplan_hgmh()->database;
+                $submission = $database->get_submission_by_id($submission_id);
+                if (!$submission || intval($submission['submitted_by_user_id']) !== get_current_user_id()) {
+                    wp_send_json_error(array('message' => __('Keine Berechtigung zum Bearbeiten dieser Meldung.', 'abschussplan-hgmh')));
+                }
+            }
+
+            // Sanitize and validate form data (new normalized schema field names)
             $data = array();
 
-            // Game species (optional in update, might not be changed)
-            if (isset($_POST['game_species'])) {
-                $data['game_species'] = sanitize_text_field($_POST['game_species']);
-            }
-
-            // Field1 (e.g., date, sex, or other submission data)
+            // Map legacy field names from the edit modal to DB column names
             if (isset($_POST['field1'])) {
-                $data['field1'] = sanitize_text_field($_POST['field1']);
+                $data['harvest_date'] = sanitize_text_field($_POST['field1']);
+            }
+            if (isset($_POST['harvest_date'])) {
+                $data['harvest_date'] = sanitize_text_field($_POST['harvest_date']);
             }
 
-            // Field2 (e.g., category)
             if (isset($_POST['field2'])) {
-                $data['field2'] = sanitize_text_field($_POST['field2']);
+                $data['category'] = sanitize_text_field($_POST['field2']);
+            }
+            if (isset($_POST['category'])) {
+                $data['category'] = sanitize_text_field($_POST['category']);
             }
 
-            // Field3 (e.g., WUS number)
             if (isset($_POST['field3'])) {
-                $data['field3'] = sanitize_text_field($_POST['field3']);
+                $data['wus_number'] = sanitize_text_field($_POST['field3']);
+            }
+            if (isset($_POST['wus_number'])) {
+                $data['wus_number'] = sanitize_text_field($_POST['wus_number']);
             }
 
-            // Field4 (e.g., meldegruppe)
+            // field4 = Bemerkung → notes column
             if (isset($_POST['field4'])) {
-                $data['field4'] = sanitize_text_field($_POST['field4']);
+                $data['notes'] = sanitize_textarea_field($_POST['field4']);
+            }
+            if (isset($_POST['notes'])) {
+                $data['notes'] = sanitize_textarea_field($_POST['notes']);
             }
 
-            // Field5 (e.g., jagdbezirk)
-            if (isset($_POST['field5'])) {
-                $data['field5'] = sanitize_text_field($_POST['field5']);
-            }
-
-            // Field6 (e.g., notes/comments - optional)
+            // field6 = Interne Notiz → internal_note column
             if (isset($_POST['field6'])) {
-                $data['field6'] = sanitize_textarea_field($_POST['field6']);
+                $data['internal_note'] = sanitize_textarea_field($_POST['field6']);
+            }
+            if (isset($_POST['internal_note'])) {
+                $data['internal_note'] = sanitize_textarea_field($_POST['internal_note']);
+            }
+
+            // eigenjagdbezirk_id: accept either numeric ID or name (resolve by name if string)
+            if (isset($_POST['eigenjagdbezirk_id'])) {
+                $data['eigenjagdbezirk_id'] = absint($_POST['eigenjagdbezirk_id']);
+            }
+
+            if (isset($_POST['wildart_id'])) {
+                $data['wildart_id'] = absint($_POST['wildart_id']);
             }
 
             // Validate that at least one field is being updated
@@ -297,6 +352,115 @@ class AHGMH_Table_Shortcode {
             wp_send_json_error(array(
                 'message' => __('Fehler beim Aktualisieren der Meldung. Bitte versuchen Sie es erneut.', 'abschussplan-hgmh')
             ));
+        }
+    }
+
+    /**
+     * AJAX: Return categories and meldegruppen for a given wildart (used by frontend inline edit)
+     */
+    public function ajax_get_table_options() {
+        check_ajax_referer('ahgmh_table_moderation_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => __('Nicht autorisiert.', 'abschussplan-hgmh')));
+            return;
+        }
+
+        $wildart_name = sanitize_text_field($_POST['wildart'] ?? '');
+
+        // Categories for this wildart
+        $categories = array();
+        if ($wildart_name && class_exists('AHGMH_Wildart_Repository')) {
+            $wildart_repo = new AHGMH_Wildart_Repository();
+            $categories   = $wildart_repo->get_categories($wildart_name);
+        }
+
+        // Meldegruppen from normalized table (same source as jagdbezirk lookup)
+        global $wpdb;
+        $meldegruppen_tbl = $wpdb->prefix . 'hgmh_meldegruppen';
+        $wildarten_tbl    = $wpdb->prefix . 'hgmh_wildarten';
+        $meldegruppen = array();
+        if (!empty($wildart_name)) {
+            $meldegruppen = $wpdb->get_col($wpdb->prepare(
+                "SELECT m.name FROM $meldegruppen_tbl m
+                 INNER JOIN $wildarten_tbl w ON m.wildart_id = w.id
+                 WHERE w.name = %s AND m.is_active = 1
+                 ORDER BY m.name ASC",
+                $wildart_name
+            ));
+        }
+        if (empty($meldegruppen)) {
+            $meldegruppen = $wpdb->get_col(
+                "SELECT DISTINCT name FROM $meldegruppen_tbl WHERE is_active = 1 ORDER BY name ASC"
+            );
+        }
+
+        wp_send_json_success(array(
+            'categories'   => $categories,
+            'meldegruppen' => $meldegruppen,
+        ));
+    }
+
+    /**
+     * AJAX: Return jagdbezirke for a given meldegruppe (used by frontend inline edit)
+     */
+    public function ajax_get_table_jagdbezirke() {
+        check_ajax_referer('ahgmh_table_moderation_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => __('Nicht autorisiert.', 'abschussplan-hgmh')));
+            return;
+        }
+
+        $meldegruppe = sanitize_text_field($_POST['meldegruppe'] ?? '');
+        if (empty($meldegruppe)) {
+            wp_send_json_error(array('message' => __('Meldegruppe fehlt.', 'abschussplan-hgmh')));
+            return;
+        }
+
+        $database    = abschussplan_hgmh()->database;
+        $jagdbezirke = $database->get_jagdbezirke_by_meldegruppe($meldegruppe);
+
+        wp_send_json_success($jagdbezirke);
+    }
+
+    /**
+     * AJAX handler for deleting a submission (logged-in user must be owner or admin)
+     */
+    public function ajax_delete_submission() {
+        check_ajax_referer('ahgmh_table_moderation_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => __('Nicht autorisiert.', 'abschussplan-hgmh')));
+        }
+
+        $submission_id = isset($_POST['submission_id']) ? intval($_POST['submission_id']) : 0;
+        if ($submission_id <= 0) {
+            wp_send_json_error(array('message' => __('Ungültige Meldungs-ID.', 'abschussplan-hgmh')));
+        }
+
+        $database    = abschussplan_hgmh()->database;
+        $submission  = $database->get_submission_by_id($submission_id);
+
+        if (!$submission) {
+            wp_send_json_error(array('message' => __('Meldung nicht gefunden.', 'abschussplan-hgmh')));
+        }
+
+        // Allow admins and the submitter themselves
+        $current_user_id = get_current_user_id();
+        $is_admin        = current_user_can('manage_options');
+        $is_owner        = isset($submission['submitted_by_user_id']) && intval($submission['submitted_by_user_id']) === $current_user_id;
+
+        if (!$is_admin && !$is_owner) {
+            wp_send_json_error(array('message' => __('Keine Berechtigung zum Löschen dieser Meldung.', 'abschussplan-hgmh')));
+        }
+
+        $result = $database->delete_submission($submission_id);
+
+        if ($result !== false) {
+            wp_send_json_success(array('message' => __('Meldung gelöscht.', 'abschussplan-hgmh')));
+        } else {
+            wp_send_json_error(array('message' => __('Fehler beim Löschen der Meldung.', 'abschussplan-hgmh')));
         }
     }
 

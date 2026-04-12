@@ -1,16 +1,14 @@
 /**
  * Table Moderation script
- * Handles approve, edit, and reject actions for submissions
+ * Handles approve, reject, inline-edit and delete actions for submissions
  */
 (function($) {
     'use strict';
 
-    // Wait for the DOM to be ready
     $(document).ready(function() {
 
         /**
          * Announce status changes to screen readers
-         * @param {string} message - Message to announce
          */
         function announceStatus(message) {
             var $announcer = $('#moderation-status-announcer');
@@ -20,396 +18,382 @@
         }
 
         /**
-         * Handle approve button click
+         * Show Bootstrap-style notification at the top of the table container
          */
+        function showNotification(type, message) {
+            $('.moderation-notification').remove();
+            var $n = $('<div>', {
+                'class': 'alert alert-' + type + ' alert-dismissible fade show moderation-notification',
+                'role': 'alert',
+                html: message + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Schließen"></button>'
+            });
+            $('.abschuss-table-container').prepend($n);
+            $('html, body').animate({ scrollTop: $n.offset().top - 100 }, 400);
+            setTimeout(function() { $n.fadeOut(function() { $(this).remove(); }); }, 5000);
+        }
+
+        // ─── Approve ─────────────────────────────────────────────────────────
+
         $(document).on('click', '.btn-approve', function(e) {
             e.preventDefault();
+            if (!confirm(ahgmh_table_moderation.strings.confirm_approve)) return;
 
             var $btn = $(this);
-            var submissionId = $btn.data('submission-id');
+            var id   = $btn.data('submission-id');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
-            // Confirm action
-            if (!confirm(ahgmh_table_moderation.strings.confirm_approve)) {
-                return;
-            }
-
-            // Disable button to prevent multiple clicks
-            $btn.prop('disabled', true)
-                .attr('aria-busy', 'true')
-                .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-
-            // Send AJAX request
-            $.ajax({
-                url: ahgmh_table_moderation.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'ahgmh_table_approve',
-                    nonce: ahgmh_table_moderation.nonce,
-                    submission_id: submissionId
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Show success notification
-                        showNotification('success', ahgmh_table_moderation.strings.success_approved);
-                        announceStatus(ahgmh_table_moderation.strings.success_approved);
-
-                        // Update the row - remove action buttons and show status badge
-                        var $row = $btn.closest('tr');
-                        var $moderationCell = $row.find('td:last');
-                        $moderationCell.html('<span class="badge bg-success">Freigegeben</span>');
-                    } else {
-                        // Show error notification
-                        var message = response.data && response.data.message
-                            ? response.data.message
-                            : ahgmh_table_moderation.strings.error_generic;
-                        showNotification('danger', message);
-                        announceStatus(message);
-
-                        // Re-enable button
-                        $btn.prop('disabled', false)
-                            .attr('aria-busy', 'false')
-                            .html('<span aria-hidden="true">&#10003;</span> Freigeben');
-                    }
-                },
-                error: function() {
-                    // Show general error notification
-                    showNotification('danger', ahgmh_table_moderation.strings.error_generic);
-                    announceStatus(ahgmh_table_moderation.strings.error_generic);
-
-                    // Re-enable button
-                    $btn.prop('disabled', false)
-                        .attr('aria-busy', 'false')
-                        .html('<span aria-hidden="true">&#10003;</span> Freigeben');
+            $.post(ahgmh_table_moderation.ajax_url, {
+                action: 'ahgmh_table_approve',
+                nonce: ahgmh_table_moderation.nonce,
+                submission_id: id
+            }, function(r) {
+                if (r.success) {
+                    showNotification('success', ahgmh_table_moderation.strings.success_approved);
+                    announceStatus(ahgmh_table_moderation.strings.success_approved);
+                    $btn.closest('tr').find('td:last').html('<span class="badge bg-success">Genehmigt</span>');
+                } else {
+                    var msg = (r.data && r.data.message) ? r.data.message : ahgmh_table_moderation.strings.error_generic;
+                    showNotification('danger', msg);
+                    $btn.prop('disabled', false).html('&#10003; Freigeben');
                 }
+            }).fail(function() {
+                showNotification('danger', ahgmh_table_moderation.strings.error_generic);
+                $btn.prop('disabled', false).html('&#10003; Freigeben');
             });
         });
 
-        /**
-         * Handle edit button click - open modal and populate form
-         */
+        // ─── Reject (modal) ───────────────────────────────────────────────────
+
+        $(document).on('click', '.btn-reject', function(e) {
+            e.preventDefault();
+            var id = $(this).data('submission-id');
+            $('#reject-submission-form').attr('data-submission-id', id);
+            $('#reject-comment').val('');
+            $('.form-error').text('').hide();
+            $('#reject-form-response').hide();
+            var modal = new bootstrap.Modal(document.getElementById('rejectSubmissionModal'));
+            modal.show();
+            $('#rejectSubmissionModal').one('shown.bs.modal', function() { $('#reject-comment').focus(); });
+        });
+
+        $('#confirm-reject-btn').on('click', function(e) {
+            e.preventDefault();
+            var $btn    = $(this);
+            var $form   = $('#reject-submission-form');
+            var id      = $form.attr('data-submission-id');
+            var comment = $('#reject-comment').val().trim();
+
+            if (!comment) {
+                $('#reject-comment').addClass('is-invalid').attr('aria-invalid', 'true')
+                    .siblings('.form-error').text('Dieses Feld ist erforderlich.').show();
+                $('#reject-comment').focus();
+                return;
+            }
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Wird abgelehnt...');
+
+            $.post(ahgmh_table_moderation.ajax_url, {
+                action: 'ahgmh_table_reject',
+                nonce: ahgmh_table_moderation.nonce,
+                submission_id: id,
+                comment: comment
+            }, function(r) {
+                if (r.success) {
+                    showNotification('success', ahgmh_table_moderation.strings.success_rejected);
+                    announceStatus(ahgmh_table_moderation.strings.success_rejected);
+                    bootstrap.Modal.getInstance(document.getElementById('rejectSubmissionModal')).hide();
+                    $('.btn-reject[data-submission-id="' + id + '"]').closest('tr').fadeOut(400, function() { $(this).remove(); });
+                } else {
+                    var msg = (r.data && r.data.message) ? r.data.message : ahgmh_table_moderation.strings.error_generic;
+                    $('#reject-form-response').removeClass('alert-success').addClass('alert-danger').text(msg).show();
+                }
+            }).fail(function() {
+                $('#reject-form-response').removeClass('alert-success').addClass('alert-danger')
+                    .text(ahgmh_table_moderation.strings.error_generic).show();
+            }).always(function() {
+                $btn.prop('disabled', false).text('Ablehnen bestätigen');
+            });
+        });
+
+        // ─── Inline Edit ──────────────────────────────────────────────────────
+
         $(document).on('click', '.btn-edit', function(e) {
             e.preventDefault();
 
-            var $btn = $(this);
-            var submissionId = $btn.data('submission-id');
-            var $row = $btn.closest('tr');
+            // Only one edit row at a time
+            if ($('.ahgmh-inline-edit-row').length) return;
 
-            // Extract data from table row cells
-            var $cells = $row.find('td');
+            var $btn  = $(this);
+            var $row  = $btn.closest('tr');
+            var id    = $row.data('id');
+            var nonce = $row.data('nonce');
 
-            // Get field values from table cells
-            var dateText = $cells.eq(0).text().trim(); // dd.mm.yy format
-            var jagdbezirk = $cells.eq(1).text().trim(); // May include meldegruppe in parentheses
-            var abschuss = $cells.eq(2).text().trim();
-            var wus = $cells.eq(3).text().trim();
-            var interneNotiz = $cells.eq(4).text().trim();
-            var bemerkung = $cells.eq(5).text().trim();
+            // Read raw values from cells (column order: 0:Datum 1:Wildart 2:Abschuss 3:WUS
+            // 4:Meldegruppe 5:Jagdbezirk 6:Bemerkung 7:InterneNotiz 8:ErstelltVon 9:ErstelltAm 10:Moderation)
+            var $cells      = $row.find('td');
+            var isoDate     = $row.data('harvest-date') || '';
+            var wildart     = $cells.eq(1).text().trim();
+            var abschuss    = $cells.eq(2).text().trim();
+            var wus         = $cells.eq(3).text().trim();
+            var meldegruppe = $cells.eq(4).text().trim();
+            var jagdbezirk  = $cells.eq(5).text().trim();
+            var bemerkung   = $cells.eq(6).text().trim();
+            var notiz       = $cells.eq(7).text().trim();
+            var colCount    = $cells.length;
 
-            // Convert date from dd.mm.yy to YYYY-MM-DD for input[type="date"]
-            var dateValue = '';
-            if (dateText) {
-                var dateParts = dateText.split('.');
-                if (dateParts.length === 3) {
-                    var day = dateParts[0].length < 2 ? '0' + dateParts[0] : dateParts[0];
-                    var month = dateParts[1].length < 2 ? '0' + dateParts[1] : dateParts[1];
-                    var year = dateParts[2];
-                    // Convert 2-digit year to 4-digit (assuming 2000s for years < 50, 1900s otherwise)
-                    if (year.length === 2) {
-                        year = parseInt(year) < 50 ? '20' + year : '19' + year;
+            // Show spinner on button while loading options
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+            // Load categories and meldegruppen via AJAX
+            $.post(ahgmh_table_moderation.ajax_url, {
+                action: 'ahgmh_table_get_options',
+                nonce:  ahgmh_table_moderation.nonce,
+                wildart: wildart
+            }, function(r) {
+                $btn.prop('disabled', false).html('<i class="bi bi-pencil"></i>');
+
+                var categories  = (r.success && r.data.categories)   ? r.data.categories   : [];
+                var meldegruppen = (r.success && r.data.meldegruppen) ? r.data.meldegruppen : [];
+
+                // Build category <select>
+                var catOpts = '<option value="">Bitte wählen...</option>';
+                categories.forEach(function(cat) {
+                    var sel = (cat === abschuss) ? ' selected' : '';
+                    catOpts += '<option value="' + escAttr(cat) + '"' + sel + '>' + escHtml(cat) + '</option>';
+                });
+                // Fallback: if category not in list, add it as option
+                if (abschuss && categories.indexOf(abschuss) === -1) {
+                    catOpts += '<option value="' + escAttr(abschuss) + '" selected>' + escHtml(abschuss) + '</option>';
+                }
+
+                // Build meldegruppe <select>
+                var mgOpts = '<option value="">Bitte wählen...</option>';
+                meldegruppen.forEach(function(mg) {
+                    var sel = (mg === meldegruppe) ? ' selected' : '';
+                    mgOpts += '<option value="' + escAttr(mg) + '"' + sel + '>' + escHtml(mg) + '</option>';
+                });
+
+                var editHtml =
+                    '<tr class="ahgmh-inline-edit-row table-warning">' +
+                    '<td colspan="' + colCount + '" style="padding:12px;">' +
+
+                    // Buttons top
+                    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #dee2e6;">' +
+                    '<button type="button" class="btn btn-primary btn-sm ahgmh-inline-save" data-id="' + id + '" data-nonce="' + escAttr(nonce) + '">Speichern</button>' +
+                    '<button type="button" class="btn btn-danger btn-sm ahgmh-inline-delete" data-id="' + id + '" data-nonce="' + escAttr(nonce) + '">Löschen</button>' +
+                    '<button type="button" class="btn btn-secondary btn-sm ahgmh-inline-cancel">Abbrechen</button>' +
+                    '</div>' +
+
+                    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:10px;">' +
+
+                    '<div><label style="font-weight:600;display:block;margin-bottom:3px;">Abschussdatum</label>' +
+                    '<input type="date" class="form-control form-control-sm ahgmh-edit-datum" value="' + escAttr(isoDate) + '"></div>' +
+
+                    '<div><label style="font-weight:600;display:block;margin-bottom:3px;">Wildart</label>' +
+                    '<input type="text" class="form-control form-control-sm" value="' + escAttr(wildart) + '" readonly style="background:#f0f0f0;"></div>' +
+
+                    '<div><label style="font-weight:600;display:block;margin-bottom:3px;">Abschuss</label>' +
+                    '<select class="form-select form-select-sm ahgmh-edit-abschuss">' + catOpts + '</select></div>' +
+
+                    '<div><label style="font-weight:600;display:block;margin-bottom:3px;">WUS-Nummer</label>' +
+                    '<input type="number" class="form-control form-control-sm ahgmh-edit-wus" value="' + escAttr(wus) + '" min="1000000" max="9999999"></div>' +
+
+                    '<div><label style="font-weight:600;display:block;margin-bottom:3px;">Meldegruppe</label>' +
+                    '<select class="form-select form-select-sm ahgmh-edit-meldegruppe">' + mgOpts + '</select></div>' +
+
+                    '<div><label style="font-weight:600;display:block;margin-bottom:3px;">Jagdbezirk</label>' +
+                    '<select class="form-select form-select-sm ahgmh-edit-jagdbezirk">' +
+                    '<option value="">Wird geladen...</option>' +
+                    '</select></div>' +
+
+                    '<div style="grid-column:span 2"><label style="font-weight:600;display:block;margin-bottom:3px;">Bemerkung</label>' +
+                    '<textarea class="form-control form-control-sm ahgmh-edit-bemerkung" rows="2">' + escHtml(bemerkung) + '</textarea></div>' +
+
+                    '<div style="grid-column:span 2"><label style="font-weight:600;display:block;margin-bottom:3px;">Interne Notiz</label>' +
+                    '<textarea class="form-control form-control-sm ahgmh-edit-notiz" rows="2">' + escHtml(notiz) + '</textarea></div>' +
+
+                    '</div>' +
+
+                    // Buttons bottom
+                    '<div style="display:flex;gap:8px;align-items:center;">' +
+                    '<button type="button" class="btn btn-primary btn-sm ahgmh-inline-save" data-id="' + id + '" data-nonce="' + escAttr(nonce) + '">Speichern</button>' +
+                    '<button type="button" class="btn btn-secondary btn-sm ahgmh-inline-cancel">Abbrechen</button>' +
+                    '</div>' +
+
+                    '</td></tr>';
+
+                $row.after(editHtml);
+                $row.hide();
+
+                var $editRow   = $row.next('.ahgmh-inline-edit-row');
+                var $mgSelect  = $editRow.find('.ahgmh-edit-meldegruppe');
+                var $jbSelect  = $editRow.find('.ahgmh-edit-jagdbezirk');
+                var initJb     = jagdbezirk; // for pre-selection after first AJAX load
+
+                function loadJagdbezirke(mg) {
+                    if (!mg) {
+                        $jbSelect.html('<option value="">Bitte Meldegruppe wählen...</option>');
+                        return;
                     }
-                    dateValue = year + '-' + month + '-' + day;
-                }
-            }
-
-            // Extract jagdbezirk without meldegruppe (remove anything in parentheses)
-            var jagdbezirkValue = jagdbezirk.replace(/\s*\([^)]*\)\s*$/, '').trim();
-
-            // Populate modal form fields
-            $('#edit-submission-form').attr('data-submission-id', submissionId);
-            $('#edit-field1').val(dateValue);
-            $('#edit-field2').val(abschuss);
-            $('#edit-field3').val(wus);
-            $('#edit-field5').val(jagdbezirkValue);
-            $('#edit-field4').val(bemerkung);
-            $('#edit-field6').val(interneNotiz);
-
-            // Clear any previous error messages
-            $('.form-error').text('').hide();
-            $('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
-            $('#edit-form-response').hide();
-
-            // Open the modal
-            var editModal = new bootstrap.Modal(document.getElementById('editSubmissionModal'));
-            editModal.show();
-
-            // Move focus to first field when modal opens
-            $('#editSubmissionModal').one('shown.bs.modal', function() {
-                $('#edit-field1').focus();
-            });
-        });
-
-        /**
-         * Handle save button click in edit modal
-         */
-        $('#save-submission-btn').on('click', function(e) {
-            e.preventDefault();
-
-            var $btn = $(this);
-            var $form = $('#edit-submission-form');
-            var submissionId = $form.attr('data-submission-id');
-
-            // Clear previous errors
-            $form.find('.form-error').text('').hide();
-            $form.find('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
-
-            // Validate required fields
-            var hasErrors = false;
-            $form.find('[required]').each(function() {
-                var $field = $(this);
-                if (!$field.val()) {
-                    $field.addClass('is-invalid').attr('aria-invalid', 'true');
-                    $field.siblings('.form-error').text('Dieses Feld ist erforderlich.').show();
-                    hasErrors = true;
-                }
-            });
-
-            if (hasErrors) {
-                // Focus first invalid field
-                $form.find('.is-invalid:first').focus();
-                return;
-            }
-
-            // Disable button to prevent multiple submissions
-            $btn.prop('disabled', true)
-                .attr('aria-busy', 'true')
-                .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird gespeichert...');
-
-            // Prepare form data
-            var formData = {
-                action: 'ahgmh_table_update',
-                nonce: ahgmh_table_moderation.nonce,
-                submission_id: submissionId,
-                field1: $('#edit-field1').val(),
-                field2: $('#edit-field2').val(),
-                field3: $('#edit-field3').val(),
-                field5: $('#edit-field5').val(),
-                field4: $('#edit-field4').val(),
-                field6: $('#edit-field6').val()
-            };
-
-            // Send AJAX request
-            $.ajax({
-                url: ahgmh_table_moderation.ajax_url,
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    if (response.success) {
-                        // Show success notification
-                        var successMsg = ahgmh_table_moderation.strings.success_updated || 'Abschussmeldung wurde erfolgreich aktualisiert.';
-                        showNotification('success', successMsg);
-                        announceStatus(successMsg);
-
-                        // Close the modal
-                        var editModal = bootstrap.Modal.getInstance(document.getElementById('editSubmissionModal'));
-                        editModal.hide();
-
-                        // Return focus to the edit button that triggered the modal
-                        var $editBtn = $('.btn-edit[data-submission-id="' + submissionId + '"]');
-                        $editBtn.focus();
-
-                        // Update the table row with new data
-                        var $row = $editBtn.closest('tr');
-                        var $cells = $row.find('td');
-
-                        // Format date for display (convert YYYY-MM-DD back to dd.mm.yy)
-                        var editDateValue = $('#edit-field1').val();
-                        var displayDate = editDateValue;
-                        if (editDateValue) {
-                            var editDateParts = editDateValue.split('-');
-                            if (editDateParts.length === 3) {
-                                var displayYear = editDateParts[0].substring(2);
-                                var displayMonth = editDateParts[1];
-                                var displayDay = editDateParts[2];
-                                displayDate = displayDay + '.' + displayMonth + '.' + displayYear;
-                            }
+                    $jbSelect.html('<option value="">Lade...</option>').prop('disabled', true);
+                    $.post(ahgmh_table_moderation.ajax_url, {
+                        action:      'ahgmh_table_get_jagdbezirke',
+                        nonce:       ahgmh_table_moderation.nonce,
+                        meldegruppe: mg
+                    }, function(resp) {
+                        $jbSelect.prop('disabled', false);
+                        if (resp.success && resp.data && resp.data.length > 0) {
+                            var opts = '<option value="">Bitte wählen...</option>';
+                            resp.data.forEach(function(jb) {
+                                var jbId   = jb.id   || '';
+                                var jbName = jb.jagdbezirk || jb.name || '';
+                                var sel = (jbName === initJb) ? ' selected' : '';
+                                opts += '<option value="' + escAttr(jbId) + '"' + sel + '>' + escHtml(jbName) + '</option>';
+                            });
+                            $jbSelect.html(opts);
+                            initJb = ''; // pre-select only once
+                        } else {
+                            $jbSelect.html('<option value="">Kein Jagdbezirk konfiguriert</option>');
+                            initJb = '';
                         }
-
-                        // Update cell contents
-                        $cells.eq(0).text(displayDate);
-                        $cells.eq(1).text($('#edit-field5').val());
-                        $cells.eq(2).text($('#edit-field2').val());
-                        $cells.eq(3).text($('#edit-field3').val());
-                        $cells.eq(4).text($('#edit-field6').val());
-                        $cells.eq(5).text($('#edit-field4').val());
-                    } else {
-                        // Show error message in modal
-                        var message = response.data && response.data.message
-                            ? response.data.message
-                            : ahgmh_table_moderation.strings.error_generic;
-                        $('#edit-form-response').removeClass('alert-success').addClass('alert-danger').text(message).show();
-                    }
-                },
-                error: function() {
-                    // Show general error message in modal
-                    $('#edit-form-response').removeClass('alert-success').addClass('alert-danger')
-                        .text(ahgmh_table_moderation.strings.error_generic).show();
-                },
-                complete: function() {
-                    // Re-enable button
-                    $btn.prop('disabled', false)
-                        .attr('aria-busy', 'false')
-                        .text('Speichern');
+                    }).fail(function() {
+                        $jbSelect.prop('disabled', false).html('<option value="">Fehler beim Laden</option>');
+                    });
                 }
+
+                $mgSelect.on('change', function() { loadJagdbezirke($(this).val()); });
+
+                // Trigger initial jagdbezirk load for current meldegruppe
+                loadJagdbezirke($mgSelect.val());
+
+                $editRow.find('.ahgmh-edit-datum').focus();
+
+            }).fail(function() {
+                $btn.prop('disabled', false).html('<i class="bi bi-pencil"></i>');
+                showNotification('danger', ahgmh_table_moderation.strings.error_generic);
             });
         });
 
-        /**
-         * Handle reject button click - open modal
-         */
-        $(document).on('click', '.btn-reject', function(e) {
-            e.preventDefault();
-
-            var $btn = $(this);
-            var submissionId = $btn.data('submission-id');
-
-            // Set submission ID on the form
-            $('#reject-submission-form').attr('data-submission-id', submissionId);
-
-            // Clear the comment field and any previous error messages
-            $('#reject-comment').val('');
-            $('.form-error').text('').hide();
-            $('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
-            $('#reject-form-response').hide();
-
-            // Open the modal
-            var rejectModal = new bootstrap.Modal(document.getElementById('rejectSubmissionModal'));
-            rejectModal.show();
-
-            // Move focus to comment field when modal opens
-            $('#rejectSubmissionModal').one('shown.bs.modal', function() {
-                $('#reject-comment').focus();
-            });
+        // Cancel inline edit
+        $(document).on('click', '.ahgmh-inline-cancel', function() {
+            var $editRow = $(this).closest('.ahgmh-inline-edit-row');
+            $editRow.prev('tr').show();
+            $editRow.remove();
         });
 
-        /**
-         * Handle reject submit button click
-         */
-        $('#confirm-reject-btn').on('click', function(e) {
-            e.preventDefault();
+        // Save inline edit
+        $(document).on('click', '.ahgmh-inline-save', function() {
+            var $btn      = $(this);
+            var $editRow  = $btn.closest('.ahgmh-inline-edit-row');
+            var id        = $btn.data('id');
+            var nonce     = $btn.data('nonce');
+            var $dataRow  = $editRow.prev('tr');
 
-            var $btn = $(this);
-            var $form = $('#reject-submission-form');
-            var submissionId = $form.attr('data-submission-id');
-            var $commentField = $('#reject-comment');
-            var comment = $commentField.val().trim();
+            var harvestDate  = $editRow.find('.ahgmh-edit-datum').val();
+            var category     = $editRow.find('.ahgmh-edit-abschuss').val().trim();
+            var wus          = $editRow.find('.ahgmh-edit-wus').val().trim();
+            var bemerkung    = $editRow.find('.ahgmh-edit-bemerkung').val().trim();
+            var notiz        = $editRow.find('.ahgmh-edit-notiz').val().trim();
+            var ejbId        = $editRow.find('.ahgmh-edit-jagdbezirk').val();
+            var mgName       = $editRow.find('.ahgmh-edit-meldegruppe').val();
+            var jbName       = $editRow.find('.ahgmh-edit-jagdbezirk option:selected').text();
 
-            // Clear previous error messages
-            $('.form-error').text('').hide();
-            $('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
+            $editRow.find('.ahgmh-inline-save').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
-            // Validate comment field - it is required
-            if (!comment) {
-                $commentField.addClass('is-invalid').attr('aria-invalid', 'true');
-                $commentField.siblings('.form-error').text('Dieses Feld ist erforderlich.').show();
-                $commentField.focus();
-                return;
-            }
+            $.post(ahgmh_table_moderation.ajax_url, {
+                action:              'ahgmh_table_update',
+                nonce:               nonce,
+                submission_id:       id,
+                harvest_date:        harvestDate,
+                category:            category,
+                wus_number:          wus,
+                notes:               bemerkung,
+                internal_note:       notiz,
+                eigenjagdbezirk_id:  ejbId
+            }, function(r) {
+                if (r.success) {
+                    showNotification('success', ahgmh_table_moderation.strings.success_updated || 'Meldung aktualisiert.');
+                    announceStatus('Meldung aktualisiert.');
 
-            // Disable button to prevent multiple submissions
-            $btn.prop('disabled', true)
-                .attr('aria-busy', 'true')
-                .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wird abgelehnt...');
-
-            // Prepare form data
-            var formData = {
-                action: 'ahgmh_table_reject',
-                nonce: ahgmh_table_moderation.nonce,
-                submission_id: submissionId,
-                comment: comment
-            };
-
-            // Send AJAX request
-            $.ajax({
-                url: ahgmh_table_moderation.ajax_url,
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    if (response.success) {
-                        // Show success notification
-                        var successMsg = ahgmh_table_moderation.strings.success_rejected || 'Abschussmeldung wurde erfolgreich abgelehnt.';
-                        showNotification('success', successMsg);
-                        announceStatus(successMsg);
-
-                        // Close the modal
-                        var rejectModal = bootstrap.Modal.getInstance(document.getElementById('rejectSubmissionModal'));
-                        rejectModal.hide();
-
-                        // Remove the table row since submission is rejected
-                        var $row = $('.btn-reject[data-submission-id="' + submissionId + '"]').closest('tr');
-                        $row.fadeOut(400, function() {
-                            $(this).remove();
-                        });
-                    } else {
-                        // Show error message in modal
-                        var message = response.data && response.data.message
-                            ? response.data.message
-                            : ahgmh_table_moderation.strings.error_generic;
-                        $('#reject-form-response').removeClass('alert-success').addClass('alert-danger').text(message).show();
+                    // Update display cells
+                    var $cells = $dataRow.find('td');
+                    if (harvestDate) {
+                        var p = harvestDate.split('-');
+                        if (p.length === 3) {
+                            $cells.eq(0).text(p[2] + '.' + p[1] + '.' + p[0].substring(2));
+                        }
                     }
-                },
-                error: function() {
-                    // Show general error message in modal
-                    $('#reject-form-response').removeClass('alert-success').addClass('alert-danger')
-                        .text(ahgmh_table_moderation.strings.error_generic).show();
-                },
-                complete: function() {
-                    // Re-enable button
-                    $btn.prop('disabled', false)
-                        .attr('aria-busy', 'false')
-                        .text('Ablehnen bestätigen');
+                    $cells.eq(2).text(category);
+                    $cells.eq(3).text(wus);
+                    if (mgName) { $cells.eq(4).text(mgName); }
+                    if (jbName && jbName !== 'Bitte wählen...' && jbName !== 'Lade...') {
+                        $cells.eq(5).text(jbName);
+                    }
+                    $cells.eq(6).text(bemerkung);
+                    $cells.eq(7).text(notiz);
+
+                    // Update data-harvest-date for subsequent edits
+                    $dataRow.attr('data-harvest-date', harvestDate);
+
+                    $editRow.remove();
+                    $dataRow.show();
+                } else {
+                    var msg = (r.data && r.data.message) ? r.data.message : ahgmh_table_moderation.strings.error_generic;
+                    showNotification('danger', msg);
+                    $editRow.find('.ahgmh-inline-save').prop('disabled', false).text('Speichern');
                 }
+            }).fail(function() {
+                showNotification('danger', ahgmh_table_moderation.strings.error_generic);
+                $editRow.find('.ahgmh-inline-save').prop('disabled', false).text('Speichern');
             });
         });
 
-        // Handle keyboard events on moderation buttons (Enter/Space)
+        // Delete from inline edit
+        $(document).on('click', '.ahgmh-inline-delete', function() {
+            if (!confirm('Diese Meldung wirklich löschen?')) return;
+
+            var $btn     = $(this);
+            var $editRow = $btn.closest('.ahgmh-inline-edit-row');
+            var $dataRow = $editRow.prev('tr');
+            var id       = $btn.data('id');
+            var nonce    = $btn.data('nonce');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+            $.post(ahgmh_table_moderation.ajax_url, {
+                action: 'ahgmh_table_delete',
+                nonce: nonce,
+                submission_id: id
+            }, function(r) {
+                if (r.success) {
+                    showNotification('success', 'Meldung gelöscht.');
+                    $editRow.remove();
+                    $dataRow.fadeOut(400, function() { $(this).remove(); });
+                } else {
+                    var msg = (r.data && r.data.message) ? r.data.message : ahgmh_table_moderation.strings.error_generic;
+                    showNotification('danger', msg);
+                    $btn.prop('disabled', false).text('Löschen');
+                }
+            }).fail(function() {
+                showNotification('danger', ahgmh_table_moderation.strings.error_generic);
+                $btn.prop('disabled', false).text('Löschen');
+            });
+        });
+
+        // Keyboard support
         $(document).on('keydown', '.btn-approve, .btn-edit, .btn-reject', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                $(this).trigger('click');
-            }
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(this).trigger('click'); }
         });
+
+        // ─── Helpers ──────────────────────────────────────────────────────────
+
+        function escHtml(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+        function escAttr(str) {
+            return escHtml(str).replace(/"/g,'&quot;');
+        }
 
     });
 
-    /**
-     * Show Bootstrap alert notification
-     * @param {string} type - 'success' or 'danger'
-     * @param {string} message - Message to display
-     */
-    function showNotification(type, message) {
-        // Remove any existing notifications
-        $('.moderation-notification').remove();
-
-        // Create notification element
-        var $notification = $('<div>', {
-            'class': 'alert alert-' + type + ' alert-dismissible fade show moderation-notification',
-            'role': 'alert',
-            html: message + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Schließen"></button>'
-        });
-
-        // Insert at top of table container
-        $('.abschuss-table-container').prepend($notification);
-
-        // Scroll to notification
-        $('html, body').animate({
-            scrollTop: $notification.offset().top - 100
-        }, 500);
-
-        // Auto-dismiss after 5 seconds
-        setTimeout(function() {
-            $notification.fadeOut(function() {
-                $(this).remove();
-            });
-        }, 5000);
-    }
 })(jQuery);

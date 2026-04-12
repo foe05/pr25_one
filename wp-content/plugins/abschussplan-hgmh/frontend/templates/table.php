@@ -14,8 +14,9 @@ $current_page = isset($_GET['abschuss_page']) ? max(1, intval($_GET['abschuss_pa
 // Get limit from URL or use the one from shortcode attributes
 $current_limit = isset($_GET['abschuss_limit']) ? max(1, intval($_GET['abschuss_limit'])) : (isset($limit) ? $limit : 10);
 
-// Check if current user is an Obmann (moderator)
+// Check if current user is an Obmann (moderator) or at least logged in (can edit own entries)
 $is_moderator = current_user_can('moderate_submissions') || current_user_can('manage_options');
+$can_edit = is_user_logged_in();
 ?>
 
 <div class="abschuss-table-container">
@@ -44,67 +45,74 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
                 <thead>
                     <tr>
                         <th scope="col"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?></th>
-                        <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Wildart', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></th>
-                        <th scope="col"><?php echo esc_html__('Interne Notiz', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Interne Notiz', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Erstellt von', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Erstellt am', 'abschussplan-hgmh'); ?></th>
-                        <?php if ($is_moderator) : ?>
+                        <?php if ($is_moderator || $can_edit) : ?>
                         <th scope="col"><?php echo esc_html__('Moderation', 'abschussplan-hgmh'); ?></th>
                         <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
+                    <?php
+                    $frontend_status_labels = array(
+                        'pending_email'    => 'E-Mail ausstehend',
+                        'pending'          => 'Ausstehend',
+                        'email_verified'   => 'E-Mail bestätigt',
+                        'pending_approval' => 'Warten auf Freigabe',
+                        'approved'         => 'Genehmigt',
+                        'rejected'         => 'Abgelehnt',
+                    );
+                    ?>
                     <?php foreach ($submissions as $submission) : ?>
-                        <tr>
+                        <?php
+                        $sub_id       = isset($submission['id']) ? intval($submission['id']) : 0;
+                        $raw_harvest  = $submission['harvest_date'] ?? '';
+                        // Store ISO date (YYYY-MM-DD) for the inline-edit date input
+                        $iso_date     = $raw_harvest ? substr($raw_harvest, 0, 10) : '';
+                        ?>
+                        <tr data-id="<?php echo esc_attr($sub_id); ?>" data-harvest-date="<?php echo esc_attr($iso_date); ?>"
+                            data-nonce="<?php echo esc_attr(wp_create_nonce('ahgmh_table_moderation_nonce')); ?>"><?php // nonce per row for delete ?>
                             <td data-label="<?php echo esc_attr__('Abschussdatum', 'abschussplan-hgmh'); ?>">
                                 <?php
-                                // Format the date in German format dd.mm.yy
-                                if (!empty($submission['field1'])) {
-                                    $date = DateTime::createFromFormat('Y-m-d', $submission['field1']);
+                                $harvest_date = $submission['harvest_date'] ?? '';
+                                if (!empty($harvest_date)) {
+                                    $date = DateTime::createFromFormat('Y-m-d', substr($harvest_date, 0, 10));
                                     if ($date) {
                                         echo esc_html($date->format('d.m.y'));
                                     } else {
-                                        echo esc_html($submission['field1']);
+                                        echo esc_html($harvest_date);
                                     }
                                 }
                                 ?>
                             </td>
-                            <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>">
-                                <?php
-                                echo esc_html($submission['field5'] ?? '');
-                                if (!empty($submission['meldegruppe'])) {
-                                    echo ' (' . esc_html($submission['meldegruppe']) . ')';
-                                }
-                                ?>
-                            </td>
-                            <td data-label="<?php echo esc_attr__('Abschuss', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field2']); ?></td>
-                            <td data-label="<?php echo esc_attr__('WUS', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field3']); ?></td>
-                            <td data-label="<?php echo esc_attr__('Interne Notiz', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field6'] ?? ''); ?></td>
-                            <td data-label="<?php echo esc_attr__('Bemerkung', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['field4']); ?></td>
+                            <td data-label="<?php echo esc_attr__('Wildart', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['wildart_name'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Abschuss', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['category'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('WUS', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['wus_number'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Meldegruppe', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['meldegruppe_name'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['eigenjagdbezirk_name'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Bemerkung', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['notes'] ?? ''); ?></td>
+                            <td data-label="<?php echo esc_attr__('Interne Notiz', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['internal_note'] ?? ''); ?></td>
                             <td data-label="<?php echo esc_attr__('Erstellt von', 'abschussplan-hgmh'); ?>">
                                 <?php
-                                if (isset($submission['user_id']) && $submission['user_id'] > 0) {
-                                    $user = get_user_by('id', $submission['user_id']);
+                                if (isset($submission['submitted_by_user_id']) && $submission['submitted_by_user_id'] > 0) {
+                                    $user = get_user_by('id', $submission['submitted_by_user_id']);
                                     if ($user) {
                                         $first_name = get_user_meta($user->ID, 'first_name', true);
                                         $last_name = get_user_meta($user->ID, 'last_name', true);
-
-                                        // If both first and last name are available, use them
                                         if (!empty($first_name) && !empty($last_name)) {
                                             echo esc_html(trim($first_name . ' ' . $last_name));
-                                        }
-                                        // If only one name is available, use it
-                                        elseif (!empty($first_name)) {
+                                        } elseif (!empty($first_name)) {
                                             echo esc_html($first_name);
-                                        }
-                                        elseif (!empty($last_name)) {
+                                        } elseif (!empty($last_name)) {
                                             echo esc_html($last_name);
-                                        }
-                                        // Fall back to display name
-                                        else {
+                                        } else {
                                             echo esc_html($user->display_name);
                                         }
                                     } else {
@@ -117,49 +125,52 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
                             </td>
                             <td data-label="<?php echo esc_attr__('Erstellt am', 'abschussplan-hgmh'); ?>">
                                 <?php
-                                // Format the datetime in German format dd.MM.yy hh:mm
-                                if (!empty($submission['created_at'])) {
-                                    $datetime = DateTime::createFromFormat('Y-m-d H:i:s', $submission['created_at']);
-                                    if ($datetime) {
-                                        echo esc_html($datetime->format('d.m.y H:i'));
-                                    } else {
-                                        // Fallback to original format if parsing fails
-                                        echo esc_html(date_i18n('d.m.y H:i', strtotime($submission['created_at'])));
-                                    }
+                                $submitted_at = $submission['submitted_at'] ?? '';
+                                if (!empty($submitted_at)) {
+                                    $datetime = new DateTime($submitted_at, new DateTimeZone('UTC'));
+                                    $datetime->setTimezone(new DateTimeZone('Europe/Berlin'));
+                                    echo esc_html($datetime->format('d.m.y H:i'));
                                 }
                                 ?>
                             </td>
-                            <?php if ($is_moderator) : ?>
+                            <?php if ($is_moderator || $can_edit) : ?>
                             <td data-label="<?php echo esc_attr__('Moderation', 'abschussplan-hgmh'); ?>">
                                 <?php
-                                // Only show moderation buttons for email_verified or pending_approval status
                                 $submission_status = $submission['status'] ?? '';
-                                if ($submission_status === 'email_verified' || $submission_status === 'pending_approval') :
-                                    $submission_id = isset($submission['id']) ? intval($submission['id']) : 0;
+                                $is_pending = in_array($submission_status, array('pending_email', 'pending', 'email_verified', 'pending_approval'), true);
+                                $status_label = isset($frontend_status_labels[$submission_status])
+                                    ? $frontend_status_labels[$submission_status]
+                                    : ucfirst($submission_status);
                                 ?>
-                                    <div class="btn-group btn-group-sm" role="group" aria-label="<?php echo esc_attr__('Moderationsaktionen', 'abschussplan-hgmh'); ?>">
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <?php if ($is_moderator && $is_pending) : ?>
                                         <button type="button"
-                                                class="btn btn-success btn-approve"
-                                                data-submission-id="<?php echo esc_attr($submission_id); ?>"
-                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d freigeben', 'abschussplan-hgmh'), $submission_id)); ?>">
-                                            <span aria-hidden="true">&#10003;</span> <?php echo esc_html__('Freigeben', 'abschussplan-hgmh'); ?>
+                                                class="btn btn-success btn-sm btn-approve"
+                                                data-submission-id="<?php echo esc_attr($sub_id); ?>"
+                                                title="<?php echo esc_attr__('Freigeben', 'abschussplan-hgmh'); ?>"
+                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d freigeben', 'abschussplan-hgmh'), $sub_id)); ?>">
+                                            <i class="bi bi-check-lg" aria-hidden="true"></i>
                                         </button>
                                         <button type="button"
-                                                class="btn btn-primary btn-edit"
-                                                data-submission-id="<?php echo esc_attr($submission_id); ?>"
-                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d bearbeiten', 'abschussplan-hgmh'), $submission_id)); ?>">
-                                            <span aria-hidden="true">&#9998;</span> <?php echo esc_html__('Bearbeiten', 'abschussplan-hgmh'); ?>
+                                                class="btn btn-danger btn-sm btn-reject"
+                                                data-submission-id="<?php echo esc_attr($sub_id); ?>"
+                                                title="<?php echo esc_attr__('Ablehnen', 'abschussplan-hgmh'); ?>"
+                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d ablehnen', 'abschussplan-hgmh'), $sub_id)); ?>">
+                                            <i class="bi bi-x-lg" aria-hidden="true"></i>
                                         </button>
+                                    <?php elseif (!$is_pending) : ?>
+                                        <span class="badge bg-secondary"><?php echo esc_html($status_label); ?></span>
+                                    <?php endif; ?>
+                                    <?php if ($can_edit) : ?>
                                         <button type="button"
-                                                class="btn btn-danger btn-reject"
-                                                data-submission-id="<?php echo esc_attr($submission_id); ?>"
-                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d ablehnen', 'abschussplan-hgmh'), $submission_id)); ?>">
-                                            <span aria-hidden="true">&#10005;</span> <?php echo esc_html__('Ablehnen', 'abschussplan-hgmh'); ?>
+                                                class="btn btn-outline-secondary btn-sm btn-edit"
+                                                data-submission-id="<?php echo esc_attr($sub_id); ?>"
+                                                title="<?php echo esc_attr__('Bearbeiten', 'abschussplan-hgmh'); ?>"
+                                                aria-label="<?php echo esc_attr(sprintf(__('Meldung %d bearbeiten', 'abschussplan-hgmh'), $sub_id)); ?>">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
                                         </button>
-                                    </div>
-                                <?php else : ?>
-                                    <span class="badge bg-secondary"><?php echo esc_html(ucfirst($submission_status)); ?></span>
-                                <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <?php endif; ?>
                         </tr>
@@ -240,65 +251,6 @@ $is_moderator = current_user_can('moderate_submissions') || current_user_can('ma
             </nav>
         <?php endif; ?>
     <?php endif; ?>
-</div>
-
-<!-- Edit Submission Modal -->
-<div class="modal fade" id="editSubmissionModal" tabindex="-1" aria-labelledby="editSubmissionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editSubmissionModalLabel"><?php echo esc_html__('Abschussmeldung bearbeiten', 'abschussplan-hgmh'); ?></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php echo esc_attr__('Schließen', 'abschussplan-hgmh'); ?>"></button>
-            </div>
-            <div class="modal-body">
-                <div id="edit-form-response" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
-
-                <form id="edit-submission-form" data-submission-id="" novalidate>
-                    <?php wp_nonce_field('ahgmh_edit_submission_nonce', 'ahgmh_edit_nonce'); ?>
-
-                    <div class="mb-3">
-                        <label for="edit-field1" class="form-label"><?php echo esc_html__('Abschussdatum', 'abschussplan-hgmh'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
-                        <input type="date" class="form-control" id="edit-field1" name="field1" required aria-required="true">
-                        <div class="form-error" role="alert"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit-field2" class="form-label"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
-                        <input type="text" class="form-control" id="edit-field2" name="field2" required aria-required="true">
-                        <div class="form-error" role="alert"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit-field3" class="form-label"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></label>
-                        <input type="number" class="form-control" id="edit-field3" name="field3" min="1000000" max="9999999">
-                        <div class="form-error" role="alert"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit-field5" class="form-label"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
-                        <input type="text" class="form-control" id="edit-field5" name="field5" required aria-required="true">
-                        <div class="form-error" role="alert"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit-field4" class="form-label"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></label>
-                        <textarea class="form-control" id="edit-field4" name="field4" rows="4"></textarea>
-                        <div class="form-error" role="alert"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit-field6" class="form-label"><?php echo esc_html__('Interne Notiz', 'abschussplan-hgmh'); ?></label>
-                        <textarea class="form-control" id="edit-field6" name="field6" rows="4"></textarea>
-                        <div class="form-error" role="alert"></div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo esc_html__('Abbrechen', 'abschussplan-hgmh'); ?></button>
-                <button type="button" class="btn btn-primary" id="save-submission-btn"><?php echo esc_html__('Speichern', 'abschussplan-hgmh'); ?></button>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Reject Submission Modal -->

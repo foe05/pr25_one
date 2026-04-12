@@ -1,5 +1,34 @@
 # Changelog - Abschussplan HGMH
 
+## [26.4.0] - 2026-04-13
+
+### Admin-Backend: Meldungen-Editiermaske
+
+- **Meldegruppen-Quelle korrigiert**: `ajax_get_submission_data()` liest Meldegruppen jetzt direkt aus `hgmh_meldegruppen JOIN hgmh_wildarten` (dieselbe Quelle wie der Jagdbezirk-Lookup) statt der alten `get_meldegruppen_for_wildart()`-Methode mit inkonsistenter Quelle
+- **Erfasser-Löschung behoben**: `submitted_by_user_id` wird nur noch überschrieben wenn `user_id > 0` explizit gesendet wird
+- **`buildSelect()` für User-Objekte repariert**: Wertet jetzt korrekt `{id, display_name}`-Objekte aus (vorher wurde `[object Object]` als Wert verwendet)
+- **Layout vollständig überarbeitet**: CSS-Grid statt verschachtelter `<table>`, Speichern/Abbrechen-Buttons sowohl oben als auch unten (mobiltauglich)
+- **Jagdbezirk-Vorauswahl beim Öffnen**: Nach der initialen Meldegruppen-AJAX-Anfrage wird der aktuelle Jagdbezirk automatisch vorausgewählt
+- **`colspan` korrigiert**: Von 11 auf 12 (Tabelle hat 1 Checkbox-Spalte + 11 `<th>`-Spalten)
+
+### Frontend: `[abschuss_table]` Inline-Editieren
+
+- **Script-Ladegarantie**: `wp_enqueue_script()` wird jetzt direkt in `render_table()` aufgerufen, nicht nur im `wp_enqueue_scripts`-Hook — verhindert dass der Bearbeiten-Button ohne JS-Handler gerendert wird (tritt auf bei Page Buildern, Template-Dateien, Gutenberg Reusable Blocks)
+- **Icon-Buttons statt Text**: Freigeben = `bi-check-lg` (grün), Ablehnen = `bi-x-lg` (rot), Bearbeiten = `bi-pencil` (grau) — jeweils `btn-sm` mit `title`-Attribut
+- **Abschuss-Feld jetzt Dropdown**: Lädt Kategorien der Wildart via neuen AJAX-Endpoint `ahgmh_table_get_options`
+- **Meldegruppe editierbar**: War `readonly`-Textfeld, ist jetzt ein `<select>` mit allen aktiven Meldegruppen für die Wildart
+- **Jagdbezirk editierbar**: War `readonly`-Textfeld, ist jetzt ein `<select>` der per `ahgmh_table_get_jagdbezirke` in Abhängigkeit der Meldegruppe geladen wird; aktueller Wert wird vorausgewählt
+- **`eigenjagdbezirk_id` beim Speichern**: Save-Handler sendet jetzt die numerische Jagdbezirk-ID; Zellen-Update nach Speichern aktualisiert auch Meldegruppe- und Jagdbezirk-Spalten
+- **Zwei neue AJAX-Endpoints** in `AHGMH_Table_Shortcode`:
+  - `ahgmh_table_get_options` — Kategorien + Meldegruppen für eine Wildart (Login erforderlich)
+  - `ahgmh_table_get_jagdbezirke` — Jagdbezirke für eine Meldegruppe (Login erforderlich)
+
+### Allgemein
+
+- Version 26.4.0 (Browser-Cache-Buster für alle JS/CSS-Assets)
+
+---
+
 ## [26.1.0] - 2026-04-08
 
 ### Sicherheit (Security)

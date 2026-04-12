@@ -27,6 +27,8 @@ class AHGMH_Admin_Page_Modern {
         add_action('wp_ajax_ahgmh_edit_submission', array($this, 'ajax_edit_submission'));
         add_action('wp_ajax_ahgmh_get_submission_data', array($this, 'ajax_get_submission_data'));
         add_action('wp_ajax_ahgmh_admin_get_jagdbezirke_by_meldegruppe', array($this, 'ajax_admin_get_jagdbezirke_by_meldegruppe'));
+        add_action('wp_ajax_ahgmh_admin_approve_submission', array($this, 'ajax_admin_approve_submission'));
+        add_action('wp_ajax_ahgmh_admin_reject_submission', array($this, 'ajax_admin_reject_submission'));
         add_action('wp_ajax_ahgmh_danger_action', array($this, 'ajax_danger_action'));
         // Jagdbezirk handlers moved to emergency file
         // Legacy handlers - these are now handled by AHGMH_Wildart_Controller
@@ -466,10 +468,6 @@ class AHGMH_Admin_Page_Modern {
                    class="nav-tab <?php echo $active_tab === 'database' ? 'nav-tab-active' : ''; ?>">
                     <?php echo esc_html__('Datenbank', 'abschussplan-hgmh'); ?>
                 </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-settings&tab=export')); ?>"
-                   class="nav-tab <?php echo $active_tab === 'export' ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html__('Export-Konfiguration', 'abschussplan-hgmh'); ?>
-                </a>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=abschussplan-hgmh-settings&tab=logging')); ?>"
                    class="nav-tab <?php echo $active_tab === 'logging' ? 'nav-tab-active' : ''; ?>">
                     <?php echo esc_html__('Logging', 'abschussplan-hgmh'); ?>
@@ -486,9 +484,6 @@ class AHGMH_Admin_Page_Modern {
                 switch ($active_tab) {
                     case 'database':
                         $this->render_database_settings();
-                        break;
-                    case 'export':
-                        $this->render_export_settings();
                         break;
                     case 'logging':
                         $this->render_logging_settings();
@@ -1054,18 +1049,34 @@ class AHGMH_Admin_Page_Modern {
                         <th scope="col"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Datum', 'abschussplan-hgmh'); ?></th>
+                        <th scope="col"><?php echo esc_html__('Status', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Aktionen', 'abschussplan-hgmh'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($submissions)): ?>
                         <tr>
-                            <td colspan="10" style="text-align: center; padding: 20px;">
+                            <td colspan="11" style="text-align: center; padding: 20px;">
                                 <?php echo esc_html__('Keine Meldungen gefunden.', 'abschussplan-hgmh'); ?>
                             </td>
                         </tr>
                     <?php else: ?>
+                        <?php
+                        $status_labels = array(
+                            'pending_email'    => array('label' => 'E-Mail ausstehend', 'color' => '#f0ad4e'),
+                            'pending'          => array('label' => 'Warten auf Freigabe', 'color' => '#f39c12'),
+                            'approved'         => array('label' => 'Freigegeben', 'color' => '#5cb85c'),
+                            'rejected'         => array('label' => 'Abgelehnt', 'color' => '#d9534f'),
+                        );
+                        $pending_statuses = array('pending_email', 'pending', 'email_verified', 'pending_approval');
+                        ?>
                         <?php foreach ($submissions as $submission): ?>
+                            <?php
+                            $sub_status = $submission['status'] ?? 'pending_email';
+                            $status_info = isset($status_labels[$sub_status])
+                                ? $status_labels[$sub_status]
+                                : array('label' => esc_html($sub_status), 'color' => '#777');
+                            ?>
                             <tr>
                                 <th scope="row" class="check-column">
                                     <label class="screen-reader-text" for="cb-select-<?php echo esc_attr($submission['id']); ?>">
@@ -1078,15 +1089,32 @@ class AHGMH_Admin_Page_Modern {
                                            class="ahgmh-submission-checkbox">
                                 </th>
                                 <td><?php echo esc_html($submission['id']); ?></td>
-                                <td><?php echo esc_html($submission['game_species']); ?></td>
-                                <td><?php echo esc_html($submission['field2']); ?></td>
-                                <td><?php echo esc_html($submission['field3']); ?></td>
-                                <td><?php echo esc_html($submission['field6'] ?? ''); ?></td>
-                                <td><?php echo esc_html($submission['field4']); ?></td>
-                                <td><?php echo esc_html($submission['meldegruppe'] ?? ''); ?></td>
-                                <td><?php echo esc_html($submission['field5']); ?></td>
-                                <td><?php echo esc_html(mysql2date('d.m.Y H:i', $submission['created_at'])); ?></td>
+                                <td><?php echo esc_html($submission['wildart_name'] ?? ''); ?></td>
+                                <td><?php echo esc_html($submission['category'] ?? ''); ?></td>
+                                <td><?php echo esc_html($submission['wus_number'] ?? ''); ?></td>
+                                <td><?php echo esc_html($submission['internal_note'] ?? ''); ?></td>
+                                <td><?php echo esc_html($submission['notes'] ?? ''); ?></td>
+                                <td><?php echo esc_html($submission['meldegruppe_name'] ?? ''); ?></td>
+                                <td><?php echo esc_html($submission['eigenjagdbezirk_name'] ?? ''); ?></td>
+                                <td><?php echo esc_html(mysql2date('d.m.Y H:i', $submission['submitted_at'])); ?></td>
                                 <td>
+                                    <span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:<?php echo esc_attr($status_info['color']); ?>;">
+                                        <?php echo esc_html($status_info['label']); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if (in_array($sub_status, $pending_statuses)): ?>
+                                    <button class="button button-small ahgmh-admin-approve-submission"
+                                            style="color:#fff;background:#5cb85c;border-color:#4cae4c;"
+                                            data-id="<?php echo esc_attr($submission['id']); ?>">
+                                        <?php echo esc_html__('Freigeben', 'abschussplan-hgmh'); ?>
+                                    </button>
+                                    <button class="button button-small ahgmh-admin-reject-submission"
+                                            style="color:#fff;background:#d9534f;border-color:#d43f3a;"
+                                            data-id="<?php echo esc_attr($submission['id']); ?>">
+                                        <?php echo esc_html__('Ablehnen', 'abschussplan-hgmh'); ?>
+                                    </button>
+                                    <?php endif; ?>
                                     <button class="button button-small button-secondary ahgmh-edit-submission"
                                             data-id="<?php echo esc_attr($submission['id']); ?>">
                                         <?php echo esc_html__('Bearbeiten', 'abschussplan-hgmh'); ?>
@@ -2285,174 +2313,6 @@ class AHGMH_Admin_Page_Modern {
     /**
      * Render export settings tab
      */
-    private function render_export_settings() {
-        $species_list = get_option('ahgmh_species', array('Rotwild', 'Damwild'));
-        $database = abschussplan_hgmh()->database;
-        $stats = $this->get_dashboard_stats();
-        ?>
-        <div class="ahgmh-panel">
-            <h2><?php echo esc_html__('CSV Export & Download', 'abschussplan-hgmh'); ?></h2>
-            
-            <!-- Export Statistics -->
-            <div class="ahgmh-settings-section">
-                <h3><?php echo esc_html__('Export-Statistiken', 'abschussplan-hgmh'); ?></h3>
-                <div class="ahgmh-stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number"><?php echo esc_html($stats['total_submissions']); ?></div>
-                        <div class="stat-label"><?php echo esc_html__('Verfügbare Meldungen', 'abschussplan-hgmh'); ?></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number"><?php echo esc_html($stats['submissions_this_month']); ?></div>
-                        <div class="stat-label"><?php echo esc_html__('Neue Meldungen (diesen Monat)', 'abschussplan-hgmh'); ?></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Export by Species -->
-            <div class="ahgmh-settings-section">
-                <h3><?php echo esc_html__('Export nach Wildart', 'abschussplan-hgmh'); ?></h3>
-                <p><?php echo esc_html__('Klicken Sie auf einen der folgenden Buttons, um Daten für eine bestimmte Wildart zu exportieren:', 'abschussplan-hgmh'); ?></p>
-                
-                <div class="export-buttons">
-                    <?php foreach ($species_list as $species): 
-                        $species_count = $database->count_submissions_by_species($species);
-                    ?>
-                        <div class="export-species-item">
-                            <button class="button button-primary ahgmh-export-btn" 
-                                    data-format="csv" 
-                                    data-species="<?php echo esc_attr($species); ?>">
-                                <span class="dashicons dashicons-download"></span>
-                                <?php printf(esc_html__('%s exportieren (%d Meldungen)', 'abschussplan-hgmh'), 
-                                           esc_html($species), 
-                                           esc_html($species_count)); ?>
-                            </button>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <!-- Complete Export -->
-            <div class="ahgmh-settings-section">
-                <h3><?php echo esc_html__('Vollständiger Export', 'abschussplan-hgmh'); ?></h3>
-                <p><?php echo esc_html__('Exportieren Sie alle Meldungen in einer einzigen CSV-Datei:', 'abschussplan-hgmh'); ?></p>
-                
-                <button class="button button-primary button-hero ahgmh-export-btn" 
-                        data-format="csv" 
-                        data-species="">
-                    <span class="dashicons dashicons-download"></span>
-                    <?php printf(esc_html__('Alle Meldungen exportieren (%d Einträge)', 'abschussplan-hgmh'), 
-                               esc_html($stats['total_submissions'])); ?>
-                </button>
-            </div>
-
-            <!-- Export Configuration -->
-            <div class="ahgmh-settings-section">
-                <h3><?php echo esc_html__('Export-Konfiguration', 'abschussplan-hgmh'); ?></h3>
-                <div class="ahgmh-form-row">
-                    <label for="export_filename_pattern"><?php echo esc_html__('Dateiname-Muster:', 'abschussplan-hgmh'); ?></label>
-                    <input type="text" 
-                           id="export_filename_pattern" 
-                           name="export_filename_pattern" 
-                           value="<?php echo esc_attr(get_option('ahgmh_export_filename_pattern', 'abschussplan_{species}_{date}')); ?>"
-                           placeholder="abschussplan_{species}_{date}"
-                           class="regular-text">
-                    <p class="description">
-                        <?php echo esc_html__('Verfügbare Platzhalter: {species} (Wildart), {date} (YYYY-MM-DD), {datetime} (YYYY-MM-DD_HH-MM)', 'abschussplan-hgmh'); ?>
-                    </p>
-                </div>
-                
-                <div class="ahgmh-form-row">
-                    <label>
-                        <input type="checkbox" 
-                               id="export_include_time" 
-                               name="export_include_time" 
-                               <?php checked(get_option('ahgmh_export_include_time', false)); ?>>
-                        <?php echo esc_html__('Uhrzeit in Dateinamen einschließen', 'abschussplan-hgmh'); ?>
-                    </label>
-                </div>
-                
-                <button type="button" class="button" id="save_export_config">
-                    <?php echo esc_html__('Export-Einstellungen speichern', 'abschussplan-hgmh'); ?>
-                </button>
-            </div>
-
-            <!-- Export Parameters -->
-            <div class="ahgmh-settings-section">
-                <h3><?php echo esc_html__('Export-Parameter & API-Zugriff', 'abschussplan-hgmh'); ?></h3>
-                <div class="ahgmh-info-box">
-                    <h4><?php echo esc_html__('Export-URL:', 'abschussplan-hgmh'); ?></h4>
-                    <code><?php echo esc_html(admin_url('admin-ajax.php?action=export_abschuss_csv')); ?></code>
-                    
-                    <h4><?php echo esc_html__('Verfügbare Parameter:', 'abschussplan-hgmh'); ?></h4>
-                    <table class="widefat">
-                        <thead>
-                            <tr>
-                                <th><?php echo esc_html__('Parameter', 'abschussplan-hgmh'); ?></th>
-                                <th><?php echo esc_html__('Beschreibung', 'abschussplan-hgmh'); ?></th>
-                                <th><?php echo esc_html__('Beispiel', 'abschussplan-hgmh'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code>species</code></td>
-                                <td><?php echo esc_html__('Filtert nach Wildart', 'abschussplan-hgmh'); ?></td>
-                                <td><code>species=Rotwild</code></td>
-                            </tr>
-                            <tr>
-                                <td><code>from</code></td>
-                                <td><?php echo esc_html__('Startdatum (YYYY-MM-DD)', 'abschussplan-hgmh'); ?></td>
-                                <td><code>from=2024-01-01</code></td>
-                            </tr>
-                            <tr>
-                                <td><code>to</code></td>
-                                <td><?php echo esc_html__('Enddatum (YYYY-MM-DD)', 'abschussplan-hgmh'); ?></td>
-                                <td><code>to=2024-12-31</code></td>
-                            </tr>
-                            <tr>
-                                <td><code>filename</code></td>
-                                <td><?php echo esc_html__('Eigener Dateiname (ohne .csv)', 'abschussplan-hgmh'); ?></td>
-                                <td><code>filename=export_2024</code></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    
-                    <h4><?php echo esc_html__('Beispiel-URLs:', 'abschussplan-hgmh'); ?></h4>
-                    <ul>
-                        <li><code><?php echo esc_html(admin_url('admin-ajax.php?action=export_abschuss_csv&species=Rotwild')); ?></code></li>
-                        <li><code><?php echo esc_html(admin_url('admin-ajax.php?action=export_abschuss_csv&from=2024-01-01&to=2024-12-31')); ?></code></li>
-                        <li><code><?php echo esc_html(admin_url('admin-ajax.php?action=export_abschuss_csv&species=Damwild&filename=damwild_export')); ?></code></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Export Information -->
-            <div class="ahgmh-settings-section">
-                <h3><?php echo esc_html__('Export-Informationen', 'abschussplan-hgmh'); ?></h3>
-                <div class="ahgmh-info-box">
-                    <h4><?php echo esc_html__('CSV-Datei enthält folgende Spalten:', 'abschussplan-hgmh'); ?></h4>
-                    <ul>
-                        <li><strong><?php echo esc_html__('ID:', 'abschussplan-hgmh'); ?></strong> <?php echo esc_html__('Eindeutige Meldungs-ID', 'abschussplan-hgmh'); ?></li>
-                        <li><strong><?php echo esc_html__('Wildart:', 'abschussplan-hgmh'); ?></strong> <?php echo esc_html__('Art des erlegten Wildes', 'abschussplan-hgmh'); ?></li>
-                        <li><strong><?php echo esc_html__('Kategorie:', 'abschussplan-hgmh'); ?></strong> <?php echo esc_html__('Altersklasse/Geschlecht', 'abschussplan-hgmh'); ?></li>
-                        <li><strong><?php echo esc_html__('WUS-Nummer:', 'abschussplan-hgmh'); ?></strong> <?php echo esc_html__('Wildursprungsschein-Nummer', 'abschussplan-hgmh'); ?></li>
-                        <li><strong><?php echo esc_html__('Erlegungsort:', 'abschussplan-hgmh'); ?></strong> <?php echo esc_html__('Ort der Erlegung', 'abschussplan-hgmh'); ?></li>
-                        <li><strong><?php echo esc_html__('Jagdbezirk:', 'abschussplan-hgmh'); ?></strong> <?php echo esc_html__('Zuständiger Jagdbezirk', 'abschussplan-hgmh'); ?></li>
-                        <li><strong><?php echo esc_html__('Datum:', 'abschussplan-hgmh'); ?></strong> <?php echo esc_html__('Abschussdatum und Uhrzeit', 'abschussplan-hgmh'); ?></li>
-                    </ul>
-                    
-                    <h4><?php echo esc_html__('Technische Details:', 'abschussplan-hgmh'); ?></h4>
-                    <ul>
-                        <li><?php echo esc_html__('Format: CSV (Comma-Separated Values)', 'abschussplan-hgmh'); ?></li>
-                        <li><?php echo esc_html__('Zeichenkodierung: UTF-8', 'abschussplan-hgmh'); ?></li>
-                        <li><?php echo esc_html__('Trennzeichen: Komma (,)', 'abschussplan-hgmh'); ?></li>
-                        <li><?php echo esc_html__('Textbegrenzung: Anführungszeichen (")', 'abschussplan-hgmh'); ?></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <?php
-    }
-
     /**
      * Render Jagdbezirke settings tab
      */
@@ -2746,7 +2606,7 @@ class AHGMH_Admin_Page_Modern {
      * AJAX: Delete submission
      */
     public function ajax_delete_submission() {
-        AHGMH_Validation_Service::verify_ajax_request();
+        AHGMH_Validation_Service::verify_ajax_request('ahgmh_delete_submission');
 
         $id = intval($_POST['id'] ?? 0);
         
@@ -2788,15 +2648,15 @@ class AHGMH_Admin_Page_Modern {
 
         // Get user info
         $user_display_name = '';
-        if (!empty($submission['user_id'])) {
-            $user = get_user_by('id', $submission['user_id']);
+        if (!empty($submission['submitted_by_user_id'])) {
+            $user = get_user_by('id', $submission['submitted_by_user_id']);
             if ($user) {
                 $user_display_name = $user->display_name;
             }
         }
 
         // Get available options for dropdowns
-        $wildart = $submission['game_species'];
+        $wildart = $submission['wildart_name'] ?? '';
 
         // Get categories for this wildart
         $categories = array();
@@ -2808,8 +2668,26 @@ class AHGMH_Admin_Page_Modern {
         // Get all jagdbezirke
         $jagdbezirke = $database->get_jagdbezirke();
 
-        // Get meldegruppen for this wildart
-        $meldegruppen = $database->get_meldegruppen_for_wildart($wildart);
+        // Get meldegruppen from normalized table, filtered by wildart (same source as jagdbezirke lookup)
+        global $wpdb;
+        $meldegruppen_tbl = $wpdb->prefix . 'hgmh_meldegruppen';
+        $wildarten_tbl    = $wpdb->prefix . 'hgmh_wildarten';
+        $meldegruppen = array();
+        if (!empty($wildart)) {
+            $meldegruppen = $wpdb->get_col($wpdb->prepare(
+                "SELECT m.name FROM $meldegruppen_tbl m
+                 INNER JOIN $wildarten_tbl w ON m.wildart_id = w.id
+                 WHERE w.name = %s AND m.is_active = 1
+                 ORDER BY m.name ASC",
+                $wildart
+            ));
+        }
+        // Fallback: all active meldegruppen
+        if (empty($meldegruppen)) {
+            $meldegruppen = $wpdb->get_col(
+                "SELECT DISTINCT name FROM $meldegruppen_tbl WHERE is_active = 1 ORDER BY name ASC"
+            );
+        }
 
         // Get all users for dropdown (only admins and editors)
         $users = get_users(array(
@@ -2830,17 +2708,17 @@ class AHGMH_Admin_Page_Modern {
         $response_data = array(
             'submission' => array(
                 'id' => $submission['id'],
-                'wildart' => $submission['game_species'],
-                'kategorie' => $submission['field2'],
-                'wus_nummer' => $submission['field3'],
-                'bemerkung' => $submission['field4'],
-                'jagdbezirk' => $submission['field5'],
-                'interne_notiz' => $submission['field6'] ?? '',
-                'meldegruppe' => $submission['meldegruppe'] ?? '',
-                'user_id' => $submission['user_id'],
+                'wildart' => $submission['wildart_name'] ?? '',
+                'kategorie' => $submission['category'] ?? '',
+                'wus_nummer' => $submission['wus_number'] ?? '',
+                'bemerkung' => $submission['notes'] ?? '',
+                'jagdbezirk' => $submission['eigenjagdbezirk_name'] ?? '',
+                'interne_notiz' => $submission['internal_note'] ?? '',
+                'meldegruppe' => $submission['meldegruppe_name'] ?? '',
+                'user_id' => $submission['submitted_by_user_id'] ?? 0,
                 'user_display_name' => $user_display_name,
-                'created_at' => $submission['created_at'],
-                'status' => $submission['status'] ?? 'pending'
+                'harvest_date' => $submission['harvest_date'] ?? '',
+                'status' => $submission['status'] ?? 'pending_email'
             ),
             'options' => array(
                 'categories' => $categories,
@@ -2865,31 +2743,60 @@ class AHGMH_Admin_Page_Modern {
             wp_send_json_error(__('Ungueltige Meldungs-ID', 'abschussplan-hgmh'));
         }
 
-        // Sanitize inputs
-        $data = array(
-            'game_species' => sanitize_text_field($_POST['wildart'] ?? ''),
-            'field2' => sanitize_text_field($_POST['kategorie'] ?? ''),
-            'field3' => sanitize_text_field($_POST['wus_nummer'] ?? ''),
-            'field4' => sanitize_textarea_field($_POST['bemerkung'] ?? ''),
-            'field5' => sanitize_text_field($_POST['jagdbezirk'] ?? ''),
-            'field6' => sanitize_textarea_field($_POST['interne_notiz'] ?? ''),
-            'created_at' => sanitize_text_field($_POST['datum'] ?? ''),
-            'user_id' => intval($_POST['user_id'] ?? 0)
-        );
-
-        // Convert datetime-local format to MySQL datetime format
-        if ($data['created_at']) {
-            // Input format: YYYY-MM-DDTHH:MM
-            $datetime = str_replace('T', ' ', $data['created_at']);
-            $data['created_at'] = $datetime . ':00'; // Add seconds
+        // Sanitize inputs mapped to actual DB column names
+        $harvest_date_raw = sanitize_text_field($_POST['datum'] ?? '');
+        // Convert datetime-local format (YYYY-MM-DDTHH:MM) to MySQL datetime (YYYY-MM-DD HH:MM:SS)
+        if ($harvest_date_raw) {
+            $harvest_date_raw = str_replace('T', ' ', $harvest_date_raw) . ':00';
         }
 
-        // Validate required fields
-        if (empty($data['game_species']) || empty($data['field2'])) {
-            wp_send_json_error(__('Wildart und Kategorie sind Pflichtfelder', 'abschussplan-hgmh'));
+        $data = array(
+            'category'      => sanitize_text_field($_POST['kategorie'] ?? ''),
+            'wus_number'    => sanitize_text_field($_POST['wus_nummer'] ?? ''),
+            'notes'         => sanitize_textarea_field($_POST['bemerkung'] ?? ''),
+            'internal_note' => sanitize_textarea_field($_POST['interne_notiz'] ?? ''),
+            'harvest_date'  => $harvest_date_raw,
+        );
+
+        // Only update Erfasser if a valid user was explicitly selected (prevents accidental clearing)
+        $user_id = intval($_POST['user_id'] ?? 0);
+        if ($user_id > 0) {
+            $data['submitted_by_user_id'] = $user_id;
         }
 
         $database = abschussplan_hgmh()->database;
+        global $wpdb;
+
+        // Resolve wildart_id by name if provided
+        $wildart_name = sanitize_text_field($_POST['wildart'] ?? '');
+        if ($wildart_name) {
+            $wildarten_table = $wpdb->prefix . 'hgmh_wildarten';
+            $wildart_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $wildarten_table WHERE name = %s AND is_active = 1",
+                $wildart_name
+            ));
+            if ($wildart_id) {
+                $data['wildart_id'] = $wildart_id;
+            }
+        }
+
+        // Resolve eigenjagdbezirk_id by name if provided
+        $jagdbezirk_name = sanitize_text_field($_POST['jagdbezirk'] ?? '');
+        if ($jagdbezirk_name) {
+            $ejb_table = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+            $ejb_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $ejb_table WHERE name = %s AND is_active = 1",
+                $jagdbezirk_name
+            ));
+            if ($ejb_id) {
+                $data['eigenjagdbezirk_id'] = $ejb_id;
+            }
+        }
+
+        // Validate required fields
+        if (empty($data['category'])) {
+            wp_send_json_error(__('Kategorie ist ein Pflichtfeld', 'abschussplan-hgmh'));
+        }
 
         if ($database->update_submission($id, $data)) {
             wp_send_json_success(__('Meldung erfolgreich aktualisiert', 'abschussplan-hgmh'));
@@ -2918,6 +2825,49 @@ class AHGMH_Admin_Page_Modern {
         $jagdbezirke = $database->get_jagdbezirke_by_meldegruppe($meldegruppe);
 
         wp_send_json_success($jagdbezirke);
+    }
+
+    /**
+     * AJAX: Admin approve submission
+     */
+    public function ajax_admin_approve_submission() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        $id = intval($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            wp_send_json_error(__('Ungültige Meldungs-ID', 'abschussplan-hgmh'));
+        }
+
+        $moderation_service = new AHGMH_Moderation_Service();
+        $result = $moderation_service->approve_submission($id);
+
+        if ($result) {
+            wp_send_json_success(__('Meldung erfolgreich freigegeben', 'abschussplan-hgmh'));
+        } else {
+            wp_send_json_error(__('Fehler beim Freigeben der Meldung', 'abschussplan-hgmh'));
+        }
+    }
+
+    /**
+     * AJAX: Admin reject submission
+     */
+    public function ajax_admin_reject_submission() {
+        AHGMH_Validation_Service::verify_ajax_request();
+
+        $id = intval($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            wp_send_json_error(__('Ungültige Meldungs-ID', 'abschussplan-hgmh'));
+        }
+
+        $comment = sanitize_textarea_field($_POST['comment'] ?? '');
+        $moderation_service = new AHGMH_Moderation_Service();
+        $result = $moderation_service->reject_submission($id, $comment);
+
+        if ($result) {
+            wp_send_json_success(__('Meldung abgelehnt', 'abschussplan-hgmh'));
+        } else {
+            wp_send_json_error(__('Fehler beim Ablehnen der Meldung', 'abschussplan-hgmh'));
+        }
     }
 
     /**
@@ -4395,15 +4345,17 @@ class AHGMH_Admin_Page_Modern {
                     } else {
                         // Fallback: use normalized schema with JOINs
                         global $wpdb;
-                        $s = $wpdb->prefix . 'hgmh_submissions_v2';
-                        $w = $wpdb->prefix . 'hgmh_wildarten';
-                        $e = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
-                        $m = $wpdb->prefix . 'hgmh_meldegruppen';
+                        $s  = $wpdb->prefix . 'hgmh_submissions_v2';
+                        $w  = $wpdb->prefix . 'hgmh_wildarten';
+                        $e  = $wpdb->prefix . 'hgmh_eigenjagdbezirke';
+                        $jm = $wpdb->prefix . 'hgmh_jagdbezirk_meldegruppen';
+                        $m  = $wpdb->prefix . 'hgmh_meldegruppen';
                         $count = $wpdb->get_var($wpdb->prepare(
                             "SELECT COUNT(*) FROM $s s
                              INNER JOIN $w w ON s.wildart_id = w.id
                              LEFT JOIN $e e ON s.eigenjagdbezirk_id = e.id
-                             LEFT JOIN $m m ON e.meldegruppe_id = m.id
+                             LEFT JOIN $jm jm ON e.id = jm.jagdbezirk_id
+                             LEFT JOIN $m m ON jm.meldegruppe_id = m.id
                              WHERE w.name = %s AND s.category = %s AND m.name = %s
                              AND s.status = 'approved'",
                             $wildart, $category, $meldegruppe
@@ -5261,6 +5213,41 @@ class AHGMH_Admin_Page_Modern {
             </div>
         </div>
         
+        <!-- Export Configuration -->
+        <div class="ahgmh-card" style="margin-top: 20px;">
+            <div class="ahgmh-card-header">
+                <h2><i class="dashicons dashicons-admin-settings"></i> <?php echo esc_html__('Export-Konfiguration', 'abschussplan-hgmh'); ?></h2>
+            </div>
+            <div class="ahgmh-card-content">
+                <div class="ahgmh-form-row">
+                    <label for="export_filename_pattern"><?php echo esc_html__('Dateiname-Muster:', 'abschussplan-hgmh'); ?></label>
+                    <input type="text"
+                           id="export_filename_pattern"
+                           name="export_filename_pattern"
+                           value="<?php echo esc_attr(get_option('ahgmh_export_filename_pattern', 'abschussplan_{species}_{date}')); ?>"
+                           placeholder="abschussplan_{species}_{date}"
+                           class="regular-text">
+                    <p class="description">
+                        <?php echo esc_html__('Verfügbare Platzhalter: {species} (Wildart), {date} (YYYY-MM-DD), {datetime} (YYYY-MM-DD_HH-MM)', 'abschussplan-hgmh'); ?>
+                    </p>
+                </div>
+
+                <div class="ahgmh-form-row">
+                    <label>
+                        <input type="checkbox"
+                               id="export_include_time"
+                               name="export_include_time"
+                               <?php checked(get_option('ahgmh_export_include_time', false)); ?>>
+                        <?php echo esc_html__('Uhrzeit in Dateinamen einschließen', 'abschussplan-hgmh'); ?>
+                    </label>
+                </div>
+
+                <button type="button" class="button" id="save_export_config">
+                    <?php echo esc_html__('Export-Einstellungen speichern', 'abschussplan-hgmh'); ?>
+                </button>
+            </div>
+        </div>
+
         <script>
         function generateExportURL() {
             var baseUrl = '<?php echo admin_url('admin-ajax.php'); ?>';

@@ -3,7 +3,7 @@
  * Plugin Name: Abschussplan HGMH
  * Plugin URI: https://github.com/foe05/pr25_one
  * Description: Collect and view game shoots for registration with local hunting authorities in Germany. Version 3.0: Complete architectural refactoring with enterprise features including moderation workflow, email verification, activity logging, and migration manager.
- * Version: 26.1.0
+ * Version: 26.4.0
  * Author: foe05
  * Author URI: https://github.com/foe05
  * License: GPL v3 or later
@@ -25,8 +25,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Define plugin constants.
 define( 'AHGMH_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AHGMH_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'AHGMH_PLUGIN_VERSION', '26.1.0' );
-define( 'AHGMH_DB_VERSION', '10' );
+define( 'AHGMH_PLUGIN_VERSION', '26.4.0' );
+define( 'AHGMH_DB_VERSION', '12' );
 
 /*
 |--------------------------------------------------------------------------
@@ -39,8 +39,6 @@ require_once AHGMH_PLUGIN_DIR . 'includes/class-form-handler.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-table-display.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-permissions-service.php';
 require_once AHGMH_PLUGIN_DIR . 'includes/class-rest-api.php';
-require_once AHGMH_PLUGIN_DIR . 'includes/class-page-view-logger.php';
-
 // Core repositories (used by services below).
 require_once AHGMH_PLUGIN_DIR . 'includes/repositories/class-submission-repository.php';
 
@@ -77,8 +75,6 @@ if ( is_admin() ) {
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-export-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-limits-service.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/services/class-moderation-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-bulk-operations-service.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/services/class-undo-service.php';
 
     // Admin views.
     require_once AHGMH_PLUGIN_DIR . 'admin/views/class-dashboard-view.php';
@@ -92,9 +88,6 @@ if ( is_admin() ) {
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-jagdbezirk-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-export-controller.php';
     require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-limits-controller.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-page-views-controller.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-bulk-operations-controller.php';
-    require_once AHGMH_PLUGIN_DIR . 'admin/controllers/class-undo-controller.php';
 
     // Legacy admin page (monolith -- provides menus and page rendering).
     require_once AHGMH_PLUGIN_DIR . 'admin/class-admin-page-modern.php';
@@ -239,11 +232,8 @@ class Abschussplan_HGMH {
         $this->admin = new AHGMH_Admin_Page_Modern();
 
         // Modular controllers -- each registers its own AJAX handlers.
-        new AHGMH_Page_Views_Controller();
         new AHGMH_Jagdbezirk_Controller();
         new AHGMH_Export_Controller();
-        new AHGMH_Bulk_Operations_Controller();
-        new AHGMH_Undo_Controller();
         new AHGMH_Wildart_Controller();
         new AHGMH_Limits_Controller();
     }
@@ -389,50 +379,6 @@ class Abschussplan_HGMH {
  */
 function abschussplan_hgmh() {
     return Abschussplan_HGMH::get_instance();
-}
-
-/*
-|--------------------------------------------------------------------------
-| Cron: page-views cleanup
-|--------------------------------------------------------------------------
-|
-| Test: Enable ahgmh_auto_cleanup_enabled, wait for the daily cron to
-|       fire, then verify that page-view rows older than the configured
-|       number of days have been removed.
-*/
-add_action( 'ahgmh_page_views_cleanup_hook', 'ahgmh_page_views_cleanup_cron' );
-/**
- * Cron callback -- remove old page-view log entries.
- */
-function ahgmh_page_views_cleanup_cron() {
-    if ( ! get_option( 'ahgmh_auto_cleanup_enabled', false ) ) {
-        return;
-    }
-
-    $days   = (int) get_option( 'ahgmh_auto_cleanup_days', 90 );
-    $logger = new AHGMH_Page_View_Logger();
-    $logger->cleanup_old_logs( $days );
-}
-
-add_action( 'wp', 'ahgmh_schedule_page_views_cleanup' );
-/**
- * Ensure the daily cleanup cron is scheduled.
- */
-function ahgmh_schedule_page_views_cleanup() {
-    if ( ! wp_next_scheduled( 'ahgmh_page_views_cleanup_hook' ) ) {
-        wp_schedule_event( time(), 'daily', 'ahgmh_page_views_cleanup_hook' );
-    }
-}
-
-register_deactivation_hook( __FILE__, 'ahgmh_clear_page_views_cleanup' );
-/**
- * Remove the page-views cleanup cron on deactivation.
- */
-function ahgmh_clear_page_views_cleanup() {
-    $timestamp = wp_next_scheduled( 'ahgmh_page_views_cleanup_hook' );
-    if ( $timestamp ) {
-        wp_unschedule_event( $timestamp, 'ahgmh_page_views_cleanup_hook' );
-    }
 }
 
 /*
