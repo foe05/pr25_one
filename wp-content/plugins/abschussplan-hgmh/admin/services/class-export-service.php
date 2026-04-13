@@ -202,20 +202,20 @@ class AHGMH_Export_Service {
 
             $sanitized[] = array(
                 'id'             => absint($row['id']),
-                'wildart'        => esc_html($row['wildart'] ?? ''),
-                'kategorie'      => esc_html($row['kategorie'] ?? ''),
-                'datum'          => esc_html($row['datum'] ?? ''),
-                'wus_nummer'     => esc_html($row['wus_nummer'] ?? ''),
-                'meldegruppe'    => esc_html($row['meldegruppe'] ?? ''),
-                'jagdbezirk'     => esc_html($row['jagdbezirk'] ?? ''),
-                'erfasser'       => esc_html($erfasser_name),
-                'erfassungsdatum' => esc_html($row['erfassungsdatum'] ?? ''),
-                'status'         => esc_html($status_translated),
-                'bemerkung'      => esc_html($row['bemerkung'] ?? ''),
-                'interne_notiz'  => esc_html($row['interne_notiz'] ?? ''),
-                'genehmigt_von'  => esc_html($genehmiger_name),
-                'genehmigt_am'   => esc_html($row['approved_at'] ?? ''),
-                'ablehnungsgrund' => esc_html($row['rejection_reason'] ?? ''),
+                'wildart'        => wp_strip_all_tags($row['wildart'] ?? ''),
+                'kategorie'      => wp_strip_all_tags($row['kategorie'] ?? ''),
+                'datum'          => wp_strip_all_tags($row['datum'] ?? ''),
+                'wus_nummer'     => wp_strip_all_tags($row['wus_nummer'] ?? ''),
+                'meldegruppe'    => wp_strip_all_tags($row['meldegruppe'] ?? ''),
+                'jagdbezirk'     => wp_strip_all_tags($row['jagdbezirk'] ?? ''),
+                'erfasser'       => wp_strip_all_tags($erfasser_name),
+                'erfassungsdatum' => wp_strip_all_tags($row['erfassungsdatum'] ?? ''),
+                'status'         => wp_strip_all_tags($status_translated),
+                'bemerkungen'    => wp_strip_all_tags($row['bemerkung'] ?? ''),
+                'interne_notiz'  => wp_strip_all_tags($row['interne_notiz'] ?? ''),
+                'genehmigt_von'  => wp_strip_all_tags($genehmiger_name),
+                'genehmigt_am'   => wp_strip_all_tags($row['approved_at'] ?? ''),
+                'ablehnungsgrund' => wp_strip_all_tags($row['rejection_reason'] ?? ''),
             );
         }
 
@@ -249,7 +249,7 @@ class AHGMH_Export_Service {
      * @throws Exception Bei Fehlern
      */
     private function create_csv_file($filepath, $data) {
-        $fp = fopen($filepath, 'w');
+        $fp = fopen($filepath, 'wb'); // Binärmodus für konsistente \r\n Zeilenenden
 
         if (!$fp) {
             throw new Exception(__('Export-Datei konnte nicht erstellt werden', 'abschussplan-hgmh'));
@@ -258,26 +258,26 @@ class AHGMH_Export_Service {
         // BOM für UTF-8 Encoding (Excel-Kompatibilität)
         fwrite($fp, "\xEF\xBB\xBF");
 
-        // Deutsche Spaltenüberschriften (vollständig)
+        // Deutsche Spaltenüberschriften
         $headers = array(
             'ID',
             'Wildart',
             'Kategorie',
             'Datum',
             'WUS-Nummer',
-            'Meldegruppe',
             'Jagdbezirk',
+            'Meldegruppe',
             'Erfasser',
             'Erfassungsdatum',
             'Status',
-            'Bemerkung',
+            'Bemerkungen',
             'Interne Notiz',
             'Genehmigt von',
             'Genehmigt am',
             'Ablehnungsgrund'
         );
 
-        fputcsv($fp, $headers, ';'); // Semikolon als Trennzeichen für deutsche Excel-Versionen
+        $this->write_csv_row($fp, $headers);
 
         // Datenzeilen
         foreach ($data as $row) {
@@ -287,22 +287,42 @@ class AHGMH_Export_Service {
                 $row['kategorie'],
                 $row['datum'],
                 $row['wus_nummer'],
-                $row['meldegruppe'],
                 $row['jagdbezirk'],
+                $row['meldegruppe'],
                 $row['erfasser'],
                 $this->format_date($row['erfassungsdatum']),
                 $row['status'],
-                $row['bemerkung'],
+                $row['bemerkungen'],
                 $row['interne_notiz'],
                 $row['genehmigt_von'],
                 $this->format_date($row['genehmigt_am']),
                 $row['ablehnungsgrund']
             );
 
-            fputcsv($fp, $csv_row, ';');
+            $this->write_csv_row($fp, $csv_row);
         }
 
         fclose($fp);
+    }
+
+    /**
+     * CSV-Zeile mit \r\n Zeilenende schreiben (Windows/Excel-Kompatibilität)
+     *
+     * @param resource $fp   Datei-Handle
+     * @param array    $fields Felder der Zeile
+     */
+    private function write_csv_row($fp, $fields) {
+        $escaped = array();
+        foreach ($fields as $field) {
+            $field = (string) $field;
+            // Feld in Anführungszeichen, wenn es Semikolon, Anführungszeichen oder Zeilenumbrüche enthält
+            if (strpos($field, ';') !== false || strpos($field, '"') !== false ||
+                strpos($field, "\n") !== false || strpos($field, "\r") !== false) {
+                $field = '"' . str_replace('"', '""', $field) . '"';
+            }
+            $escaped[] = $field;
+        }
+        fwrite($fp, implode(';', $escaped) . "\r\n");
     }
 
     /**
