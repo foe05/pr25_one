@@ -1284,7 +1284,7 @@ class AHGMH_Form_Handler {
             $meldegruppen_tbl = $wpdb->prefix . 'hgmh_meldegruppen';
 
             $query = "SELECT s.id, s.submitted_by_user_id AS user_id, s.submitted_at AS created_at,
-                             s.category, s.harvest_date, s.wus_number, s.internal_note,
+                             s.category, s.harvest_date, s.wus_number, s.notes, s.internal_note,
                              w.name AS wildart_name,
                              e.name AS eigenjagdbezirk_name,
                              m.name AS meldegruppe_name
@@ -1355,17 +1355,21 @@ class AHGMH_Form_Handler {
             
             // Open output stream
             $output = fopen('php://output', 'w');
-            
+
+            // BOM für UTF-8 Encoding (Excel-Kompatibilität, Umlaute)
+            fwrite($output, "\xEF\xBB\xBF");
+
             // Write CSV header
             fputcsv($output, array(
                 'ID',
-                'Wildart', 
+                'Wildart',
                 'Abschussdatum',
                 'Abschuss',
                 'WUS',
                 'Jagdbezirk',
                 'Meldegruppe',
                 'Bemerkung',
+                'Interne Notiz',
                 'Erstellt von',
                 'Erstellt am'
             ));
@@ -1383,6 +1387,7 @@ class AHGMH_Form_Handler {
                     $submission['wus_number'],
                     $submission['eigenjagdbezirk_name'],
                     $submission['meldegruppe_name'],
+                    $submission['notes'],
                     $submission['internal_note'],
                     $created_by,
                     $submission['created_at'],

@@ -1,6 +1,6 @@
 # Abschussplan HGMH - WordPress Plugin
 
-**Version:** 26.4.0
+**Version:** 26.4.1
 **Status:** Production Ready - Quality & Security Sprint Complete
 **Type:** WordPress Plugin for German Hegegemeinschaften Management
 
@@ -385,6 +385,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
 
 ---
 
+**Version 26.4.1** - Bugfix: CSV-Export (`export_abschuss_csv`) – UTF-8 BOM für korrekte Umlaute, neue Spalte "Interne Notiz" (May 2026)
 **Version 26.4.0** - Quality & Security Sprint: Critical security fixes, admin UX overhaul, WCAG 2.1 AA accessibility, code quality improvements (April 2026)
 **Version 3.0.0** - Major release with complete architectural refactoring (January 2026)
 **Version 2.5.2** - Enhanced Meldegruppen Management System (September 2025)

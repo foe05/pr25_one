@@ -1,5 +1,23 @@
 # Changelog - Abschussplan HGMH
 
+## [26.4.1] - 2026-05-15
+
+### Geändert
+
+- **`[abschuss_summary_table]` – Spalte "Jagdbezirk" entfernt**: Die öffentliche Übersichtstabelle (`templates/summary-table-template.php`) zeigt nun 6 statt 7 Spalten. Render-Methode und Datenbankabfrage blieben unverändert.
+
+### Bugfixes
+
+- **CSV-Export `export_abschuss_csv` – Umlaute**: Der über den Admin-Link (`admin-ajax.php?action=export_abschuss_csv`) erzeugte CSV-Export schrieb keinen UTF-8-BOM. Excel interpretierte die Datei als Windows-1252, wodurch Umlaute (ä/ö/ü/ß) zerstört wurden. `export_csv()` in `includes/class-form-handler.php` schreibt jetzt den BOM `\xEF\xBB\xBF`. (Der zweite Export-Weg über `AHGMH_Export_Service` war bereits in 26.4.0 korrigiert.)
+- **CSV-Export `export_abschuss_csv` – Spalte "Interne Notiz"**: Die Spalte "Interne Notiz" fehlte; stattdessen wurde der Wert von `internal_note` fälschlich unter der Überschrift "Bemerkung" ausgegeben. Die Query lädt jetzt zusätzlich `s.notes`, "Bemerkung" liefert wieder den korrekten Wert und "Interne Notiz" wurde als eigene Spalte ergänzt.
+
+### Allgemein
+
+- Version 26.4.1 (Browser-Cache-Buster für alle JS/CSS-Assets)
+- Keine Datenmodell-Änderungen, keine Migrationen — `s.notes` und `s.internal_note` existieren bereits im Schema.
+
+---
+
 ## [26.4.0] - 2026-04-13
 
 ### Admin-Backend: Meldungen-Editiermaske
