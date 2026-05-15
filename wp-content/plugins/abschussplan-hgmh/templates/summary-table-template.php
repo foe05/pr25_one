@@ -53,7 +53,6 @@ $pagination_query_args = array('abschuss_limit' => $current_limit);
                         <th scope="col"><?php echo esc_html__('Abschuss', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('WUS', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Meldegruppe', 'abschussplan-hgmh'); ?></th>
-                        <th scope="col"><?php echo esc_html__('Jagdbezirk', 'abschussplan-hgmh'); ?></th>
                         <th scope="col"><?php echo esc_html__('Bemerkung', 'abschussplan-hgmh'); ?></th>
                     </tr>
                 </thead>
@@ -79,7 +78,6 @@ $pagination_query_args = array('abschuss_limit' => $current_limit);
                             <td data-label="<?php echo esc_attr__('Abschuss', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['category'] ?? ''); ?></td>
                             <td data-label="<?php echo esc_attr__('WUS', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['wus_number'] ?? ''); ?></td>
                             <td data-label="<?php echo esc_attr__('Meldegruppe', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['meldegruppe_name'] ?? ''); ?></td>
-                            <td data-label="<?php echo esc_attr__('Jagdbezirk', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['eigenjagdbezirk_name'] ?? ''); ?></td>
                             <td data-label="<?php echo esc_attr__('Bemerkung', 'abschussplan-hgmh'); ?>"><?php echo esc_html($submission['notes'] ?? ''); ?></td>
                         </tr>
                     <?php endforeach; ?>
